@@ -16,8 +16,8 @@ const double R_STEP = 1.0;
 const double Q_STEP = 0.1;
 const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
-const double TI_ALPHA = 0.2;
-const int TI_TRIES = 10;
+const double TI_ALPHA = 0.05;
+const int TI_TRIES = 100;
 const bool TI_PARALLEL = true;
 
 class DataObject {
@@ -131,7 +131,7 @@ void print(const string &name, const double &g0_value, const double &g_value,
     cout << "There are no suitable parameter values" << endl;
   }
   for(int i = 0; i < static_cast<int>(V.size()); i++) {
-    out_file << "[" << V_low[i].to_csv() << ";" << V[i].to_csv() << ";" << V_high[i].to_csv() << "] ";
+    out_file << V_low[i].to_csv() << ";" << V[i].to_csv() << ";" << V_high[i].to_csv() << " ";
   }
   out_file << endl;
 }
