@@ -21,7 +21,7 @@ used, it is necessary to check they are correct.
 #define POPEN_DEC  1         /* popen() is declared in stdio.h */
 #define FTELL_DEC  1         /* ftell() is declared in stdio.h */
 #define FDOPEN_DEC  1        /* fdopen() is declared in stdio.h */
-#define SORTPROG  "sort"         /* name of sort program */
+#define SORTPROG  "/usr/bin/sort"         /* name of sort program */
 #define SORT_NEWKEY 1  /* if -k is supported */
 #define HAVE_PID_T 1    /* pid_t is defined */
 #define PUTENV_DEC 1   /* putenv() is declared in stdlib.h */
@@ -83,18 +83,28 @@ extern int errno;
 #define ABORT(msg) do {exit(1);} while(0)
 #endif
 
+/* Here we set environment variables that determine the sorting order
+   for the shortg program.  Older docs for sort say that it uses
+   LC_COLLATE, but the POSIX description of locales says that the
+   LC_ALL variable takes precedence over LC_COLLATE.  To be safe,
+   we will define both.  Also, define this to be nothing if the
+   variable KEEP_SORT_LOCALE is defined. */
+#ifdef KEEP_SORT_LOCALE
+#define SET_C_COLLATION
+#else
 #if PUTENV_DEC && HAVE_PUTENV
-#define SET_C_COLLATION putenv("LC_COLLATE=C")
+#define SET_C_COLLATION putenv("LC_ALL=C"); putenv("LC_COLLATE=C")
 #elif SETENV_DEC && HAVE_SETENV
-#define SET_C_COLLATION setenv("LC_COLLATE","C",1)
+#define SET_C_COLLATION setenv("LC_ALL","C",1); setenv("LC_COLLATE","C",1)
 #elif HAVE_PUTENV
 int putenv(char*);
-#define SET_C_COLLATION putenv("LC_COLLATE=C")
+#define SET_C_COLLATION putenv("LC_ALL=C"); putenv("LC_COLLATE=C")
 #elif HAVE_SETENV
 int setenv(const char*,const char*,int);
-#define SET_C_COLLATION setenv("LC_COLLATE","C",1)
+#define SET_C_COLLATION setenv("LC_ALL","C",1); setenv("LC_COLLATE","C",1)
 #else
 #define SET_C_COLLATION
+#endif
 #endif
 
 #if HAS_STDIO_UNLOCK && !defined(NAUTY_IN_MAGMA) && !defined(IS_JAVA)
