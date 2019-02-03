@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
@@ -40,6 +42,18 @@ public:
   double p, q, r;
 
   Parameters() : p(nan("")), q(nan("")), r(nan("")) { }
+
+  void initialize(const std::string &mode_v, char *argv[]) {
+    if (mode_v == "chung_lu") {
+      initialize_chung_lu(std::stod(argv[0]), std::stod(argv[1]));
+    }
+    else if (mode_v == "pastor_satorras") {
+      initialize_pastor_satorras(std::stod(argv[0]), std::stod(argv[1]));
+    }
+    else {
+      assert(0);
+    }
+  }
 
   void initialize_pure_duplication(const double &p_v) {
     this->mode = Mode::PURE_DUPLICATION;
@@ -183,6 +197,9 @@ std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const i
 
 std::vector<std::set<int>> read_graph(const std::string &graph_name) {
   std::ifstream graph_file(graph_name);
+  if (graph_file.fail()) {
+    throw std::invalid_argument("Missing " + graph_name + " file");
+  }
   std::vector<std::set<int>> G;
   int u, v;
   while (!graph_file.eof())
