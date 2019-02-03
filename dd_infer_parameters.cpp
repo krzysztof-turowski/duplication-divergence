@@ -6,7 +6,9 @@
 #include "dd_header.h"
 
 #include <functional>
+#include <future>
 #include <iomanip>
+#include <tuple>
 
 using namespace std;
 
@@ -14,6 +16,9 @@ const double R_STEP = 1.0;
 const double Q_STEP = 0.1;
 const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
+const double TI_ALPHA = 0.2;
+const int TI_TRIES = 10;
+const bool TI_PARALLEL = true;
 
 class DataObject {
 public:
@@ -55,13 +60,43 @@ void count_triangles(const vector<set<int>> &G, DataObject &data) {
   data.triangles /= 3;
 }
 
-DataObject get_params_for_graph(const vector<set<int>> &G) {
+DataObject get_params_for_graph(const vector<set<int>> &G, bool verbose = false) {
   DataObject data;
   degree_distribution(G, data);
   count_triangles(G, data);
 
-  data.print();
+  if (verbose) {
+    data.print();
+  }
   return data;
+}
+
+DataObject get_params_for_synthetic_graph(const vector<set<int>> &G0, const int &n, const Parameters &params) {
+  vector<set<int>> G = G0;
+  generate_graph(G, n, params);
+  return get_params_for_graph(G);
+}
+
+tuple<DataObject, DataObject> get_empirical_interval(
+    const vector<set<int>> &G0, const int &n, const Parameters &params, function<double(DataObject const&)> get_value) {
+  assert(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1);
+  vector<DataObject> values(TI_TRIES);
+  if (TI_PARALLEL) {
+    vector<future<DataObject>> futures(TI_TRIES);
+    for(int i = 0; i < TI_TRIES; i++) {
+      futures[i] = async(launch::deferred, get_params_for_synthetic_graph, G0, n, params);
+    }
+    for(int i = 0; i < TI_TRIES; i++) {
+      values[i] = futures[i].get();
+    }
+  } else {
+    for(int i = 0; i < TI_TRIES; i++) {
+      values[i] = get_params_for_synthetic_graph(G0, n, params);
+    }
+  }
+  sort(values.begin(), values.end(), [&](const DataObject &a, const DataObject &b) -> bool { return get_value(a) < get_value(b); });
+  int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
+  return make_tuple(values[low], values[high]);
 }
 
 // TODO: replace Score by Parameters
@@ -106,7 +141,24 @@ void print(const string &name, const double &g0_value, const double &g_value, ve
     cout << "There are no suitable parameter values" << endl;
   }
   for(auto v : V) {
-    out_file << v.params.to_csv();
+    out_file << v.params.to_csv() << " ";
+  }
+  out_file << endl;
+}
+
+void print(const string &name, const double &g0_value, const double &g_value,
+    vector<Score> &V_low, vector<Score> &V, vector<Score> &V_high, ostream &out_file) {
+  cout << fixed << setprecision(3) << name << " - G0: " << g0_value  << ", G: " << g_value << endl;
+  if (!V.empty()) {
+    for(int i = 0; i < static_cast<int>(V.size()); i++) {
+      cout << V[i].params.to_string(V_low[i].params, V_high[i].params) << endl;
+    }
+  }
+  else {
+    cout << "There are no suitable parameter values" << endl;
+  }
+  for(int i = 0; i < static_cast<int>(V.size()); i++) {
+    out_file << "[" << V_low[i].params.to_csv() << ";" << V[i].params.to_csv() << ";" << V_high[i].params.to_csv() << "] ";
   }
   out_file << endl;
 }
@@ -260,28 +312,39 @@ vector<Score> pastor_satorras_get_scores(const DataObject &g0_data, const DataOb
 }
 
 void pastor_satorras_estimate_parameter(
-    const string &name, const DataObject &g0_data, const DataObject &g_data,
-    function<double (DataObject const&)> get_value, ofstream &out_file) {
+    const string &name, const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0,
+    function<double (DataObject const&)> get_value, ofstream &out_file, bool tolerance_interval = false) {
   vector<Score> S = pastor_satorras_get_scores(g0_data, g_data, get_value);
-  print(name, get_value(g0_data), get_value(g_data), S, out_file);
+  if (tolerance_interval) {
+    vector<Score> S_low, S_high;
+    for (auto score : S) {
+      DataObject g_data_low, g_data_high;
+      tie(g_data_low, g_data_high) = get_empirical_interval(G0, g_data.no_vertices, score.params, get_value);
+      S_low.push_back(pastor_satorras_binary_search_r(g0_data, g_data_low, score.params.p, get_value));
+      S_high.push_back(pastor_satorras_binary_search_r(g0_data, g_data_high, score.params.p, get_value));
+    }
+    print(name, get_value(g0_data), get_value(g_data), S_low, S, S_high, out_file);
+  } else {
+    print(name, get_value(g0_data), get_value(g_data), S, out_file);
+  }
 }
 
 void pastor_satorras_estimate(const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0, ofstream &out_file) {
   auto D_lambda = [](const DataObject &data) { return data.average_degree; };
-  pastor_satorras_estimate_parameter("Average degree", g_data, g0_data, D_lambda, out_file);
+  pastor_satorras_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
   
   auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
-  pastor_satorras_estimate_parameter("Average degree squared", g_data, g0_data, D2_lambda, out_file);
+  pastor_satorras_estimate_parameter("Average degree squared", g_data, g0_data, G0, D2_lambda, out_file);
   
   auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
-  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, S2_lambda, out_file);
+  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file);
 
   auto C3_lambda = [](const DataObject &data) { return data.triangles; };
-  pastor_satorras_estimate_parameter("Triangles", g_data, g0_data, C3_lambda, out_file);
+  pastor_satorras_estimate_parameter("Triangles", g_data, g0_data, G0, C3_lambda, out_file, true);
 }
 
 void process_graph(const vector<set<int>> &G, const vector<set<int>> &G0, const Mode &mode, ofstream &out_file) {
-  DataObject g0_data = get_params_for_graph(G0), g_data = get_params_for_graph(G);
+  DataObject g0_data = get_params_for_graph(G0, true), g_data = get_params_for_graph(G, true);
   switch (mode) {
     case CHUNG_LU:
       chung_lu_estimate(g_data, g0_data, G0, out_file);
