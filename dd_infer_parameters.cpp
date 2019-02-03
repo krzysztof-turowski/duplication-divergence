@@ -181,7 +181,6 @@ void chung_lu_estimate(const DataObject &g0_data, const DataObject &g_data, cons
 void pastor_satorras_estimate_iterative(DataObject &apx_data, const double &p, const double &r, const int &n0, const int &n) {
 	for (int i = n0; i < n; i++) {
     double id = i, D = apx_data.average_degree, D2 = apx_data.average_degree_squared, S2 = apx_data.open_triangles, C3 = apx_data.triangles;
-    // BUG: if p = 0 and r is large for some G_n0 we have apx_data.triangles less than C3!
     apx_data.triangles =
         C3 * (1 + 3 * p * p / id - 6 * p * r / (id * id) + 3 * r * r / (id * id * id))
         + D2 * (p * r / id - r * r / (id * id)) + D * r * r / (2 * id);
@@ -248,6 +247,9 @@ vector<Score> pastor_satorras_get_scores(const DataObject &g0_data, const DataOb
 		DataObject apx_min(g0_data), apx_max(g0_data);
 		pastor_satorras_estimate_iterative(apx_min, 0.0, r, g0_data.no_vertices, g_data.no_vertices);
 		pastor_satorras_estimate_iterative(apx_max, 1.0, r, g0_data.no_vertices, g_data.no_vertices);
+		if (g0_data.triangles > apx_min.triangles || g0_data.open_triangles > apx_min.open_triangles) {
+			continue;
+		}
 		if (contains(get_value(apx_min), get_value(apx_max), get_value(g_data))) {
 			Score value = pastor_satorras_binary_search_p(g0_data, g_data, get_value(apx_max), r, get_value);
       // TODO: add tolerance interval
