@@ -125,15 +125,14 @@ void chung_lu_estimate_iterative(DataObject &apx_data, const double &p, const do
 }
 
 Score chung_lu_binary_search_p(
-    const DataObject &g0_data, const DataObject &g_data, const double &high_value, const double &q,
-    function<double(DataObject const&)> get_value) {
+    const DataObject &g0_data, const DataObject &g_data, const double &q, function<double(DataObject const&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
     double p_mid = (p_high + p_low) / 2;
     apx_data = g0_data;
     chung_lu_estimate_iterative(apx_data, p_mid, q, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), high_value, get_value(g_data))) {
+    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
       p_low = p_mid;
     }
     else {
@@ -153,7 +152,7 @@ vector<Score> chung_lu_get_scores(const DataObject &g0_data, const DataObject &g
     chung_lu_estimate_iterative(apx_min, 0.0, q, g0_data.no_vertices, g_data.no_vertices);
     chung_lu_estimate_iterative(apx_max, 1.0, q, g0_data.no_vertices, g_data.no_vertices);
     if (contains(get_value(apx_min), get_value(apx_max), get_value(g_data))) {
-      Score value = chung_lu_binary_search_p(g0_data, g_data, get_value(apx_max), q, get_value);
+      Score value = chung_lu_binary_search_p(g0_data, g_data, q, get_value);
       params.push_back(value);
     }
   }
@@ -198,15 +197,14 @@ void pastor_satorras_estimate_iterative(DataObject &apx_data, const double &p, c
 }
 
 Score pastor_satorras_binary_search_p(
-    const DataObject &g0_data, const DataObject &g_data, const double &high_value, const double &r,
-    function<double(DataObject const&)> get_value) {
+    const DataObject &g0_data, const DataObject &g_data, const double &r, function<double(DataObject const&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
     double p_mid = (p_high + p_low) / 2;
     apx_data = g0_data;
     pastor_satorras_estimate_iterative(apx_data, p_mid, r, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), high_value, get_value(g_data))) {
+    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
       p_low = p_mid;
     }
     else {
@@ -218,16 +216,15 @@ Score pastor_satorras_binary_search_p(
   return Score(params, get_value(g_data), get_value(apx_data));
 }
 
-Score pastor_satorras_estimate_binary_search_r(
-    const DataObject &g0_data, const DataObject &g_data, const double &high_value, const double &p,
-    function<double(DataObject const&)> get_value) {
+Score pastor_satorras_binary_search_r(
+    const DataObject &g0_data, const DataObject &g_data, const double &p, function<double(DataObject const&)> get_value) {
   double r_low = 0.0, r_high = g0_data.no_vertices, error = EPS;
   DataObject apx_data;
   while (r_high - r_low > error) {
     double r_mid = (r_high + r_low) / 2;
     apx_data = g0_data;
     pastor_satorras_estimate_iterative(apx_data, p, r_mid, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), high_value, get_value(g_data))) {
+    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
       r_low = r_mid;
     }
     else {
@@ -251,7 +248,7 @@ vector<Score> pastor_satorras_get_scores(const DataObject &g0_data, const DataOb
       continue;
     }
     if (contains(get_value(apx_min), get_value(apx_max), get_value(g_data))) {
-      Score value = pastor_satorras_binary_search_p(g0_data, g_data, get_value(apx_max), r, get_value);
+      Score value = pastor_satorras_binary_search_p(g0_data, g_data, r, get_value);
       // TODO: add tolerance interval
       params.push_back(value);
     }
