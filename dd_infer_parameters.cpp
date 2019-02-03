@@ -172,6 +172,9 @@ void chung_lu_estimate(const DataObject &g0_data, const DataObject &g_data, cons
   
   auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
   chung_lu_estimate_parameter("Average degree squared", g_data, g0_data, D2_lambda, out_file);
+  
+  auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
+  chung_lu_estimate_parameter("Open triangles", g_data, g0_data, S2_lambda, out_file);
 
   auto C3_lambda = [](const DataObject &data) { return data.triangles; };
   chung_lu_estimate_parameter("Triangles", g_data, g0_data, C3_lambda, out_file);
@@ -269,6 +272,9 @@ void pastor_satorras_estimate(const DataObject &g0_data, const DataObject &g_dat
   
   auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
   pastor_satorras_estimate_parameter("Average degree squared", g_data, g0_data, D2_lambda, out_file);
+  
+  auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
+  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, S2_lambda, out_file);
 
   auto C3_lambda = [](const DataObject &data) { return data.triangles; };
   pastor_satorras_estimate_parameter("Triangles", g_data, g0_data, C3_lambda, out_file);
