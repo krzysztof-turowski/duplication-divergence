@@ -37,9 +37,9 @@ const std::map<std::string, Mode> REVERSE_NAME = {
 class Parameters {
 public:
   Mode mode;
-	double p, q, r;
+  double p, q, r;
 
-	Parameters() : p(nan("")), q(nan("")), r(nan("")) { }
+  Parameters() : p(nan("")), q(nan("")), r(nan("")) { }
 
   void initialize_pure_duplication(const double &p_v) {
     this->mode = Mode::PURE_DUPLICATION;
@@ -65,67 +65,67 @@ public:
     this->q = nan("");
   }
 
-	std::string to_string() const {
-		std::stringstream out;
+  std::string to_string() const {
+    std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
-		out << "p = " << this->p << " ";
-		if (!std::isnan(this->q)) {
-			out << "q = " << this->q << " ";
-		}
-		if (!std::isnan(this->r)) {
-			out << "r = " << this->r << " ";
-		}
-		return out.str();
-	}
+    out << "p = " << this->p << " ";
+    if (!std::isnan(this->q)) {
+      out << "q = " << this->q << " ";
+    }
+    if (!std::isnan(this->r)) {
+      out << "r = " << this->r << " ";
+    }
+    return out.str();
+  }
 
-	std::string to_csv() const {
-		std::stringstream out;
-		out << this->p << ",";
-		if (!std::isnan(this->q)) {
-			out << this->q;
-		}
-		out << ",";
-		if (!std::isnan(this->r)) {
-			out  << this->r;
-		}
-		out << " ";
-		return out.str();
-	}
+  std::string to_csv() const {
+    std::stringstream out;
+    out << this->p << ",";
+    if (!std::isnan(this->q)) {
+      out << this->q;
+    }
+    out << ",";
+    if (!std::isnan(this->r)) {
+      out  << this->r;
+    }
+    out << " ";
+    return out.str();
+  }
 };
 
 std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
-	std::vector<std::set<int>> G(n0);
-	std::random_device device;
-	std::mt19937 generator(device());
-	std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+  std::vector<std::set<int>> G(n0);
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
-	for (int i = 0; i < n0; i++) {
-		for (int j = i + 1; j < n0; j++) {
-			if (edge_distribution(generator) <= p0) {
-				G[i].insert(j), G[j].insert(i);
-			}
-		}
+  for (int i = 0; i < n0; i++) {
+    for (int j = i + 1; j < n0; j++) {
+      if (edge_distribution(generator) <= p0) {
+        G[i].insert(j), G[j].insert(i);
+      }
+    }
   }
   return G;
 }
  
 std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const int &n, const Parameters &params) {
-	std::random_device device;
-	std::mt19937 generator(device());
-	std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
-	for (int i = G.size(); i < n; i++) {
-		std::uniform_int_distribution<int> parent_distribution(0, i - 1);
-		int parent = parent_distribution(generator);
-		G.resize(i + 1);
+  for (int i = G.size(); i < n; i++) {
+    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
+    int parent = parent_distribution(generator);
+    G.resize(i + 1);
     if (params.mode == Mode::PURE_DUPLICATION) {
-			for (auto j : G[parent]) {
-				if (edge_distribution(generator) <= params.p) {
-					G[i].insert(j), G[j].insert(i);
-				}
-			}
+      for (auto j : G[parent]) {
+        if (edge_distribution(generator) <= params.p) {
+          G[i].insert(j), G[j].insert(i);
+        }
+      }
     }
-		else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
+    else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
       while(true) {
         for (auto j : G[parent]) {
           if (edge_distribution(generator) <= params.p) {
@@ -138,34 +138,34 @@ std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const i
         parent = parent_distribution(generator);
       }
     }
-		else if (params.mode == Mode::CHUNG_LU) {
-			for (auto j : G[parent]) {
-				if (edge_distribution(generator) <= params.p) {
-					G[i].insert(j), G[j].insert(i);
-				}
-			}
-			if (edge_distribution(generator) <= params.q) {
-				G[i].insert(parent), G[parent].insert(i);
-			}
-		}
-		else if (params.mode == Mode::PASTOR_SATORRAS) {
-			for (int j = 0; j < i; j++) {
-				if (G[parent].count(j)) {
-					if (edge_distribution(generator) <= params.p) {
-						G[i].insert(j), G[j].insert(i);
-					}
-				}
-				else {
-					if (edge_distribution(generator) <= params.r / i) {
-						G[i].insert(j), G[j].insert(i);
-					}
-				}
-			}
-		}
+    else if (params.mode == Mode::CHUNG_LU) {
+      for (auto j : G[parent]) {
+        if (edge_distribution(generator) <= params.p) {
+          G[i].insert(j), G[j].insert(i);
+        }
+      }
+      if (edge_distribution(generator) <= params.q) {
+        G[i].insert(parent), G[parent].insert(i);
+      }
+    }
+    else if (params.mode == Mode::PASTOR_SATORRAS) {
+      for (int j = 0; j < i; j++) {
+        if (G[parent].count(j)) {
+          if (edge_distribution(generator) <= params.p) {
+            G[i].insert(j), G[j].insert(i);
+          }
+        }
+        else {
+          if (edge_distribution(generator) <= params.r / i) {
+            G[i].insert(j), G[j].insert(i);
+          }
+        }
+      }
+    }
     else {
       assert(0);
     }
-	}
+  }
   return G;
 }
 
