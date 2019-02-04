@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <map>
 #include <random>
@@ -12,6 +13,7 @@
 #include <vector>
 
 const std::string FILES_FOLDER = "files/", TEMP_FOLDER = "temp/";
+const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
 enum Mode { PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS };
 
@@ -82,12 +84,12 @@ public:
   std::string to_string() const {
     std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
-    out << "p = " << this->p << " ";
+    out << "p = " << std::fixed << std::setprecision(PRECISION_P) << this->p << " ";
     if (!std::isnan(this->q)) {
-      out << "q = " << this->q << " ";
+      out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r << " ";
     }
     return out.str();
   }
@@ -95,12 +97,12 @@ public:
   std::string to_string(const Parameters &low, const Parameters &high) const {
     std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
-    out << "p_min = " << low.p << " " << "p = " << this->p << " " << "p_max = " << high.p << " ";
+    out << "p_min = " << std::fixed << std::setprecision(PRECISION_P) << low.p << " " << "p = " << this->p << " " << "p_max = " << high.p << " ";
     if (!std::isnan(this->q)) {
-      out << "q = " << this->q << " ";
+      out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r << " ";
     }
     return out.str();
   }
@@ -214,4 +216,19 @@ std::vector<std::set<int>> read_graph(const std::string &graph_name) {
   }
   graph_file.close();
   return G;
+}
+
+int read_graph_size(const std::string &graph_name) {
+  std::ifstream graph_file(graph_name);
+  if (graph_file.fail()) {
+    throw std::invalid_argument("Missing " + graph_name + " file");
+  }
+  int n = 0, u, v;
+  while (!graph_file.eof())
+  {
+    graph_file >> u >> v;
+    n = std::max(n, v + 1);
+  }
+  graph_file.close();
+  return n;
 }
