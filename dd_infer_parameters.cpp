@@ -7,7 +7,6 @@
 
 #include <functional>
 #include <future>
-#include <iomanip>
 #include <tuple>
 
 using namespace std;
@@ -18,7 +17,7 @@ const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
-const bool TI_PARALLEL = true;
+const bool TI_PARALLEL = false;
 
 class DataObject {
 public:
@@ -84,7 +83,7 @@ tuple<DataObject, DataObject> get_empirical_interval(
   if (TI_PARALLEL) {
     vector<future<DataObject>> futures(TI_TRIES);
     for(int i = 0; i < TI_TRIES; i++) {
-      futures[i] = async(launch::deferred, get_params_for_synthetic_graph, G0, n, params);
+      futures[i] = async(launch::async, &get_params_for_synthetic_graph, cref(G0), cref(n), cref(params));
     }
     for(int i = 0; i < TI_TRIES; i++) {
       values[i] = futures[i].get();
@@ -358,8 +357,9 @@ int main(int argc, char *argv[]) {
     }
     else if (action == "real_data") {
       // TODO: make datasets parameter-variable
-      real_world_data("G-100-20-PS-0.70-2.00.txt", "G0-100-20-PS-0.70-2.00.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", REVERSE_NAME.find(mode)->second);
