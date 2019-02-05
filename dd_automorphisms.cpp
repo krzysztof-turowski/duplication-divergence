@@ -1,3 +1,8 @@
+// Tool for computation automorphisms for various duplication-divergence models.
+// Compile: g++ dd_automorphisms.cpp LIB/nauty/nauty.a -O3 -o ./dd_automorphisms
+// Run: ./dd_automorphisms real_graph FILE   - e.g. ./dd_automorphisms real_graph file.txt
+//      ./dd_automorphisms real_seed MODE    - e.g. ./dd_automorphisms real_seed pastor_satorras 0.5 2.0
+
 #include "dd_header.h"
 
 #pragma GCC diagnostic push
@@ -6,8 +11,10 @@
 #pragma GCC diagnostic pop
 
 #include <chrono>
+#include <future>
 
 const int PVAL_TRIES = 100;
+const bool PARALLEL = false;
 
 enum Algorithm { NAUTY_DENSE, NAUTY_SPARSE, ALL };
 
@@ -34,15 +41,28 @@ double log_automorphisms(const std::vector<std::set<int>> &G, const Algorithm &a
   assert(0);
 }
 
+double log_automorphisms_single(const std::vector<std::set<int>> &G0, const int &n, const Parameters &params) {
+  std::vector<std::set<int>> H = G0;
+  generate_graph(H, n, params);
+  return log_automorphisms(H);
+}
+
 std::vector<double> log_automorphisms(const std::vector<std::set<int>> &G0, const int &n, const Parameters &params, const int &tries) {
-  // TODO: provide parallelized version
   std::vector<double> log_aut_H(tries);
-  for (int i = 0; i < tries; i++) {
-    std::cerr << "Run " << i << ": ";
-    std::vector<std::set<int>> H = G0;
-    generate_graph(H, n, params);
-    log_aut_H[i] = log_automorphisms(H);
-    std::cerr << log_aut_H[i] << std::endl;
+  if (PARALLEL) {
+    std::vector<std::future<double>> futures(tries);
+    for(int i = 0; i < tries; i++) {
+      futures[i] = std::async(std::launch::async, &log_automorphisms_single, std::cref(G0), std::cref(n), std::cref(params));
+    }
+    for(int i = 0; i < tries; i++) {
+      log_aut_H[i] = futures[i].get();
+    }
+  } else {
+    for (int i = 0; i < tries; i++) {
+      std::cerr << "Run " << i << ": ";
+      log_aut_H[i] = log_automorphisms_single(G0, n, params);
+      std::cerr << log_aut_H[i] << std::endl;
+    }
   }
   return log_aut_H;
 }
@@ -71,8 +91,9 @@ int main(int argc, char *argv[]) {
       // TODO: make parameters ranges
       Parameters params;
       params.initialize(mode, argv + 3);
-      log_automorphisms_p_value("G-100-20-PS-0.70-2.00.txt", "G0-100-20-PS-0.70-2.00.txt", params);
-      log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.1-0.3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
       log_automorphisms_p_value("G-a-thaliana.txt", "G0-a-thaliana.txt", params);
       log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
       log_automorphisms_p_value("G-d-melanogaster.txt", "G0-d-melanogaster.txt", params);

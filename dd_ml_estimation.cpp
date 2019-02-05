@@ -213,12 +213,12 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
   return ML_value;
 }
 
-LikelihoodValue importance_sampling(Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
+LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   vector<double> likelihood_values(IS_TRIES);
   if (ML_PARALLEL) {
     vector<future<double>> futures(IS_TRIES);
     for(int i = 0; i < IS_TRIES; i++) {
-      futures[i] = async(launch::async, &likelihood_value, G, n0, params, params_0);
+      futures[i] = async(launch::async, &likelihood_value, cref(G), cref(n0), cref(params), cref(params_0));
     }
     for(int i = 0; i < IS_TRIES; i++) {
       likelihood_values[i] = futures[i].get();
