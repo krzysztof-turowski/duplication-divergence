@@ -334,8 +334,7 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
   vector<set<int>> G0 = generate_seed(n0, 1.0);
   vector<set<int>> G = G0;
   generate_graph(G, n, params);
-  string name = "Synthetic data: " + params.to_string();
-  cout << name << endl, out_file << name << endl;
+  cout << "Synthetic data: " + params.to_string() << endl;
   process_graph(G, G0, params.mode, out_file);
 }
 
@@ -343,7 +342,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   vector<set<int>> G = read_graph(FILES_FOLDER + graph_name);
   vector<set<int>> G0 = read_graph(FILES_FOLDER + seed_name);
   ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of(".")) + "_" + SHORT_NAME.find(mode)->second + ".txt");
-  cout << "File: " << graph_name << endl, out_file << graph_name << endl;
+  cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);
 }
 
@@ -366,7 +365,9 @@ int main(int argc, char *argv[]) {
     }
     else if (action == "real_data") {
       // TODO: make datasets parameter-variable
-      real_world_data("G-100-20-PS-0.70-2.00.txt", "G0-100-20-PS-0.70-2.00.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", REVERSE_NAME.find(mode)->second);
+      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", REVERSE_NAME.find(mode)->second);
       real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);

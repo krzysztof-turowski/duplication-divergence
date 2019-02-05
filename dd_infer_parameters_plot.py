@@ -34,16 +34,16 @@ def plot_parameter(X, Y_min, Y, Y_max, label, color):
   if Y_min is not None and Y_max is not None:
     pyplot.fill_between(X, Y_min, Y_max, color = color, alpha = 0.25)
 
-def plot_data(filename, export):
+def plot_data(file, filename, export):
+  name = os.path.splitext(filename.strip())[0]
   data = file.readlines()
-  name = os.path.splitext(data[0].strip())[0]
-  plot_parameter(*read_data(data[1]), 'Degree', 'red')
-  plot_parameter(*read_data(data[2]), 'Degree squared', 'magenta')
-  plot_parameter(*read_data(data[3]), 'Open triangles', 'blue')
-  plot_parameter(*read_data(data[4]), 'Triangles', 'green')
+  plot_parameter(*read_data(data[0]), label = 'Degree', color = 'red')
+  plot_parameter(*read_data(data[1]), label = 'Degree squared', color = 'magenta')
+  plot_parameter(*read_data(data[2]), label = 'Open triangles', color = 'blue')
+  plot_parameter(*read_data(data[3]), label = 'Triangles', color = 'green')
   pyplot.legend(loc = 'upper left')
   if export == 'pdf':
-    pyplot.savefig('temp/{0}.pdf'.format(name), bbox_inches = 'tight', pad_inches = 0.05)
+    pyplot.savefig('temp/{0}.pdf'.format(filename), bbox_inches = 'tight', pad_inches = 0.05)
   else:
     pyplot.show()
 
@@ -55,4 +55,4 @@ parser.add_argument('filename', metavar = 'FILE', help = 'data to plot')
 parser.add_argument('--export', choices = ['pdf'], help = 'export plot to file')
 args = parser.parse_args()
 with open('temp/' + args.filename) as file:
-  plot_data(file, args.export)
+  plot_data(file, args.filename, args.export)
