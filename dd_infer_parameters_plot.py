@@ -1,5 +1,5 @@
 # Tool for plotting the results from dd_infer_parameters.
-# Run: ./dd_infer_parameters FILE [--export {pdf}]
+# Run: python ./dd_infer_parameters_plot.py FILE [--export {pdf}]
 
 import argparse
 import matplotlib
@@ -39,6 +39,9 @@ def initialize_figure():
   matplotlib.rcParams['figure.figsize'] = figure_size()
   pyplot.gca().get_xaxis().set_major_locator(pyplot.MaxNLocator(8))
   pyplot.gca().get_yaxis().set_major_locator(pyplot.MaxNLocator(8))
+
+PASTOR_SATORRAS_PATTERN = [False, True, False]
+CHUNG_LU_PATTERN = [False, False, True]
 
 def read_data(data):
   values = numpy.array([[[float(value) if value != '' else None for value in interval.split(',')]

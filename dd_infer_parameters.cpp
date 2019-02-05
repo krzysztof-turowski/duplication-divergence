@@ -116,7 +116,6 @@ void print(const string &name, const double &g0_value, const double &g_value, co
   }
   else {
     cout << "There are no suitable parameter values" << endl;
-  }
   for(auto v : V) {
     out_file << v.to_csv() << " ";
   }
@@ -356,15 +355,7 @@ int main(int argc, char *argv[]) {
     if (action == "synthetic") {
       int n = stoi(argv[3]), n0 = stoi(argv[4]);
       Parameters params;
-      if (mode == "chung_lu") {
-        params.initialize_chung_lu(stod(argv[5]), stod(argv[6]));
-      }
-      else if (mode == "pastor_satorras") {
-        params.initialize_pastor_satorras(stod(argv[5]), stod(argv[6]));
-      }
-      else {
-        assert(0);
-      }
+      params.initialize(mode, argv + 5);
       synthetic_data(n, n0, params);
     }
     else if (action == "real_data") {
