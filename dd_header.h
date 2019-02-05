@@ -107,6 +107,19 @@ public:
     return out.str();
   }
 
+  std::string to_string(const Parameters &low, const Parameters &high) const {
+    std::stringstream out;
+    out << LONG_NAME.find(this->mode)->second << " ";
+    out << "p_min = " << low.p << " " << "p = " << this->p << " " << "p_max = " << high.p << " ";
+    if (!std::isnan(this->q)) {
+      out << "q = " << this->q << " ";
+    }
+    if (!std::isnan(this->r)) {
+      out << "r = " << this->r << " ";
+    }
+    return out.str();
+  }
+
   std::string to_csv() const {
     std::stringstream out;
     out << this->p << ",";
