@@ -52,8 +52,7 @@ std::vector<double> log_automorphisms(const std::vector<std::set<int>> &G0, cons
   if (PARALLEL) {
     std::vector<std::future<double>> futures(tries);
     for(int i = 0; i < tries; i++) {
-      // futures[i] = std::async(std::launch::async, &log_automorphisms_single, std::cref(G0), std::cref(n), std::cref(params));
-      futures[i] = std::async(std::launch::async, &log_automorphisms_single, G0, n, params);
+      futures[i] = std::async(std::launch::async, &log_automorphisms_single, std::cref(G0), std::cref(n), std::cref(params));
     }
     for(int i = 0; i < tries; i++) {
       log_aut_H[i] = futures[i].get();
@@ -92,9 +91,9 @@ int main(int argc, char *argv[]) {
       // TODO: make parameters ranges
       Parameters params;
       params.initialize(mode, argv + 3);
-      log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.1-0.3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
       log_automorphisms_p_value("G-a-thaliana.txt", "G0-a-thaliana.txt", params);
       log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
       log_automorphisms_p_value("G-d-melanogaster.txt", "G0-d-melanogaster.txt", params);
