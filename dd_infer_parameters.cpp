@@ -116,6 +116,7 @@ void print(const string &name, const double &g0_value, const double &g_value, co
   }
   else {
     cout << "There are no suitable parameter values" << endl;
+  }
   for(auto v : V) {
     out_file << v.to_csv() << " ";
   }
