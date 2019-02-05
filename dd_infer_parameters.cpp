@@ -77,26 +77,30 @@ DataObject get_params_for_synthetic_graph(const vector<set<int>> &G0, const int 
 }
 
 tuple<DataObject, DataObject> get_empirical_interval(
-    const vector<set<int>> &G0, const int &n, const Parameters &params, function<double(DataObject const&)> get_value) {
+    const vector<set<int>> &G0, const DataObject &g_data, const Parameters &params, function<double(DataObject const&)> get_value) {
   assert(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1);
   vector<DataObject> values(TI_TRIES);
   if (TI_PARALLEL) {
     vector<future<DataObject>> futures(TI_TRIES);
     for(int i = 0; i < TI_TRIES; i++) {
-      futures[i] = async(launch::async, &get_params_for_synthetic_graph, cref(G0), cref(n), cref(params));
+      futures[i] = async(launch::async, &get_params_for_synthetic_graph, cref(G0), cref(g_data.no_vertices), cref(params));
     }
     for(int i = 0; i < TI_TRIES; i++) {
       values[i] = futures[i].get();
     }
   } else {
     for(int i = 0; i < TI_TRIES; i++) {
-      values[i] = get_params_for_synthetic_graph(G0, n, params);
+      values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
     }
   }
   sort(values.begin(), values.end(), [&](const DataObject &a, const DataObject &b) -> bool { return get_value(a) < get_value(b); });
   int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
-  return make_tuple(values[low], values[high]);
+  return make_tuple(
+      get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
+      get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
 }
+
+// TODO: get_empirical_interval via variance estimation
 
 inline bool contains(const double &low, const double &high, const double &value) {
   return min(low, high) <= value && max(low, high) >= value;
@@ -111,7 +115,6 @@ void print(const string &name, const double &g0_value, const double &g_value, co
   }
   else {
     cout << "There are no suitable parameter values" << endl;
-  }
   for(auto v : V) {
     out_file << v.to_csv() << " ";
   }
@@ -290,7 +293,7 @@ void pastor_satorras_estimate_parameter(
     vector<Parameters> S_low, S_high;
     for (auto params : S) {
       DataObject g_data_low, g_data_high;
-      tie(g_data_low, g_data_high) = get_empirical_interval(G0, g_data.no_vertices, params, get_value);
+      tie(g_data_low, g_data_high) = get_empirical_interval(G0, g_data, params, get_value);
       S_low.push_back(pastor_satorras_binary_search_r(g0_data, g_data_low, params.p, get_value));
       S_high.push_back(pastor_satorras_binary_search_r(g0_data, g_data_high, params.p, get_value));
     }
@@ -333,8 +336,7 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
   vector<set<int>> G0 = generate_seed(n0, 1.0);
   vector<set<int>> G = G0;
   generate_graph(G, n, params);
-  string name = "Synthetic data: " + params.to_string();
-  cout << name << endl, out_file << name << endl;
+  cout << "Synthetic data: " + params.to_string() << endl;
   process_graph(G, G0, params.mode, out_file);
 }
 
@@ -342,7 +344,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   vector<set<int>> G = read_graph(FILES_FOLDER + graph_name);
   vector<set<int>> G0 = read_graph(FILES_FOLDER + seed_name);
   ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of(".")) + "_" + SHORT_NAME.find(mode)->second + ".txt");
-  cout << "File: " << graph_name << endl, out_file << graph_name << endl;
+  cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);
 }
 
