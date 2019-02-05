@@ -37,6 +37,8 @@ def initialize_figure():
   matplotlib.rcParams['savefig.dpi'] = 125
   matplotlib.rcParams['text.latex.preamble']=[r"\usepackage{amsmath,amssymb,amsfonts}"]
   matplotlib.rcParams['figure.figsize'] = figure_size()
+  pyplot.gca().get_xaxis().set_major_locator(pyplot.MaxNLocator(8))
+  pyplot.gca().get_yaxis().set_major_locator(pyplot.MaxNLocator(8))
 
 def read_data(data):
   values = numpy.array([[[float(value) if value != '' else None for value in interval.split(',')]
