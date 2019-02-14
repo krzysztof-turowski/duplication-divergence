@@ -24,8 +24,8 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const double STEP_P = 0.2, STEP_R = 2.0, EPS = 10e-9;
-const int IS_TRIES = 10;
+const double STEP_P = 0.1, STEP_R = 1.0, EPS = 10e-9;
+const int IS_TRIES = 100;
 const bool ML_PARALLEL = false;
 
 template <typename T>
@@ -261,7 +261,7 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
   return likelihood_values;
 }
 
-void print(const string &name, const vector<LikelihoodValue> &likelihood_values) {
+void print(const string &name, const vector<LikelihoodValue> &likelihood_values, ostream &out_file) {
   cout << name << endl;
   auto ML = *max_element(
       likelihood_values.begin(), likelihood_values.end(),
@@ -270,21 +270,24 @@ void print(const string &name, const vector<LikelihoodValue> &likelihood_values)
   for (auto const& value : likelihood_values) {
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
   }
+  for (auto const& value : likelihood_values) {
+    out_file << value.params.to_csv() << "," << value.likelihood << " ";
+  }
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
   Graph G = generate_graph_koala(n, n0, params);
   auto likelihood_values = find_likelihood_values(G, n0, params.mode);
-  print("Synthetic data: " + params.to_string(), likelihood_values);
-  // TODO: export values to file
+  ofstream out_file(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + "-ML.txt");
+  print("Synthetic data: " + params.to_string(), likelihood_values, out_file);
 }
 
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
   Graph G = read_graph_koala(FILES_FOLDER + graph_name);
   int n0 = read_graph_size(FILES_FOLDER + seed_name);
   auto likelihood_values = find_likelihood_values(G, n0, mode);
-  print(graph_name, likelihood_values);
-  // TODO: export values to file
+  ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of(".")) + "_" + SHORT_NAME.find(mode)->second + "-ML.txt");
+  print(graph_name, likelihood_values, out_file);
 }
 
 int main(int argc, char *argv[]) {
