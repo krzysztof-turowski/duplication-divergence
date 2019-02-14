@@ -6,17 +6,19 @@ import math
 import matplotlib.pyplot as pyplot
 import numpy
 import os
+import scipy.interpolate
 
 import dd_plot
 
 PLOT_STYLE = 'default'
 FIGURE_SIZE_SCALE = 0.6
 X_LABELS, Y_LABELS = 11, 6
+RESOLUTION = 20
 
 PASTOR_SATORRAS_PATTERN = [False, True, False]
 CHUNG_LU_PATTERN = [False, False, True]
 
-def read_data(data):
+def read_data(data, interpolate = False):
   values = [[float(value) if value != '' else None for value in parameter.split(',')] for parameter in data.strip().split(' ')]
   if (numpy.equal(values[0][:len(PASTOR_SATORRAS_PATTERN)], None) == PASTOR_SATORRAS_PATTERN).all():
     pyplot.xlabel(r'$p$')
@@ -29,10 +31,19 @@ def read_data(data):
   else:
     raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
-  x_range, y_range = numpy.unique(x), numpy.unique(y)
-  matrix = numpy.zeros((len(y_range), len(x_range)))
-  for px, py, pz in zip(x, y, z):
-    matrix[len(y_range) - 1 - numpy.searchsorted(y_range, py), numpy.searchsorted(x_range, px)] = pz
+  if interpolate:
+    # TODO: fix issues with infinity - currently we replace it with 2 * minimum
+    minimum = min(value for value in z if value != -math.inf)
+    z = [value if value >= minimum else 2 * minimum for value in z]
+    f = scipy.interpolate.interp2d(x, y, z, kind = 'cubic')
+    x_range, y_range = numpy.linspace(min(x), max(x), num = RESOLUTION, endpoint = True), numpy.linspace(min(y), max(y), num = RESOLUTION, endpoint = True)
+    matrix = [[value if value >= minimum else -math.inf for value in row] for row in f(x_range, y_range)]
+  else:
+    x_range, y_range = numpy.unique(x), numpy.unique(y)
+    matrix = numpy.zeros((len(y_range), len(x_range)))
+    for px, py, pz in zip(x, y, z):
+      matrix[numpy.searchsorted(y_range, py), numpy.searchsorted(x_range, px)] = pz
+  matrix = numpy.flip(matrix, axis = 0)
   return x_range, y_range, matrix
 
 def plot_data(file, filename, export):
