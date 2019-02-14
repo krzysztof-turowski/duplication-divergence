@@ -1,52 +1,28 @@
 # Tool for plotting the results from dd_ml_estimation.
-# Run: python ./dd_ml_estimation_plot.py FILE [--export {pdf}]
+# Run: python -B ./dd_ml_estimation_plot.py FILE [--export {pdf}]
 
 import argparse
 import math
-import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
 import os
 
-TEXT_WIDTH_PT = 506.295 # Get this from LaTeX using \the\textwidth
-PYPLOT_STYLE = 'default'
+import dd_plot
+
+PLOT_STYLE = 'default'
 FIGURE_SIZE_SCALE = 0.6
 X_LABELS, Y_LABELS = 11, 6
 
 PASTOR_SATORRAS_PATTERN = [False, True, False]
 CHUNG_LU_PATTERN = [False, False, True]
 
-def initialize_figure(pyplot_style, figure_size_scale):
-  publication_with_latex = {
-    "pgf.texsystem": "pdflatex", # change this if using xetex or lautex
-    # "text.usetex": True, # use LaTeX to write all text
-    "font.family": "serif",
-    "font.serif": [], # blank entries should cause plots to inherit fonts from the document
-    "font.sans-serif": [],
-    "font.monospace": [],
-    "axes.labelsize": 8, # LaTeX default is 10pt font.
-    "font.size": 8,
-    "legend.fontsize": 8, # Make the legend/label fonts a little smaller
-  }
-  def figure_size():
-    inches_per_pt = 1.0 / 72.27 # Convert pt to inch
-    golden_mean = (numpy.sqrt(5.0) - 1.0) / 2.0 # Aesthetic ratio (you could change this)
-    figure_width = TEXT_WIDTH_PT * inches_per_pt * figure_size_scale
-    figure_height = figure_width * golden_mean
-    return [figure_width, figure_height]
-  pyplot.style.use(pyplot_style)
-  matplotlib.rcParams.update(publication_with_latex)
-  matplotlib.rcParams['savefig.dpi'] = 125
-  matplotlib.rcParams['text.latex.preamble'] = [r"\usepackage{amsmath,amssymb,amsfonts}"]
-  matplotlib.rcParams['figure.figsize'] = figure_size()
-
 def read_data(data):
   values = [[float(value) if value != '' else None for value in parameter.split(',')] for parameter in data.strip().split(' ')]
-  if (numpy.equal(values[0][:-1], None) == PASTOR_SATORRAS_PATTERN).all():
+  if (numpy.equal(values[0][:len(PASTOR_SATORRAS_PATTERN)], None) == PASTOR_SATORRAS_PATTERN).all():
     pyplot.xlabel(r'$p$')
     pyplot.ylabel(r'$r$', rotation = 0)
     x, _, y, z = zip(*values)
-  elif (numpy.equal(values[0][:-1], None) == CHUNG_LU_PATTERN).all():
+  elif (numpy.equal(values[0][:len(CHUNG_LU_PATTERN)], None) == CHUNG_LU_PATTERN).all():
     pyplot.xlabel(r'$p$')
     pyplot.ylabel(r'$q$', rotation = 0)
     x, y, _, z = zip(*values)
@@ -61,7 +37,7 @@ def read_data(data):
 
 def plot_data(file, filename, export):
   name = os.path.splitext(filename.strip())[0]
-  initialize_figure(PYPLOT_STYLE, FIGURE_SIZE_SCALE)
+  dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
   x, y, data = read_data(file.readlines()[0])
   image = pyplot.imshow(data, cmap = 'BuPu', interpolation = 'nearest', aspect = 'auto')
   # alternatives: pcolormesh + cmap {'YlGnBu', 'Pastel1'} + interpolation {'nearest', 'bilinear'} + aspect {'auto'}
