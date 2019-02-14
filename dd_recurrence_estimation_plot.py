@@ -1,5 +1,5 @@
-# Tool for plotting the results from dd_infer_parameters.
-# Run: python -B ./dd_infer_parameters_plot.py -B FILE [--export {pdf}]
+# Tool for plotting the results from dd_recurrence_estimation.
+# Run: python -B ./dd_recurrence_estimation_plot.py -B FILE [--export {pdf}]
 
 import argparse
 import matplotlib.pyplot as pyplot
