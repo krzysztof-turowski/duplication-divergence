@@ -49,6 +49,7 @@ def read_data(data):
   elif (numpy.equal(values[0][:-1], None) == CHUNG_LU_PATTERN).all():
     pyplot.xlabel(r'$p$')
     pyplot.ylabel(r'$q$', rotation = 0)
+    x, y, _, z = zip(*values)
   else:
     raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
@@ -56,21 +57,21 @@ def read_data(data):
   matrix = numpy.zeros((len(y_range), len(x_range)))
   for px, py, pz in zip(x, y, z):
     matrix[len(y_range) - 1 - numpy.searchsorted(y_range, py), numpy.searchsorted(x_range, px)] = pz
-
-  labels_x = numpy.linspace(round(min(x_range)), round(max(x_range)), num = X_LABELS, endpoint = True)
-  pyplot.gca().set_xticks(numpy.linspace(0, len(x_range) - 1, num = X_LABELS, endpoint = True))
-  pyplot.gca().set_xticklabels([(round(float(label), 2)) for label in labels_x])
-  labels_y = numpy.flip(numpy.linspace(round(min(y_range)), round(max(y_range)), num = Y_LABELS, endpoint = True))
-  pyplot.gca().set_yticks(numpy.linspace(0, len(y_range) - 1, num = Y_LABELS, endpoint = True))
-  pyplot.gca().set_yticklabels([(round(float(label), 1)) for label in labels_y])
-
-  return matrix
+  return x_range, y_range, matrix
 
 def plot_data(file, filename, export):
   name = os.path.splitext(filename.strip())[0]
   initialize_figure(PYPLOT_STYLE, FIGURE_SIZE_SCALE)
-  image = pyplot.imshow(read_data(file.readlines()[0]), cmap = 'BuPu', interpolation = 'nearest', aspect = 'auto')
+  x, y, data = read_data(file.readlines()[0])
+  image = pyplot.imshow(data, cmap = 'BuPu', interpolation = 'nearest', aspect = 'auto')
   # alternatives: pcolormesh + cmap {'YlGnBu', 'Pastel1'} + interpolation {'nearest', 'bilinear'} + aspect {'auto'}
+
+  labels_x = numpy.linspace(round(min(x)), round(max(x)), num = X_LABELS, endpoint = True)
+  pyplot.gca().set_xticks(numpy.linspace(0, len(x) - 1, num = X_LABELS, endpoint = True))
+  pyplot.gca().set_xticklabels([(round(float(label), 2)) for label in labels_x])
+  labels_y = numpy.flip(numpy.linspace(round(min(y)), round(max(y)), num = Y_LABELS, endpoint = True))
+  pyplot.gca().set_yticks(numpy.linspace(0, len(y) - 1, num = Y_LABELS, endpoint = True))
+  pyplot.gca().set_yticklabels([(round(float(label), 1)) for label in labels_y])
   pyplot.gcf().colorbar(image)
 
   if export == 'pdf':
