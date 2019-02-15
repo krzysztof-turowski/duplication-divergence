@@ -14,11 +14,8 @@ def figure_size(figure_size_scale):
 def initialize_figure(plot_style, figure_size_scale):
   publication_with_latex = {
     "pgf.texsystem": "pdflatex", # change this if using xetex or lautex
-    # "text.usetex": True, # use LaTeX to write all text
+    "text.usetex": True, # use LaTeX to write all text
     "font.family": "serif",
-    "font.serif": [], # blank entries should cause plots to inherit fonts from the document
-    "font.sans-serif": [],
-    "font.monospace": [],
     "axes.labelsize": 8, # LaTeX default is 10pt font.
     "font.size": 8,
     "legend.fontsize": 8, # Make the legend/label fonts a little smaller
