@@ -1,7 +1,7 @@
 // Tool for inference the values of parameters for various duplication-divergence models.
-// Compile: g++ dd_infer_parameters.cpp -O3 -o ./dd_infer_parameters
-// Run: ./dd_infer_parameters synthetic MODE n n0 PARAMETERS - e.g. ./dd_infer_parameters synthetic pastor_satorras 100 20 0.5 2.0
-//      ./dd_infer_parameters real_data MODE                 - e.g. ./dd_infer_parameters real_data pastor_satorras
+// Compile: g++ dd_recurrence_estimation.cpp -O3 -o ./dd_recurrence_estimation
+// Run: ./dd_recurrence_estimation synthetic MODE n n0 PARAMETERS - e.g. ./dd_recurrence_estimation synthetic pastor_satorras 100 20 0.5 2.0
+//      ./dd_recurrence_estimation real_data MODE                 - e.g. ./dd_recurrence_estimation real_data pastor_satorras
 
 #include "dd_header.h"
 
