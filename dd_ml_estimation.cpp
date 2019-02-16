@@ -3,19 +3,7 @@
 // Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS - e.g. ./dd_ml_estimation synthetic pastor_satorras 100 20 0.5 2.0
 //      ./dd_ml_estimation real_data MODE                 - e.g. ./dd_ml_estimation real_data pastor_satorras
 
-#include "dd_header.h"
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#include "lib/koala/graph/graph.h"
-#pragma GCC diagnostic pop
+#include "dd_koala.h"
 
 #include <future>
 
@@ -49,103 +37,6 @@ public:
 
 inline int get_index(const int &n, const Vertex &v, const Vertex &u) {
   return min(v->getInfo(), u->getInfo()) * n + max(v->getInfo(), u->getInfo());
-}
-
-Graph generate_graph_koala(const int &n, const int &n0, const Parameters &params) {
-  random_device device;
-  mt19937 generator(device());
-  uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-  double p0 = 1.0;
-
-  Graph G;
-  vector<Vertex> V;
-  for (int i = 0; i < n; i++) {
-    V.push_back(G.addVert(i));
-  }
-  for (int i = 0; i < n0; i++) {
-    for (int j = i + 1; j < n0; j++) {
-      if (edge_distribution(generator) <= p0) {
-        G.addEdge(V[i], V[j]);
-      }
-    }
-  }
-  for (int i = n0; i < n; i++) {
-    uniform_int_distribution<int> parent_distribution(0, i - 1);
-    int parent = parent_distribution(generator);
-    set<Vertex> neighbors = G.getNeighSet(V[parent]);
-    if (params.mode == Mode::PURE_DUPLICATION) {
-      for (auto v : neighbors) {
-        if (edge_distribution(generator) <= params.p) {
-          G.addEdge(V[i], v);
-        }
-      }
-    }
-    else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
-      while(true) {
-        for (auto v : neighbors) {
-          if (edge_distribution(generator) <= params.p) {
-            G.addEdge(V[i], v);
-          }
-        }
-        if (G.getNeighNo(V[i]) > 0) {
-          break;
-        }
-        neighbors = G.getNeighSet(V[parent_distribution(generator)]);
-      }
-    }
-    else if (params.mode == Mode::CHUNG_LU) {
-      for (auto v : neighbors) {
-        if (edge_distribution(generator) <= params.p) {
-          G.addEdge(V[i], v);
-        }
-      }
-      if (edge_distribution(generator) <= params.q) {
-        G.addEdge(V[i], V[parent]);
-      }
-    }
-    else if (params.mode == Mode::PASTOR_SATORRAS) {
-      for (int j = 0; j < i; j++) {
-        if (neighbors.count(V[j])) {
-          if (edge_distribution(generator) <= params.p) {
-            G.addEdge(V[i], V[j]);
-          }
-        }
-        else {
-          if (edge_distribution(generator) <= params.r / i) {
-            G.addEdge(V[i], V[j]);
-          }
-        }
-      }
-    }
-    else {
-      assert(0);
-    }
-  }
-  return G;
-}
-
-Graph read_graph_koala(const string &graph_name) {
-  ifstream graph_file(graph_name);
-  if (graph_file.fail()) {
-    throw invalid_argument("Missing " + graph_name + " file");
-  }
-  Graph G;
-  vector<Vertex> V;
-  int u, v;
-  while (!graph_file.eof())
-  {
-    graph_file >> u >> v;
-    if (v >= G.getVertNo()) {
-      for (int i = G.getVertNo(); i <= v; i++) {
-        V.push_back(G.addVert(i));
-      }
-    }
-    if (u != v) {
-      G.addEdge(V[u], V[v]);
-    }
-  }
-  graph_file.close();
-  return G;
 }
 
 double omega(const Graph &G, vector<int> &V, const int &n, const Parameters &params, const Vertex &v) {
