@@ -78,7 +78,9 @@ DataObject get_params_for_synthetic_graph(const vector<set<int>> &G0, const int 
 
 tuple<DataObject, DataObject> get_empirical_interval(
     const vector<set<int>> &G0, const DataObject &g_data, const Parameters &params, function<double(DataObject const&)> get_value) {
-  assert(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1);
+  if (!(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1)) {
+    throw invalid_argument("Invalid tolerance interval constants: TI_ALPHA = " + string(TI_ALPHA) + ", TI_TRIES = " + string(TI_TRIES));
+  }
   vector<DataObject> values(TI_TRIES);
   if (TI_PARALLEL) {
     vector<future<DataObject>> futures(TI_TRIES);
@@ -328,7 +330,7 @@ void process_graph(const vector<set<int>> &G, const vector<set<int>> &G0, const 
       pastor_satorras_estimate(g_data, g0_data, G0, out_file);
       break;
     default:
-      assert(0);
+      throw invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
   }
 }
 
@@ -372,10 +374,10 @@ int main(int argc, char *argv[]) {
       real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
     }
     else {
-      assert(0);
+      throw invalid_argument("Invalid action: " + action);
     }
-  } catch (exception &e) {
-    cout << "ERROR: " << e.what() << endl;
+  } catch (const exception &e) {
+    cerr << "ERROR: " << e.what() << endl;
   }
   return 0;
 }
