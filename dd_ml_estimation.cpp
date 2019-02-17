@@ -16,17 +16,6 @@ const double STEP_P = 0.1, STEP_R = 1.0, EPS = 10e-9;
 const int IS_TRIES = 100;
 const bool ML_PARALLEL = false;
 
-template <typename T>
-struct counting_iterator
-{
-    size_t count;
-    T dummy;
-
-    counting_iterator() : count(0) { }
-    counting_iterator& operator++() { ++count; return *this; }
-    T& operator*() { return dummy; }
-};
-
 class LikelihoodValue {
 public:
   Parameters params;
@@ -44,11 +33,11 @@ double omega(const Graph &G, vector<int> &V, const int &n, const Parameters &par
   for (Vertex u = G.getVert(); u; u = G.getVertNext(u)) {
     if (u != v) {
       if (params.mode == Mode::PASTOR_SATORRAS) {
-        double a = V[get_index(n, v, u)], b = G.getNeighNo(v) - a, c = G.getNeighNo(u) - a, d = i + a - b - c;
+        double a = V[get_index(n, v, u)], b = G.deg(v) - a, c = G.deg(u) - a, d = i + a - b - c;
         out += pow(params.p, a) * pow(params.r / i, b) * pow(1 - params.p, c) * pow(1 - (params.r / i), d);
       }
       else {
-        assert(0);
+        throw std::invalid_argument("Invalid mode: " + params.to_string());
       }
     }
   }
@@ -143,12 +132,10 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
           }
         }
       }
-      break;
+      return likelihood_values;
     default:
-      assert(0);
-      break;
+      throw std::invalid_argument("Invalid action: " + action);
   }
-  return likelihood_values;
 }
 
 void print(const string &name, const vector<LikelihoodValue> &likelihood_values, ostream &out_file) {
@@ -204,10 +191,10 @@ int main(int argc, char *argv[]) {
       real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
     }
     else {
-      assert(0);
+      throw std::invalid_argument("Invalid action: " + action);
     }
-  } catch (exception &e) {
-    cout << "ERROR: " << e.what() << endl;
+  } catch (const exception &e) {
+    cerr << "ERROR: " << e.what() << endl;
   }
   return 0;
 }

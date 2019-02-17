@@ -60,7 +60,7 @@ Koala::Graph<int, int> generate_graph_koala(Koala::Graph<int, int> &G, const int
             G.addEdge(V[i], v);
           }
         }
-        if (G.getNeighNo(V[i]) > 0) {
+        if (G.deg(V[i]) > 0) {
           break;
         }
         neighbors = G.getNeighSet(V[parent_distribution(generator)]);
@@ -119,4 +119,84 @@ Koala::Graph<int, int> read_graph_koala(const std::string &graph_name) {
   }
   graph_file.close();
   return G;
+}
+
+template <typename T>
+struct counting_iterator
+{
+    size_t count;
+    T dummy;
+
+    counting_iterator() : count(0) { }
+    counting_iterator& operator++() { ++count; return *this; }
+    T& operator*() { return dummy; }
+};
+
+class NeighborhoodStructure {
+private:
+  int n;
+  std::vector<int> V;
+
+  inline int get_index(const Koala::Graph<int, int>::PVertex &v, const Koala::Graph<int, int>::PVertex &u) const {
+    return u->getInfo() * n + v->getInfo();
+  }
+
+public:
+  NeighborhoodStructure(const Koala::Graph<int, int> &G) : n(G.getVertNo()) {
+    V.resize(n * n);
+    for (auto v = G.getVert(); v; v = G.getVertNext(v)) {
+      std::set<Koala::Graph<int, int>::PVertex> N_v = G.getNeighSet(v);
+      for (auto u = G.getVert(); u; u = G.getVertNext(u)) {
+        std::set<Koala::Graph<int, int>::PVertex> N_u = G.getNeighSet(u);
+        V[get_index(v, u)] = set_intersection(N_v.begin(), N_v.end(), N_u.begin(), N_u.end(), counting_iterator<Koala::Graph<int, int>::PVertex>()).count;
+      }
+    }
+  }
+
+  int common_neighbors(const Koala::Graph<int, int>::PVertex &v, const Koala::Graph<int, int>::PVertex &u) const {
+    return V[get_index(v, u)];
+  }
+
+  void remove_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> neighbors) {
+    for (auto w : neighbors) {
+      for (auto u : neighbors) {
+        --V[get_index(w, u)];
+      }
+    }
+  }
+
+  void restore_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> neighbors) {
+    for (auto w : neighbors) {
+      for (auto u : neighbors) {
+        ++V[get_index(w, u)];
+      }
+    }
+  }
+};
+
+double get_transition_probability(
+    const Koala::Graph<int, int> &G, const Parameters &params, const Koala::Graph<int, int>::PVertex &v, const Koala::Graph<int, int>::PVertex &u,
+    const NeighborhoodStructure &aux) {
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION:
+      if (G.deg(v) <= G.deg(u)) {
+        int both = aux.common_neighbors(v, u);
+        return G.deg(v) - both == 0 ? pow(params.p, both) * pow(1 - params.p, G.deg(u) - both) / (G.getVertNo() - 1) : 0.0;
+      }
+      return 0.0;
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+double get_transition_probability(
+    const Koala::Graph<int, int> &G, const Parameters &params, const Koala::Graph<int, int>::PVertex &v,
+    const NeighborhoodStructure &aux) {
+  double p_v = 0;
+  for (auto u = G.getVert(); u; u = G.getVertNext(u)) {
+    if (u != v) {
+      p_v += get_transition_probability(G, params, v, u, aux);
+    }
+  }
+  return p_v;
 }

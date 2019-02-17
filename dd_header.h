@@ -46,7 +46,10 @@ public:
   Parameters() : p(nan("")), q(nan("")), r(nan("")) { }
 
   void initialize(const std::string &mode_v, char *argv[]) {
-    if (mode_v == "chung_lu") {
+    if (mode_v == "pure_duplication") {
+      initialize_pure_duplication(std::stod(argv[0]));
+    }
+    else if (mode_v == "chung_lu") {
       initialize_chung_lu(std::stod(argv[0]), std::stod(argv[1]));
     }
     else if (mode_v == "pastor_satorras") {

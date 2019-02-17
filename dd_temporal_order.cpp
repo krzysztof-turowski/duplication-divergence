@@ -44,7 +44,7 @@ vector<int> decode_permutation(const mpz_class &sigma, const int &n) {
     value /= base;
     S[n - i] = remainder.get_si();
   }
-  for (int i = n - 1; i >= 0; i--) { 
+  for (int i = n - 1; i >= 0; i--) {
     for (int j = i + 1; j < n; j++) {
       if (S[i] <= S[j]) {
         S[j]++;
@@ -54,10 +54,11 @@ vector<int> decode_permutation(const mpz_class &sigma, const int &n) {
   return S;
 }
 
-mpz_class encode_permutation(const vector<int> &S, const int &n) {
+mpz_class encode_permutation(const vector<int> &S) {
+  int n = S.size();
   mpz_class sigma(0);
   vector<int> V(S);
-  for (int i = 0; i < n; i++) { 
+  for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
       if (V[i] < V[j]) {
         V[j]--;
@@ -80,30 +81,79 @@ void apply_permutation(Graph &G, const vector<int> &S) {
   }
 }
 
+map<mpz_class, double> get_permutation_probabilities(
+    Graph &G, const int &n0, const Parameters &params, NeighborhoodStructure &aux, vector<int> &S, const double &p) {
+  map<mpz_class, double> permutations;
+  if (G.getVertNo() == n0) {
+    mpz_class sigma = encode_permutation(S);
+    permutations.insert(make_pair(sigma, p));
+    return permutations;
+  }
+
+  multimap<Vertex, Vertex> candidates;
+  vector<Vertex> V(G.getVertNo());
+  G.getVerts(V.begin());
+  Graph H;
+  for (auto v : V) {
+    if (v->getInfo() < n0) {
+      continue;
+    }
+    double p_v = get_transition_probability(G, params, v, aux);
+    if (p_v > 0.0) {
+      set<Vertex> neighbors_v = G.getNeighSet(v);
+      aux.remove_vertex(v, neighbors_v), S[G.getVertNo() - 1] = v->getInfo(), H.move(G, v);
+
+      map<mpz_class, double> permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p * p_v);
+      permutations.insert(permutations_v.begin(), permutations_v.end());
+
+      G.move(H, v), aux.restore_vertex(v, neighbors_v), S[G.getVertNo() - 1] = -1;
+      for (auto u : neighbors_v) {
+        G.addEdge(v, u);
+      }
+    }
+  }
+  return permutations;
+}
+
+map<mpz_class, double> get_permutation_probabilities(Graph &G, const int &n0, const Parameters &params) {
+  NeighborhoodStructure aux(G);
+  vector<int> S(G.getVertNo(), -1);
+  for (int i = 0; i < n0; i++) {
+    S[i] = i;
+  }
+  return get_permutation_probabilities(G, n0, params, aux, S, 1.0);
+}
+
 void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
-  Graph G(G0);
+  Graph G = generate_seed_koala(n0, 1.0);
   generate_graph_koala(G, n, params);
 
   Graph H(G);
   vector<int> S = generate_permutation(n, n0);
   apply_permutation(H, S);
+
   // compute P(Pi_n = sigma_n | Pi_n(G_n) = h_n, G_n0 = g_n0)
+  map<mpz_class, double> permutations = get_permutation_probabilities(H, n0, params);
+
   // compute p_uv coefficients
   // construct and solve LP
   // export to file and to stdout
 }
 
 int main(int argc, char *argv[]) {
-  string action(argv[1]), mode(argv[2]);
-  int n = stoi(argv[3]), n0 = stoi(argv[4]);
-  Parameters params;
-  params.initialize(mode, argv + 5);
-  if (action == "exact_bound") {
-    LP_bound_exact(n, n0, params);
-  }
-  else {
-    assert(0);
+  try {
+    string action(argv[1]), mode(argv[2]);
+    int n = stoi(argv[3]), n0 = stoi(argv[4]);
+    Parameters params;
+    params.initialize(mode, argv + 5);
+    if (action == "exact_bound") {
+      LP_bound_exact(n, n0, params);
+    }
+    else {
+      throw std::invalid_argument("Invalid action: " + action);
+    }
+  } catch (const exception &e) {
+    cerr << "ERROR: " << e.what() << endl;
   }
 
   return 0;
