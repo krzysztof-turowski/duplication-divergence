@@ -184,6 +184,26 @@ Parameters chung_lu_binary_search_p(
   return params;
 }
 
+Parameters chung_lu_binary_search_q(
+    const DataObject &g0_data, const DataObject &g_data, const double &p, function<double(DataObject const&)> get_value) {
+  double q_low = 0.0, q_high = 1.0, error = EPS;
+  DataObject apx_data;
+  while (q_high - q_low > error) {
+    double q_mid = (q_high + q_low) / 2;
+    apx_data = g0_data;
+    chung_lu_estimate_iterative(apx_data, p, q_mid, g0_data.no_vertices, g_data.no_vertices);
+    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+      q_low = q_mid;
+    }
+    else {
+      q_high = q_mid;
+    }
+  }
+  Parameters params;
+  params.initialize_chung_lu(p, q_low);
+  return params;
+}
+
 vector<Parameters> chung_lu_get_parameters(const DataObject &g0_data, const DataObject &g_data, function<double (DataObject const&)> get_value) {
   vector<Parameters> S;
   // TODO: variable step, increased if points too close
@@ -199,25 +219,35 @@ vector<Parameters> chung_lu_get_parameters(const DataObject &g0_data, const Data
 }
 
 void chung_lu_estimate_parameter(
-    const string &name, const DataObject &g0_data, const DataObject &g_data,
-    function<double (DataObject const&)> get_value, ofstream &out_file) {
+    const string &name, const DataObject &g_data, const DataObject &g0_data, const vector<set<int>> &G0,
+    function<double (DataObject const&)> get_value, ofstream &out_file, bool tolerance_interval = false) {
   vector<Parameters> S = chung_lu_get_parameters(g0_data, g_data, get_value);
-  print(name, get_value(g0_data), get_value(g_data), S, out_file);
-  // TODO: add tolerance interval
+  if (tolerance_interval) {
+    vector<Parameters> S_low, S_high;
+    for (auto params : S) {
+      DataObject g_data_low, g_data_high;
+      tie(g_data_low, g_data_high) = get_empirical_interval(G0, g_data, params, get_value);
+      S_low.push_back(chung_lu_binary_search_q(g0_data, g_data_low, params.p, get_value));
+      S_high.push_back(chung_lu_binary_search_q(g0_data, g_data_high, params.p, get_value));
+    }
+    print(name, get_value(g0_data), get_value(g_data), S_low, S, S_high, out_file);
+  } else {
+    print(name, get_value(g0_data), get_value(g_data), S, out_file);
+  }
 }
 
-void chung_lu_estimate(const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0, ofstream &out_file) {
+void chung_lu_estimate(const DataObject &g_data, const DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
   auto D_lambda = [](const DataObject &data) { return data.average_degree; };
-  chung_lu_estimate_parameter("Average degree", g_data, g0_data, D_lambda, out_file);
+  chung_lu_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
   
   auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
-  chung_lu_estimate_parameter("Average degree squared", g_data, g0_data, D2_lambda, out_file);
+  chung_lu_estimate_parameter("Average degree squared", g_data, g0_data, G0, D2_lambda, out_file);
   
   auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
-  chung_lu_estimate_parameter("Open triangles", g_data, g0_data, S2_lambda, out_file);
+  chung_lu_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file, true);
 
   auto C3_lambda = [](const DataObject &data) { return data.triangles; };
-  chung_lu_estimate_parameter("Triangles", g_data, g0_data, C3_lambda, out_file);
+  chung_lu_estimate_parameter("Triangles", g_data, g0_data, G0, C3_lambda, out_file, true);
 }
 
 void pastor_satorras_estimate_iterative(DataObject &apx_data, const double &p, const double &r, const int &n0, const int &n) {
@@ -316,7 +346,7 @@ void pastor_satorras_estimate_parameter(
   }
 }
 
-void pastor_satorras_estimate(const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0, ofstream &out_file) {
+void pastor_satorras_estimate(const DataObject &g_data, const DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
   auto D_lambda = [](const DataObject &data) { return data.average_degree; };
   pastor_satorras_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
   
@@ -324,7 +354,7 @@ void pastor_satorras_estimate(const DataObject &g0_data, const DataObject &g_dat
   pastor_satorras_estimate_parameter("Average degree squared", g_data, g0_data, G0, D2_lambda, out_file);
   
   auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
-  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file);
+  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file, true);
 
   auto C3_lambda = [](const DataObject &data) { return data.triangles; };
   pastor_satorras_estimate_parameter("Triangles", g_data, g0_data, G0, C3_lambda, out_file, true);
