@@ -16,29 +16,40 @@
 const int PVAL_TRIES = 100;
 const bool PARALLEL = false;
 
-enum Algorithm { NAUTY_DENSE, NAUTY_SPARSE, ALL };
+enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
-double log_automorphisms(const std::vector<std::set<int>> &G, const Algorithm &algorithm = Algorithm::NAUTY_DENSE) {
-  switch(algorithm) {
-    default:
-      break;
+const AutomorphismsDetection ALGORITHM = AutomorphismsDetection::NAUTY_DENSE;
+
+double log_automorphisms(const std::vector<std::set<int>> &G) {
+  switch(ALGORITHM) {
     case NAUTY_DENSE:
       return log_automorphisms_dense(G);
     case NAUTY_SPARSE:
       return log_automorphisms_sparse(G);
-    case ALL:
-      auto first = std::chrono::system_clock::now();
-      double dense = log_automorphisms_dense(G);
-      auto second = std::chrono::system_clock::now();
-      double sparse = log_automorphisms_sparse(G);
-      auto third = std::chrono::system_clock::now();
-      double run_dense = std::chrono::duration_cast<std::chrono::milliseconds>(second - first).count() / 1000.0;
-      double run_sparse = std::chrono::duration_cast<std::chrono::milliseconds>(third - second).count() / 1000.0;
-      assert(sparse == dense);
-      std::cerr << "Time: " << run_sparse << " " << run_dense << std::endl;
-      return dense;
+    case TRACES:
+      return log_automorphisms_traces(G);
+    case ALL: {
+        auto first = std::chrono::system_clock::now();
+        double dense = log_automorphisms_dense(G);
+        auto second = std::chrono::system_clock::now();
+        double sparse = log_automorphisms_sparse(G);
+        auto third = std::chrono::system_clock::now();
+        double traces = log_automorphisms_traces(G);
+        auto fourth = std::chrono::system_clock::now();
+        double run_dense = std::chrono::duration_cast<std::chrono::milliseconds>(second - first).count() / 1000.0;
+        double run_sparse = std::chrono::duration_cast<std::chrono::milliseconds>(third - second).count() / 1000.0;
+        double run_traces = std::chrono::duration_cast<std::chrono::milliseconds>(fourth - third).count() / 1000.0;
+        if (dense != sparse || dense != traces) {
+          throw std::logic_error(
+              "Automorphism number do not match: dense " + std::to_string(dense)
+              + ", sparse " + std::to_string(sparse) + ", traces " + std::to_string(traces));
+        }
+        std::cerr << "Time: " << run_dense << " " << run_sparse << " " << run_traces << std::endl;
+        return dense;
+      }
+    default:
+      throw std::invalid_argument("Invalid automorphisms detection algorithm");
   }
-  assert(0);
 }
 
 double log_automorphisms_single(const std::vector<std::set<int>> &G0, const int &n, const Parameters &params) {
@@ -74,7 +85,7 @@ void log_automorphisms_p_value(const std::string &graph_name, const std::string 
   std::vector<double> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
   double p_lower = std::count_if(log_aut_H.begin(), log_aut_H.end(), [&](const double &value){ return value < log_aut_G; }) / PVAL_TRIES;
   double p_upper = std::count_if(log_aut_H.begin(), log_aut_H.end(), [&](const double &value){ return value > log_aut_G; }) / PVAL_TRIES;
-  double p_value = 2 * std::max(p_lower, p_upper);
+  double p_value = 2 * std::min(p_lower, p_upper);
   std::cout << graph_name << " " << std::accumulate(log_aut_H.begin(), log_aut_H.end(), 0.0) / PVAL_TRIES << " " << p_value << std::endl;
 }
 
@@ -107,10 +118,10 @@ int main(int argc, char *argv[]) {
       log_automorphisms(graph_name);
     }
     else {
-      assert(0);
+      throw std::invalid_argument("Invalid action: " + action);
     }
-  } catch (std::exception &e) {
-    std::cout << "ERROR: " << e.what() << std::endl;
+  } catch (const std::exception &e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
   }
   return 0;
 }
