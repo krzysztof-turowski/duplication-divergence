@@ -24,6 +24,7 @@ public:
   LikelihoodValue(const Parameters& params_v, const double likelihood_v) : params(params_v), likelihood(likelihood_v) { }
 };
 
+// TODO: use functions from dd_koala.h
 inline int get_index(const int &n, const Vertex &v, const Vertex &u) {
   return min(v->getInfo(), u->getInfo()) * n + max(v->getInfo(), u->getInfo());
 }
@@ -134,7 +135,7 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
       }
       return likelihood_values;
     default:
-      throw std::invalid_argument("Invalid action: " + action);
+      throw std::invalid_argument("Invalid mode: " + mode);
   }
 }
 
