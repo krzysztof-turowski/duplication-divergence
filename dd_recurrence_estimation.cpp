@@ -18,6 +18,11 @@ const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
 const bool TI_PARALLEL = false;
+const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
+
+enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
+
+const ToleranceInterval TI_ALGORITHM = ToleranceInterval::DIRECT;
 
 class DataObject {
 public:
@@ -79,7 +84,7 @@ DataObject get_params_for_synthetic_graph(const vector<set<int>> &G0, const int 
 tuple<DataObject, DataObject> get_empirical_interval(
     const vector<set<int>> &G0, const DataObject &g_data, const Parameters &params, function<double(DataObject const&)> get_value) {
   if (!(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1)) {
-    throw invalid_argument("Invalid tolerance interval constants: TI_ALPHA = " + string(TI_ALPHA) + ", TI_TRIES = " + string(TI_TRIES));
+    throw invalid_argument("Invalid tolerance interval constants: TI_ALPHA = " + to_string(TI_ALPHA) + ", TI_TRIES = " + to_string(TI_TRIES));
   }
   vector<DataObject> values(TI_TRIES);
   if (TI_PARALLEL) {
@@ -95,14 +100,19 @@ tuple<DataObject, DataObject> get_empirical_interval(
       values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
     }
   }
-  sort(values.begin(), values.end(), [&](const DataObject &a, const DataObject &b) -> bool { return get_value(a) < get_value(b); });
-  int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
-  return make_tuple(
-      get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
-      get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
+  switch (TI_ALGORITHM) {
+    case ToleranceInterval::DIRECT: {
+        sort(values.begin(), values.end(), [&](DataObject &a, DataObject &b) -> bool { return get_value(a) < get_value(b); });
+        int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
+        return make_tuple(
+            get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
+            get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
+      }
+    case ToleranceInterval::EMPIRICAL_VARIANCE:
+    default:
+      throw invalid_argument("Invalid tolerance interval computation algorithm");
+  }
 }
-
-// TODO: get_empirical_interval via variance estimation
 
 inline bool contains(const double &low, const double &high, const double &value) {
   return min(low, high) <= value && max(low, high) >= value;
