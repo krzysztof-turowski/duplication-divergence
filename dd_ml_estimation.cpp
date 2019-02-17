@@ -24,53 +24,16 @@ public:
   LikelihoodValue(const Parameters& params_v, const double likelihood_v) : params(params_v), likelihood(likelihood_v) { }
 };
 
-// TODO: use functions from dd_koala.h
-inline int get_index(const int &n, const Vertex &v, const Vertex &u) {
-  return min(v->getInfo(), u->getInfo()) * n + max(v->getInfo(), u->getInfo());
-}
-
-double omega(const Graph &G, vector<int> &V, const int &n, const Parameters &params, const Vertex &v) {
-  double i = G.getVertNo(), out = 0;
-  for (Vertex u = G.getVert(); u; u = G.getVertNext(u)) {
-    if (u != v) {
-      if (params.mode == Mode::PASTOR_SATORRAS) {
-        double a = V[get_index(n, v, u)], b = G.deg(v) - a, c = G.deg(u) - a, d = i + a - b - c;
-        out += pow(params.p, a) * pow(params.r / i, b) * pow(1 - params.p, c) * pow(1 - (params.r / i), d);
-      }
-      else {
-        throw std::invalid_argument("Invalid mode: " + params.to_string());
-      }
-    }
-  }
-  return out;
-}
-
-vector<double> omega(const Graph &G, vector<int> &V, const int &n, const Parameters &params) {
-  vector<double> out;
-  for (Vertex v = G.getVert(); v; v = G.getVertNext(v)) {
-    out.push_back(omega(G, V, n, params, v));
-  }
-  return out;
-}
-
 double likelihood_value(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   random_device device;
   mt19937 generator(device());
   int n = G.getVertNo();
   Graph H(G);
-  vector<int> V(n * n);
-  for (Vertex v = H.getVert(); v; v = H.getVertNext(v)) {
-    set<Vertex> N_v = H.getNeighSet(v);
-    for (Vertex u = H.getVert(); u; u = H.getVertNext(u)) {
-      if (v < u) {
-        set<Vertex> N_u = H.getNeighSet(u);
-        V[get_index(n, v, u)] = set_intersection(N_v.begin(), N_v.end(), N_u.begin(), N_u.end(), counting_iterator<Vertex>()).count;
-      }
-    }
-  }
+  NeighborhoodStructure aux(H);
+
   double ML_value = 0;
   while (H.getVertNo() > n0) {
-    vector<double> P = omega(H, V, n, params_0);
+    vector<double> P = get_transition_probability(H, params_0, aux);
     double P_sum = accumulate(P.begin(), P.end(), 0.0);
     if (P_sum == 0.0L) {
       return -numeric_limits<double>::infinity();
@@ -78,16 +41,9 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
     Vertex v = H.vertByNo(index);
-    ML_value += log(P_sum) + log(omega(H, V, n, params, v)) - log(H.getVertNo()) - log(P[index]);
+    ML_value += log(P_sum) + log(get_transition_probability(H, params, v, aux)) - log(H.getVertNo()) - log(P[index]);
 
-    set<Vertex> neighbors = G.getNeighSet(v);
-    for (Vertex w : neighbors) {
-      for (Vertex u : neighbors) {
-        if (w < u) {
-          --V[get_index(n, w, u)];
-        }
-      }
-    }
+    aux.remove_vertex(v, G.getNeighSet(v));
     H.delVert(v);
   }
   return ML_value;
@@ -143,7 +99,7 @@ void print(const string &name, const vector<LikelihoodValue> &likelihood_values,
   cout << name << endl;
   auto ML = *max_element(
       likelihood_values.begin(), likelihood_values.end(),
-      [] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) { return lhs.likelihood > rhs.likelihood; });
+      [&] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) { return lhs.likelihood < rhs.likelihood; });
   cout << "Best found: " << ML.params.to_string() << " ML score: " << ML.likelihood << endl;
   for (auto const& value : likelihood_values) {
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;

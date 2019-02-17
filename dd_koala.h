@@ -184,6 +184,11 @@ double get_transition_probability(
         return G.deg(v) - both == 0 ? pow(params.p, both) * pow(1 - params.p, G.deg(u) - both) / (G.getVertNo() - 1) : 0.0;
       }
       return 0.0;
+    case Mode::PASTOR_SATORRAS: {
+        int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both, only_u = G.deg(u) - both, none = G.getVertNo() + both - only_u - only_v;
+        return pow(params.p, both) * pow(params.r / (G.getVertNo() - 1), only_v) * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 1)), none)
+            / (G.getVertNo() - 1);
+      }
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }
@@ -199,4 +204,12 @@ double get_transition_probability(
     }
   }
   return p_v;
+}
+
+std::vector<double> get_transition_probability(const Koala::Graph<int, int> &G, const Parameters &params, const NeighborhoodStructure &aux) {
+  std::vector<double> out;
+  for (Koala::Graph<int, int>::PVertex v = G.getVert(); v; v = G.getVertNext(v)) {
+    out.push_back(get_transition_probability(G, params, v, aux));
+  }
+  return out;
 }
