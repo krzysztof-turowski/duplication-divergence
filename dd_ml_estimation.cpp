@@ -67,8 +67,7 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
   random_device device;
   mt19937 generator(device());
   int n = G.getVertNo();
-  Graph H;
-  H.copy(G);
+  Graph H(G);
   vector<int> V(n * n);
   for (Vertex v = H.getVert(); v; v = H.getVertNext(v)) {
     set<Vertex> N_v = H.getNeighSet(v);
@@ -167,7 +166,8 @@ void print(const string &name, const vector<LikelihoodValue> &likelihood_values,
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G = generate_graph_koala(n, n0, params);
+  Graph G = generate_seed_koala(n0, 1.0);
+  generate_graph_koala(G, n, params);
   auto likelihood_values = find_likelihood_values(G, n0, params.mode);
   ofstream out_file(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + "-ML.txt");
   print("Synthetic data: " + params.to_string(), likelihood_values, out_file);

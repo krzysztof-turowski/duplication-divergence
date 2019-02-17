@@ -14,15 +14,14 @@
 #include "lib/koala/graph/graph.h"
 #pragma GCC diagnostic pop
 
-Koala::Graph<int, int> generate_graph_koala(const int &n, const int &n0, const Parameters &params) {
+Koala::Graph<int, int> generate_seed_koala(const int &n0, const double &p0) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-  double p0 = 1.0;
 
   Koala::Graph<int, int> G;
   std::vector<Koala::Graph<int, int>::PVertex> V;
-  for (int i = 0; i < n; i++) {
+  for (int i = 0; i < n0; i++) {
     V.push_back(G.addVert(i));
   }
   for (int i = 0; i < n0; i++) {
@@ -32,9 +31,20 @@ Koala::Graph<int, int> generate_graph_koala(const int &n, const int &n0, const P
       }
     }
   }
-  for (int i = n0; i < n; i++) {
+  return G;
+}
+
+Koala::Graph<int, int> generate_graph_koala(Koala::Graph<int, int> &G, const int &n, const Parameters &params) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+
+  std::vector<Koala::Graph<int, int>::PVertex> V(n);
+  G.getVerts(V.begin());
+  for (int i = G.getVertNo(); i < n; i++) {
     std::uniform_int_distribution<int> parent_distribution(0, i - 1);
     int parent = parent_distribution(generator);
+    V[i] = G.addVert(i);
     std::set<Koala::Graph<int, int>::PVertex> neighbors = G.getNeighSet(V[parent]);
     if (params.mode == Mode::PURE_DUPLICATION) {
       for (auto v : neighbors) {
