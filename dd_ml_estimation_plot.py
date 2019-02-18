@@ -34,7 +34,7 @@ def read_data(data, interpolate = False):
         raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
     if interpolate:
-        # TODO: fix issues with infinity - currently we replace it with 2 * minimum # pylint: disable=fixme
+        # TODO: fix issues with infinity - currently we replace it with 2 * minimum
         minimum = min(value for value in z if value != -float('inf'))
         z = [value if value >= minimum else 2 * minimum for value in z]
         f = scipy.interpolate.interp2d(x, y, z, kind = 'cubic')
