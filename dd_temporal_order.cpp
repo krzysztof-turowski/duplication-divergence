@@ -1,17 +1,21 @@
 // Tools for computation the temporal order for various duplication-divergence models.
-// Compile: g++ dd_temporal_order.cpp -O3 -o ./dd_temporal_order
+// Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
 // Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS - e.g. ./dd_temporal_order exact_bound pastor_satorras 100 20 0.5 2.0
 
 #include "dd_koala.h"
 
 #include <random>
 
+#include <glpk.h>
 #include <gmpxx.h>
 
 using namespace std;
 
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
+
+const int LP_TRIES = 100;
+const double EPS_STEP = 0.05;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
@@ -87,11 +91,6 @@ map<mpz_class, double> get_permutation_probabilities(
   if (G.getVertNo() == n0) {
     mpz_class sigma = encode_permutation(S);
     permutations.insert(make_pair(sigma, p));
-    // cout << "PERMUTATION: ";
-    // for (int i = 0; i < static_cast<int>(S.size()); i++) {
-      // cout << S[i] << " ";
-    // }
-    // cout << p << endl;
     return permutations;
   }
 
@@ -112,7 +111,7 @@ map<mpz_class, double> get_permutation_probabilities(
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       G.move(H, v), aux.restore_vertex(v, neighbors_v), S[G.getVertNo() - 1] = -1;
-      for (auto u : neighbors_v) {
+      for (auto &u : neighbors_v) {
         G.addEdge(v, u);
       }
     }
@@ -138,29 +137,133 @@ map<mpz_class, double> get_permutation_probabilities(const Graph &G, const int &
   return permutations;
 }
 
+map<pair<int, int>, double> get_p_uv_from_permutations(const map<mpz_class, double> &permutations, const int &n, const int &n0) {
+  map<pair<int, int>, double> p_uv;
+  for (auto &permutation : permutations) {
+    vector<int> S = decode_permutation(permutation.first, n);
+    for (int i = n0; i < n; i++) {
+      for (int j = i + 1; j < n; j++) {
+          p_uv[make_pair(S[i], S[j])] += permutation.second;
+      }
+    }
+  }
+  return p_uv;
+}
+
+string LP_row_name(const string &prefix, const initializer_list<int> &vertices) {
+  ostringstream out;
+  out << prefix;
+  if (vertices.size() > 0) {
+    out << "_{";
+    for (auto v : vertices) {
+      out << to_string(v) << ",";
+    }
+    out.seekp(-1, ios_base::end), out << "}";
+  }
+  return out.str();
+}
+
+double LP_solve_1(const map<pair<int, int>, double> &p_uv, const int &n, const int &n0, const double &epsilon) {
+  glp_prob *LP = glp_create_prob();
+  glp_set_prob_name(LP, ("Solve " + to_string(epsilon)).c_str());
+  glp_set_obj_dir(LP, GLP_MAX);
+  double variables = (n - n0) * (n - n0 - 1), density = epsilon * variables / 2;
+
+  auto get_variable_index = [&](const int &u, const int &v) {
+    return (u - n0) * (n - n0) + (v - n0);
+  };
+  auto inv_variable_index = [&](const int &index) {
+    return make_pair(index / (n - n0) + n0, index % (n - n0) + n0);
+  };
+  auto name_variable = [&](const int &u, const int &v) {
+    return "x_{" + to_string(u) + "," + to_string(v) + "}";
+  };
+
+  // Objective function
+  glp_add_cols(LP, (n - n0) * (n - n0));
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      auto index = get_variable_index(i, j);
+      glp_set_col_name(LP, index + 1, name_variable(i, j).c_str());
+      if (i != j) {
+        glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
+      }
+      if (i < j) {
+        glp_set_obj_coef(LP, index + 1, p_uv.find(make_pair(i, j))->second / density);
+      }
+    }
+  }
+
+  vector<int> X, Y;
+  vector<double> A;
+  int row = 1;
+  glp_add_rows(LP, (n - n0) * (n - n0 - 1) * (n - n0 - 2) + (n - n0) * (n - n0 - 1) / 2 + 1);
+  // Antisymmetry
+  for (int i = n0; i < n; i++) {
+    for (int j = i + 1; j < n; j++) {
+      glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
+      X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
+      X.push_back(row), Y.push_back(get_variable_index(j, i) + 1), A.push_back(1);
+      glp_set_row_bnds(LP, row, GLP_UP, 1.0, 1.0);
+      row++;
+    }
+  }
+  // Transitivity
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      for (int k = n0; k < n; k++) {
+        if (i != j && j != k && i != k) {
+          glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
+          X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
+          X.push_back(row), Y.push_back(get_variable_index(j, k) + 1), A.push_back(1);
+          X.push_back(row), Y.push_back(get_variable_index(i, k) + 1), A.push_back(-1);
+          glp_set_row_bnds(LP, row, GLP_UP, 1.0, 1.0), row++;
+        }
+      }
+    }
+  }
+  // Density
+  glp_set_row_name(LP, row, LP_row_name("D", {}).c_str());
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      if (i != j) {
+        X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
+      }
+    }
+  }
+  glp_set_row_bnds(LP, row, GLP_FX, density, density), row++;
+
+  glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
+  // glp_write_lp(LP, NULL, "/dev/stdout");
+  glp_term_out(0);
+  glp_simplex(LP, NULL);
+
+  double solution = glp_get_obj_val(LP);
+  glp_delete_prob(LP);
+  glp_free_env();
+  return solution;
+}
+
 void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
-  Graph G = generate_seed_koala(n0, 1.0);
+  Graph G0 = generate_seed_koala(n0, 1.0);
+  Graph G(G0);
   generate_graph_koala(G, n, params);
 
   vector<int> S = generate_permutation(n, n0);
   apply_permutation(G, S);
 
-  // compute P(Pi_n = sigma_n | Pi_n(G_n) = h_n, G_n0 = g_n0)
   map<mpz_class, double> permutations = get_permutation_probabilities(G, n0, params);
-
-  // compute p_uv coefficients
-  map<pair<int, int>, double> p_uv;
-  for (auto &permutation : permutations) {
-    vector<int> S_found = decode_permutation(permutation.first, n);
-    for (int i = n0; i < n; i++) {
-      for (int j = i + 1; j < n; j++) {
-          p_uv[make_pair(S_found[i], S_found[j])] += permutation.second;
-      }
-    }
+  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, n0);
+  vector<pair<double, double>> solutions;
+  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+    solutions.push_back(make_pair(eps, LP_solve_1(p_uv, n, n0, eps)));
   }
   
-  // construct and solve LP
-  // export to file and to stdout
+  for (auto &solution : solutions) {
+    cout << fixed << setw(6) << setprecision(3) << solution.first << " "
+        << fixed << setw(6) << setprecision(3) << solution.second << endl;
+  }
+  // export to file
 }
 
 int main(int argc, char *argv[]) {
