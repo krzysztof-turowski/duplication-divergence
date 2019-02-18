@@ -14,7 +14,7 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const int LP_TRIES = 100;
+const int TRIES = 100;
 const double EPS_STEP = 0.05;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
@@ -163,7 +163,7 @@ string LP_row_name(const string &prefix, const initializer_list<int> &vertices) 
   return out.str();
 }
 
-double LP_solve_1(const map<pair<int, int>, double> &p_uv, const int &n, const int &n0, const double &epsilon) {
+double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int &n0, const double &epsilon) {
   glp_prob *LP = glp_create_prob();
   glp_set_prob_name(LP, ("Solve " + to_string(epsilon)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
@@ -244,24 +244,39 @@ double LP_solve_1(const map<pair<int, int>, double> &p_uv, const int &n, const i
   return solution;
 }
 
-void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
+vector<double> LP_bound_exact_single(const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
   Graph G(G0);
   generate_graph_koala(G, n, params);
 
-  vector<int> S = generate_permutation(n, n0);
+  vector<int> S = generate_permutation(n, G0.getVertNo());
   apply_permutation(G, S);
 
-  map<mpz_class, double> permutations = get_permutation_probabilities(G, n0, params);
-  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, n0);
-  vector<pair<double, double>> solutions;
+  map<mpz_class, double> permutations = get_permutation_probabilities(G, G0.getVertNo(), params);
+  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
+  vector<double> solutions;
+  for (const double &eps : epsilon) {
+    solutions.push_back(LP_solve(p_uv, n, G0.getVertNo(), eps));
+  }
+  return solutions;
+}
+
+void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
+  Graph G0 = generate_seed_koala(n0, 1.0);
+  vector<double> epsilon;
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
-    solutions.push_back(make_pair(eps, LP_solve_1(p_uv, n, n0, eps)));
+    epsilon.push_back(eps);
+  }
+
+  // TODO: parallelize
+  vector<double> solution(epsilon.size(), 0.0);
+  for (int i = 0; i < TRIES; i++) {
+    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
+    transform(solution.begin(), solution.end(), solution_single.begin(), solution.begin(), std::plus<double>());
   }
   
-  for (auto &solution : solutions) {
-    cout << fixed << setw(6) << setprecision(3) << solution.first << " "
-        << fixed << setw(6) << setprecision(3) << solution.second << endl;
+  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
+    cout << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
+        << fixed << setw(6) << setprecision(3) << solution[i] / TRIES << endl;
   }
   // export to file
 }
