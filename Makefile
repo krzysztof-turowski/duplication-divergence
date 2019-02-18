@@ -2,10 +2,11 @@ FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -
 
 NAUTY_LIB = lib/nauty/nauty.a
 
-SRCS := $(wildcard *.cpp)
-EXEC := $(patsubst %.cpp,%,$(SRCS))
+CPP_SRCS := $(wildcard *.cpp)
+PY_SRCS := $(wildcard *.py)
+EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
 
-all: g++
+all: g++ check
 
 g++: CC = g++
 g++: COMPILER_FLAGS =-fmax-errors=5
@@ -22,9 +23,10 @@ dd_automorphisms: dd_automorphisms.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
 check:
-	cppcheck --enable=all --force --suppress=*:lib/* $(SRCS)
+	cppcheck --enable=all --force --suppress=*:lib/* $(CPP_SRCS)
+	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals $(PY_SRCS)
 
 clean:
-	@rm $(EXEC)
+	rm $(EXEC)
 
-.PHONY: check clean
+.PHONY: all check clean
