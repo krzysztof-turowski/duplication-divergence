@@ -24,7 +24,7 @@ dd_automorphisms: dd_automorphisms.cpp
 
 check:
 	cppcheck --enable=all --force --suppress=*:lib/* $(CPP_SRCS)
-	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals $(PY_SRCS)
+	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals --max-line-length=100 $(PY_SRCS)
 
 clean:
 	rm $(EXEC)
