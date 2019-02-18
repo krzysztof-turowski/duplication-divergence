@@ -14,10 +14,7 @@ addons:
     packages:
       - g++-8
       - python-pip
-      - python-dev
-      - build-essential
       - cppcheck
-      - pylint
 
 install: 
   # C++17
