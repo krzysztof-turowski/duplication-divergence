@@ -18,6 +18,11 @@ const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
 const bool TI_PARALLEL = false;
+const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
+
+enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
+
+const ToleranceInterval TI_ALGORITHM = ToleranceInterval::DIRECT;
 
 class DataObject {
 public:
@@ -77,8 +82,11 @@ DataObject get_params_for_synthetic_graph(const vector<set<int>> &G0, const int 
 }
 
 tuple<DataObject, DataObject> get_empirical_interval(
-    const vector<set<int>> &G0, const DataObject &g_data, const Parameters &params, function<double(DataObject const&)> get_value) {
-  assert(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1);
+    DataObject &g_data, const vector<set<int>> &G0, const Parameters &params,
+    function<double& (DataObject&)> get_value) {
+  if (!(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1)) {
+    throw invalid_argument("Invalid tolerance interval constants: TI_ALPHA = " + to_string(TI_ALPHA) + ", TI_TRIES = " + to_string(TI_TRIES));
+  }
   vector<DataObject> values(TI_TRIES);
   if (TI_PARALLEL) {
     vector<future<DataObject>> futures(TI_TRIES);
@@ -93,14 +101,33 @@ tuple<DataObject, DataObject> get_empirical_interval(
       values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
     }
   }
-  sort(values.begin(), values.end(), [&](const DataObject &a, const DataObject &b) -> bool { return get_value(a) < get_value(b); });
-  int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
-  return make_tuple(
-      get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
-      get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
+  switch (TI_ALGORITHM) {
+    case ToleranceInterval::DIRECT: {
+        sort(values.begin(), values.end(), [&](DataObject &a, DataObject &b) { return get_value(a) < get_value(b); });
+        int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
+        return make_tuple(
+            get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
+            get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
+      }
+    case ToleranceInterval::EMPIRICAL_VARIANCE: {
+        double empirical_first_moment =
+            accumulate(
+                values.begin(), values.end(), 0.0,
+                [&](double value, DataObject &a) { return value + get_value(a); }) / values.size();
+        double empirical_second_moment =
+            accumulate(
+                values.begin(), values.end(), 0.0,
+                [&](double value, DataObject &a) { return value + get_value(a) * get_value(a); }) / values.size();
+        double empirical_std_deviation = sqrt(empirical_second_moment - empirical_first_moment * empirical_first_moment);
+        DataObject g_data_low(g_data), g_data_high(g_data);
+        get_value(g_data_low) -= PERCENTILE_95 * empirical_std_deviation;
+        get_value(g_data_high) += PERCENTILE_95 * empirical_std_deviation;
+        return make_tuple(g_data_low, g_data_high);
+      }
+    default:
+      throw invalid_argument("Invalid tolerance interval computation algorithm");
+  }
 }
-
-// TODO: get_empirical_interval via variance estimation
 
 inline bool contains(const double &low, const double &high, const double &value) {
   return min(low, high) <= value && max(low, high) >= value;
@@ -153,7 +180,7 @@ void chung_lu_estimate_iterative(DataObject &apx_data, const double &p, const do
 }
 
 Parameters chung_lu_binary_search_p(
-    const DataObject &g0_data, const DataObject &g_data, const double &q, function<double(DataObject const&)> get_value) {
+    DataObject &g0_data, DataObject &g_data, const double &q, function<double& (DataObject&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
@@ -172,7 +199,27 @@ Parameters chung_lu_binary_search_p(
   return params;
 }
 
-vector<Parameters> chung_lu_get_parameters(const DataObject &g0_data, const DataObject &g_data, function<double (DataObject const&)> get_value) {
+Parameters chung_lu_binary_search_q(
+    DataObject &g0_data, DataObject &g_data, const double &p, function<double& (DataObject&)> get_value) {
+  double q_low = 0.0, q_high = 1.0, error = EPS;
+  DataObject apx_data;
+  while (q_high - q_low > error) {
+    double q_mid = (q_high + q_low) / 2;
+    apx_data = g0_data;
+    chung_lu_estimate_iterative(apx_data, p, q_mid, g0_data.no_vertices, g_data.no_vertices);
+    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+      q_low = q_mid;
+    }
+    else {
+      q_high = q_mid;
+    }
+  }
+  Parameters params;
+  params.initialize_chung_lu(p, q_low);
+  return params;
+}
+
+vector<Parameters> chung_lu_get_parameters(DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
   vector<Parameters> S;
   // TODO: variable step, increased if points too close
   for (double q = 0.0; q <= 1.0 + EPS; q += Q_STEP) {
@@ -187,25 +234,35 @@ vector<Parameters> chung_lu_get_parameters(const DataObject &g0_data, const Data
 }
 
 void chung_lu_estimate_parameter(
-    const string &name, const DataObject &g0_data, const DataObject &g_data,
-    function<double (DataObject const&)> get_value, ofstream &out_file) {
+    const string &name, DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0,
+    function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval = false) {
   vector<Parameters> S = chung_lu_get_parameters(g0_data, g_data, get_value);
-  print(name, get_value(g0_data), get_value(g_data), S, out_file);
-  // TODO: add tolerance interval
+  if (tolerance_interval) {
+    vector<Parameters> S_low, S_high;
+    for (auto params : S) {
+      DataObject g_data_low, g_data_high;
+      tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
+      S_low.push_back(chung_lu_binary_search_q(g0_data, g_data_low, params.p, get_value));
+      S_high.push_back(chung_lu_binary_search_q(g0_data, g_data_high, params.p, get_value));
+    }
+    print(name, get_value(g0_data), get_value(g_data), S_low, S, S_high, out_file);
+  } else {
+    print(name, get_value(g0_data), get_value(g_data), S, out_file);
+  }
 }
 
-void chung_lu_estimate(const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0, ofstream &out_file) {
-  auto D_lambda = [](const DataObject &data) { return data.average_degree; };
-  chung_lu_estimate_parameter("Average degree", g_data, g0_data, D_lambda, out_file);
+void chung_lu_estimate(DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
+  auto D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
+  chung_lu_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
   
-  auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
-  chung_lu_estimate_parameter("Average degree squared", g_data, g0_data, D2_lambda, out_file);
+  auto D2_lambda = [](DataObject &data) -> double& { return data.average_degree_squared; };
+  chung_lu_estimate_parameter("Average degree squared", g_data, g0_data, G0, D2_lambda, out_file);
   
-  auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
-  chung_lu_estimate_parameter("Open triangles", g_data, g0_data, S2_lambda, out_file);
+  auto S2_lambda = [](DataObject &data) -> double& { return data.open_triangles; };
+  chung_lu_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file, true);
 
-  auto C3_lambda = [](const DataObject &data) { return data.triangles; };
-  chung_lu_estimate_parameter("Triangles", g_data, g0_data, C3_lambda, out_file);
+  auto C3_lambda = [](DataObject &data) -> double& { return data.triangles; };
+  chung_lu_estimate_parameter("Triangles", g_data, g0_data, G0, C3_lambda, out_file, true);
 }
 
 void pastor_satorras_estimate_iterative(DataObject &apx_data, const double &p, const double &r, const int &n0, const int &n) {
@@ -228,7 +285,7 @@ void pastor_satorras_estimate_iterative(DataObject &apx_data, const double &p, c
 }
 
 Parameters pastor_satorras_binary_search_p(
-    const DataObject &g0_data, const DataObject &g_data, const double &r, function<double(DataObject const&)> get_value) {
+    DataObject &g0_data, DataObject &g_data, const double &r, function<double& (DataObject&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
@@ -248,7 +305,7 @@ Parameters pastor_satorras_binary_search_p(
 }
 
 Parameters pastor_satorras_binary_search_r(
-    const DataObject &g0_data, const DataObject &g_data, const double &p, function<double(DataObject const&)> get_value) {
+    DataObject &g0_data, DataObject &g_data, const double &p, function<double& (DataObject&)> get_value) {
   double r_low = 0.0, r_high = g0_data.no_vertices, error = EPS;
   DataObject apx_data;
   while (r_high - r_low > error) {
@@ -268,7 +325,7 @@ Parameters pastor_satorras_binary_search_r(
 }
 
 vector<Parameters> pastor_satorras_get_parameters(
-    const DataObject &g0_data, const DataObject &g_data, function<double (DataObject const&)> get_value) {
+    DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
   vector<Parameters> S;
   // TODO: variable step, increased if points too close
   double r_max = g0_data.no_vertices;
@@ -287,14 +344,14 @@ vector<Parameters> pastor_satorras_get_parameters(
 }
 
 void pastor_satorras_estimate_parameter(
-    const string &name, const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0,
-    function<double (DataObject const&)> get_value, ofstream &out_file, bool tolerance_interval = false) {
+    const string &name, DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0,
+    function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval = false) {
   vector<Parameters> S = pastor_satorras_get_parameters(g0_data, g_data, get_value);
   if (tolerance_interval) {
     vector<Parameters> S_low, S_high;
     for (auto params : S) {
       DataObject g_data_low, g_data_high;
-      tie(g_data_low, g_data_high) = get_empirical_interval(G0, g_data, params, get_value);
+      tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
       S_low.push_back(pastor_satorras_binary_search_r(g0_data, g_data_low, params.p, get_value));
       S_high.push_back(pastor_satorras_binary_search_r(g0_data, g_data_high, params.p, get_value));
     }
@@ -304,17 +361,17 @@ void pastor_satorras_estimate_parameter(
   }
 }
 
-void pastor_satorras_estimate(const DataObject &g0_data, const DataObject &g_data, const vector<set<int>> &G0, ofstream &out_file) {
-  auto D_lambda = [](const DataObject &data) { return data.average_degree; };
+void pastor_satorras_estimate(DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
+  function<double& (DataObject&)> D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
   pastor_satorras_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
   
-  auto D2_lambda = [](const DataObject &data) { return data.average_degree_squared; };
+  function<double& (DataObject&)> D2_lambda = [](DataObject &data) -> double& { return data.average_degree_squared; };
   pastor_satorras_estimate_parameter("Average degree squared", g_data, g0_data, G0, D2_lambda, out_file);
   
-  auto S2_lambda = [](const DataObject &data) { return data.open_triangles; };
-  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file);
+  function<double& (DataObject&)> S2_lambda = [](DataObject &data) -> double& { return data.open_triangles; };
+  pastor_satorras_estimate_parameter("Open triangles", g_data, g0_data, G0, S2_lambda, out_file, true);
 
-  auto C3_lambda = [](const DataObject &data) { return data.triangles; };
+  function<double& (DataObject&)> C3_lambda = [](DataObject &data) -> double& { return data.triangles; };
   pastor_satorras_estimate_parameter("Triangles", g_data, g0_data, G0, C3_lambda, out_file, true);
 }
 
@@ -328,7 +385,7 @@ void process_graph(const vector<set<int>> &G, const vector<set<int>> &G0, const 
       pastor_satorras_estimate(g_data, g0_data, G0, out_file);
       break;
     default:
-      assert(0);
+      throw invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
   }
 }
 
@@ -372,10 +429,10 @@ int main(int argc, char *argv[]) {
       real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
     }
     else {
-      assert(0);
+      throw invalid_argument("Invalid action: " + action);
     }
-  } catch (exception &e) {
-    cout << "ERROR: " << e.what() << endl;
+  } catch (const exception &e) {
+    cerr << "ERROR: " << e.what() << endl;
   }
   return 0;
 }
