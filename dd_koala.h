@@ -3,6 +3,8 @@
 #include "dd_header.h"
 #include "lib/koala/graph/graph.h"
 
+const double EPS = 10e-9;
+
 Koala::Graph<int, int> generate_seed_koala(const int &n0, const double &p0) {
   std::random_device device;
   std::mt19937 generator(device());
@@ -184,10 +186,17 @@ double get_transition_probability(
   int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both - uv, only_u = G.deg(u) - both - uv, none = (G.getVertNo() - 2) - both - only_u - only_v;
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      return only_v == 0 ? pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1) : 0.0;
+      if (only_v > 0 || (abs(params.p) < EPS && both > 0) || (abs(params.p - 1.0) < EPS && only_u > 0)) {
+        return 0.0;
+      }
+      return pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1);
     case Mode::PASTOR_SATORRAS:
-      return pow(params.p, both) * pow(params.r / (G.getVertNo() - 2), only_v)
-          * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 2)), none) / (G.getVertNo() - 1);
+      if ((abs(params.p) < EPS && both > 0) || (abs(params.p - 1.0) < EPS && only_u > 0)
+          || (abs(params.r) < EPS && only_v > 0) || (abs(params.r - (G.getVertNo() - 1)) < EPS && none > 0)) {
+        return 0.0;
+      }
+      return pow(params.p, both) * pow(params.r / (G.getVertNo() - 1), only_v)
+          * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 1)), none) / (G.getVertNo() - 1);
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }

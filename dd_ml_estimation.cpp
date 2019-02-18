@@ -26,7 +26,7 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const double STEP_P = 0.1, STEP_R = 1.0, EPS = 10e-9;
+const double STEP_P = 0.1, STEP_R = 1.0;
 const int IS_TRIES = 100;
 const bool ML_PARALLEL = false;
 
@@ -103,7 +103,6 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
             params.initialize_pastor_satorras(p, r);
             LikelihoodValue value = importance_sampling(G, n0, params, params_0);
             cerr << "Finished run for " << value.params.to_string() << endl;
-            // TODO: consider filtering out infeasible values
             likelihood_values.push_back(value);
           }
         }
