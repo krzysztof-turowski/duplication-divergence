@@ -168,13 +168,13 @@ double get_transition_probability(
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
       if (G.deg(v) <= G.deg(u)) {
-        int both = aux.common_neighbors(v, u);
-        return G.deg(v) - both == 0 ? pow(params.p, both) * pow(1 - params.p, G.deg(u) - both) / (G.getVertNo() - 1) : 0.0;
+        int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both, only_u = G.deg(u) - both;
+        return only_v == 0 ? pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1) : 0.0;
       }
       return 0.0;
     case Mode::PASTOR_SATORRAS: {
-        int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both, only_u = G.deg(u) - both, none = G.getVertNo() + both - only_u - only_v;
-        return pow(params.p, both) * pow(params.r / (G.getVertNo() - 1), only_v) * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 1)), none)
+        int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both, only_u = G.deg(u) - both, none = (G.getVertNo() - 2) + both - only_u - only_v;
+        return pow(params.p, both) * pow(params.r / (G.getVertNo() - 2), only_v) * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 2)), none)
             / (G.getVertNo() - 1);
       }
     default:

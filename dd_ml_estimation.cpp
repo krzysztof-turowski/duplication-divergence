@@ -54,7 +54,7 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
     Vertex v = H.vertByNo(index);
-    ML_value += log(P_sum) + log(get_transition_probability(H, params, v, aux)) - log(H.getVertNo()) - log(P[index]);
+    ML_value += log(P_sum) + log(get_transition_probability(H, params, v, aux)) - log(P[index]);
 
     aux.remove_vertex(v, G.getNeighSet(v));
     H.delVert(v);
