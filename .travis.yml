@@ -16,7 +16,8 @@ install:
   - sudo apt-get install -qq g++-8
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
   # Libraries
-  - sudo apt-get install -qq python-pip python-dev build-essential && python -m pip install numpy scipy matplotlib
+  - sudo apt-get install -qq python-pip python-dev build-essential
+  - sudo python -m pip install numpy scipy matplotlib
   - sudo apt-get install -qq cppcheck pylint
   - bash -e ./configure_libs.sh nauty
 
