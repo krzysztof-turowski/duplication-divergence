@@ -220,7 +220,7 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
   glp_prob *LP = glp_create_prob();
   glp_set_prob_name(LP, ("Solve " + to_string(epsilon)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
-  double variables = (n - n0) * (n - n0 - 1), density = epsilon * variables / 2;
+  double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
   auto get_variable_index = [&](const int &u, const int &v) {
     return (u - n0) * (n - n0) + (v - n0);
@@ -230,19 +230,20 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
   };
 
   // Objective function
-  glp_add_cols(LP, (n - n0) * (n - n0));
+  glp_add_cols(LP, (n - n0) * (n - n0) + 1);
+  int s_index = (n - n0) * (n - n0);
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       auto index = get_variable_index(i, j);
       glp_set_col_name(LP, index + 1, name_variable(i, j).c_str());
       if (i != j) {
         glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
-      }
-      if (i < j) {
-        glp_set_obj_coef(LP, index + 1, p_uv.find(make_pair(i, j))->second / density);
+        glp_set_obj_coef(LP, index + 1, p_uv.find(make_pair(i, j))->second);
       }
     }
   }
+  glp_set_col_name(LP, s_index + 1, "s");
+  glp_set_col_bnds(LP, s_index + 1, GLP_DB, 0.0, 1 / density);
 
   vector<int> X, Y;
   vector<double> A;
@@ -254,8 +255,8 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
       glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
       X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
       X.push_back(row), Y.push_back(get_variable_index(j, i) + 1), A.push_back(1);
-      glp_set_row_bnds(LP, row, GLP_UP, 1.0, 1.0);
-      row++;
+      X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+      glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
     }
   }
   // Transitivity
@@ -267,7 +268,8 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
           X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
           X.push_back(row), Y.push_back(get_variable_index(j, k) + 1), A.push_back(1);
           X.push_back(row), Y.push_back(get_variable_index(i, k) + 1), A.push_back(-1);
-          glp_set_row_bnds(LP, row, GLP_UP, 1.0, 1.0), row++;
+          X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+          glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
         }
       }
     }
@@ -281,7 +283,7 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
       }
     }
   }
-  glp_set_row_bnds(LP, row, GLP_FX, density, density), row++;
+  glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
 
   glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
   // glp_write_lp(LP, NULL, "/dev/stdout");
