@@ -6,20 +6,28 @@ branches:
   only:
     - master
 
-before_install:
-  # C++17
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt-get update -qq
+addons:
+  apt:
+    update: true
+    sources:
+      - sourceline: 'ppa:ubuntu-toolchain-r/test'
+    packages:
+      - g++-8
+      - python-pip
+      - python-dev
+      - build-essential
+      - cppcheck
+      - pylint
 
 install: 
   # C++17
-  - sudo apt-get install -qq g++-8
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
   # Libraries
-  - sudo apt-get install -qq python-pip python-dev build-essential
-  - sudo python -m pip install numpy scipy matplotlib
-  - sudo apt-get install -qq cppcheck pylint
+  - sudo python -m pip install numpy scipy matplotlib pylint
   - bash -e ./configure_libs.sh nauty
+
+before_script:
+  - pylint --version
 
 script:
   - make all
