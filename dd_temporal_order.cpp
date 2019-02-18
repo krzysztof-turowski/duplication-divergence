@@ -2,7 +2,21 @@
 // Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
 // Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS - e.g. ./dd_temporal_order exact_bound pastor_satorras 100 20 0.5 2.0
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wextra"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "dd_koala.h"
+#pragma GCC diagnostic pop
 
 #include <random>
 
@@ -30,14 +44,6 @@ vector<int> generate_permutation(const int &n, const int &n0) {
     swap(S[i], S[index]);
   }
   return S;
-}
-
-vector<int> invert_permutation(const vector<int> &S) {
-  vector<int> V(S.size());
-  for (int i = 0; i < static_cast<int>(S.size()); i++) {
-    V[S[i]] = i;
-  }
-  return V;
 }
 
 vector<int> decode_permutation(const mpz_class &sigma, const int &n) {
@@ -172,9 +178,6 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
   auto get_variable_index = [&](const int &u, const int &v) {
     return (u - n0) * (n - n0) + (v - n0);
   };
-  auto inv_variable_index = [&](const int &index) {
-    return make_pair(index / (n - n0) + n0, index % (n - n0) + n0);
-  };
   auto name_variable = [&](const int &u, const int &v) {
     return "x_{" + to_string(u) + "," + to_string(v) + "}";
   };
@@ -281,7 +284,7 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
   // export to file
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
     int n = stoi(argv[3]), n0 = stoi(argv[4]);

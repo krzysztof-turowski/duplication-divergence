@@ -3,7 +3,21 @@
 // Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS - e.g. ./dd_ml_estimation synthetic pastor_satorras 100 20 0.5 2.0
 //      ./dd_ml_estimation real_data MODE                 - e.g. ./dd_ml_estimation real_data pastor_satorras
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#pragma GCC diagnostic ignored "-Wextra"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wpedantic"
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "dd_koala.h"
+#pragma GCC diagnostic pop
 
 #include <future>
 
@@ -27,7 +41,6 @@ public:
 double likelihood_value(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   random_device device;
   mt19937 generator(device());
-  int n = G.getVertNo();
   Graph H(G);
   NeighborhoodStructure aux(H);
 
@@ -91,7 +104,7 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
       }
       return likelihood_values;
     default:
-      throw std::invalid_argument("Invalid mode: " + mode);
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
   }
 }
 
@@ -125,7 +138,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   print(graph_name, likelihood_values, out_file);
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
     if (action == "synthetic") {

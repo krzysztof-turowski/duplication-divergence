@@ -49,7 +49,6 @@ void degree_distribution(const vector<set<int>> &G, DataObject &data) {
 }
 
 void count_triangles(const vector<set<int>> &G, DataObject &data) {
-  double triangles = 0;
   for (auto v : G) {
     data.open_triangles += v.size() * (v.size() - 1) / 2;
 
@@ -406,7 +405,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   process_graph(G, G0, mode, out_file);
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
     if (action == "synthetic") {

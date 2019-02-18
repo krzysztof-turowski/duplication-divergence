@@ -7,6 +7,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "dd_automorphisms.h"
 #pragma GCC diagnostic pop
 
@@ -94,7 +95,7 @@ void log_automorphisms(const std::string &graph_name) {
   std::cout << graph_name << " " << log_automorphisms(G) << std::endl;
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     std::string action(argv[1]), mode(argv[2]);
     if (action == "real_seed") {

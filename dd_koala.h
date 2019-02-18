@@ -1,18 +1,7 @@
 #pragma once
 
 #include "dd_header.h"
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wswitch-default"
 #include "lib/koala/graph/graph.h"
-#pragma GCC diagnostic pop
 
 Koala::Graph<int, int> generate_seed_koala(const int &n0, const double &p0) {
   std::random_device device;
@@ -47,7 +36,7 @@ Koala::Graph<int, int> generate_graph_koala(Koala::Graph<int, int> &G, const int
     V[i] = G.addVert(i);
     std::set<Koala::Graph<int, int>::PVertex> neighbors = G.getNeighSet(V[parent]);
     if (params.mode == Mode::PURE_DUPLICATION) {
-      for (auto v : neighbors) {
+      for (const auto &v : neighbors) {
         if (edge_distribution(generator) <= params.p) {
           G.addEdge(V[i], v);
         }
@@ -55,7 +44,7 @@ Koala::Graph<int, int> generate_graph_koala(Koala::Graph<int, int> &G, const int
     }
     else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
       while(true) {
-        for (auto v : neighbors) {
+        for (const auto &v : neighbors) {
           if (edge_distribution(generator) <= params.p) {
             G.addEdge(V[i], v);
           }
@@ -67,7 +56,7 @@ Koala::Graph<int, int> generate_graph_koala(Koala::Graph<int, int> &G, const int
       }
     }
     else if (params.mode == Mode::CHUNG_LU) {
-      for (auto v : neighbors) {
+      for (const auto &v : neighbors) {
         if (edge_distribution(generator) <= params.p) {
           G.addEdge(V[i], v);
         }
@@ -142,8 +131,7 @@ private:
   }
 
 public:
-  NeighborhoodStructure(const Koala::Graph<int, int> &G) : n(G.getVertNo()) {
-    V.resize(n * n);
+  explicit NeighborhoodStructure(const Koala::Graph<int, int> &G) : n(G.getVertNo()), V(G.getVertNo() * G.getVertNo()) {
     for (auto v = G.getVert(); v; v = G.getVertNext(v)) {
       std::set<Koala::Graph<int, int>::PVertex> N_v = G.getNeighSet(v);
       for (auto u = G.getVert(); u; u = G.getVertNext(u)) {
@@ -157,17 +145,17 @@ public:
     return V[get_index(v, u)];
   }
 
-  void remove_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> neighbors) {
-    for (auto w : neighbors) {
-      for (auto u : neighbors) {
+  void remove_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> &neighbors) {
+    for (const auto &w : neighbors) {
+      for (const auto &u : neighbors) {
         --V[get_index(w, u)];
       }
     }
   }
 
-  void restore_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> neighbors) {
-    for (auto w : neighbors) {
-      for (auto u : neighbors) {
+  void restore_vertex(const Koala::Graph<int, int>::PVertex &v, const std::set<Koala::Graph<int, int>::PVertex> &neighbors) {
+    for (const auto &w : neighbors) {
+      for (const auto &u : neighbors) {
         ++V[get_index(w, u)];
       }
     }
@@ -208,7 +196,7 @@ double get_transition_probability(
 
 std::vector<double> get_transition_probability(const Koala::Graph<int, int> &G, const Parameters &params, const NeighborhoodStructure &aux) {
   std::vector<double> out;
-  for (Koala::Graph<int, int>::PVertex v = G.getVert(); v; v = G.getVertNext(v)) {
+  for (auto v = G.getVert(); v; v = G.getVertNext(v)) {
     out.push_back(get_transition_probability(G, params, v, aux));
   }
   return out;
