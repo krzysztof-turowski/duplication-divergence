@@ -3,6 +3,7 @@
 extern "C" {
   #include "lib/nauty/nauty.h"
   #include "lib/nauty/nausparse.h"
+  #include "lib/nauty/traces.h"
 }
 
 #include <stack>
@@ -70,7 +71,42 @@ double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
-// TODO: add Traces
+double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
+  DYNALLSTAT(int, lab, lab_size);
+  DYNALLSTAT(int, ptn, ptn_size);
+  DYNALLSTAT(int, orbits, orbits_size);
+  static DEFAULTOPTIONS_TRACES(options);
+  TracesStats stats;
+
+  int n = G.size(), word = SETWORDSNEEDED(n);
+  nauty_check(WORDSIZE, word, n, NAUTYVERSIONID);
+
+  int m = 0;
+  for (int v = 0; v < n; v++) {
+    m += G[v].size();
+  }
+
+  SG_DECL(g);
+  SG_ALLOC(g, n, m, "malloc");
+  DYNALLOC1(int, lab, lab_size, n, "malloc");
+  DYNALLOC1(int, ptn, ptn_size, n, "malloc");
+  DYNALLOC1(int, orbits, orbits_size, n, "malloc");
+
+  g.nv = n;
+  g.nde = m;
+  int position = 0, index = 0;
+  for (int v = 0; v < n; v++) {
+    g.v[v] = position;
+    g.d[v] = G[v].size();
+    position += G[v].size();
+    for (auto u : G[v]) {
+      g.e[index] = u;
+      index++;
+    }
+  }
+  Traces(&g, lab, ptn, orbits, &options, &stats, NULL);
+  return log(stats.grpsize1) + stats.grpsize2 * log(10);
+}
 
 std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
   std::vector<int> C(G.size()), sizes;
