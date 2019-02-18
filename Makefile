@@ -32,6 +32,6 @@ check:
 	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
 
 clean:
-	rm $(EXEC)
+	@rm -vf $(EXEC)
 
 .PHONY: all check clean
