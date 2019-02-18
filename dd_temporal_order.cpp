@@ -28,7 +28,7 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const int TRIES = 100;
+const int G_TRIES = 100, SIGMA_TRIES = 1000;
 const double EPS_STEP = 0.05;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
@@ -92,15 +92,14 @@ void apply_permutation(Graph &G, const vector<int> &S) {
 }
 
 map<mpz_class, double> get_permutation_probabilities(
-    Graph &G, const int &n0, const Parameters &params, NeighborhoodStructure &aux, vector<int> &S, const double &p) {
+    Graph &G, const int &n0, const Parameters &params, NeighborhoodStructure &aux, vector<int> &S, const double &p_sigma) {
   map<mpz_class, double> permutations;
   if (G.getVertNo() == n0) {
     mpz_class sigma = encode_permutation(S);
-    permutations.insert(make_pair(sigma, p));
+    permutations.insert(make_pair(sigma, p_sigma));
     return permutations;
   }
 
-  multimap<Vertex, Vertex> candidates;
   vector<Vertex> V(G.getVertNo());
   G.getVerts(V.begin());
   Graph H;
@@ -113,7 +112,7 @@ map<mpz_class, double> get_permutation_probabilities(
       set<Vertex> neighbors_v = G.getNeighSet(v);
       aux.remove_vertex(v, neighbors_v), S[G.getVertNo() - 1] = v->getInfo(), H.move(G, v);
 
-      map<mpz_class, double> permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p * p_v);
+      map<mpz_class, double> permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       G.move(H, v), aux.restore_vertex(v, neighbors_v), S[G.getVertNo() - 1] = -1;
@@ -137,6 +136,54 @@ map<mpz_class, double> get_permutation_probabilities(const Graph &G, const int &
   double total_probability = accumulate(
     permutations.begin(), permutations.end(), 0.0,
     [] (double value, const map<mpz_class, double>::value_type &permutation) { return value + permutation.second; });
+  for (auto &permutation : permutations) {
+    permutation.second /= total_probability;
+  }
+  return permutations;
+}
+
+pair<mpz_class, double> get_permutation_sample(const Graph &G, const int &n0, const Parameters &params) {
+  random_device device;
+  mt19937 generator(device());
+  Graph H(G);
+  NeighborhoodStructure aux(H);
+
+  vector<int> S(H.getVertNo(), -1);
+  for (int i = 0; i < n0; i++) {
+    S[i] = i;
+  }
+  double p_sigma = 1.0;
+  vector<Vertex> V(H.getVertNo());
+  for (auto v = H.getVert(); v; v = H.getVertNext(v)) {
+    V[v->getInfo()] = v;
+  }
+
+  while (H.getVertNo() > n0) {
+    vector<double> P(S.size(), 0.0);
+    for (auto v = H.getVert(); v; v = H.getVertNext(v)) {
+      if (v->getInfo() < n0) {
+        continue;
+      }
+      P[v->getInfo()] = get_transition_probability(G, params, v, aux);
+    }
+    double P_sum = accumulate(P.begin(), P.end(), 0.0);
+    discrete_distribution<int> choose_vertex(P.begin(), P.end());
+    int index = choose_vertex(generator);
+    S[H.getVertNo() - 1] = index, p_sigma *= P[index] / P_sum;
+    aux.remove_vertex(V[index], H.getNeighSet(V[index])), H.delVert(V[index]);
+  }
+  return make_pair(encode_permutation(S), p_sigma);
+}
+
+map<mpz_class, double> get_permutation_probabilities_sampling(const Graph &G, const int &n0, const Parameters &params) {
+  map<mpz_class, double> permutations;
+  double total_probability = 0;
+  // TODO: parallelize
+  for (int i = 0; i < SIGMA_TRIES; i++) {
+    pair<mpz_class, double> sigma_with_probability = get_permutation_sample(G, n0, params);
+    permutations[sigma_with_probability.first] += sigma_with_probability.second;
+    total_probability += sigma_with_probability.second;
+  }
   for (auto &permutation : permutations) {
     permutation.second /= total_probability;
   }
@@ -247,6 +294,14 @@ double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int
   return solution;
 }
 
+void print(const vector<double> &epsilon, const vector<double> &solution) {
+  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
+    cout << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
+        << fixed << setw(6) << setprecision(3) << solution[i] << endl;
+  }
+  // export to file
+}
+
 vector<double> LP_bound_exact_single(const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
   Graph G(G0);
   generate_graph_koala(G, n, params);
@@ -263,25 +318,57 @@ vector<double> LP_bound_exact_single(const Graph &G0, const int &n, const Parame
   return solutions;
 }
 
+vector<double> LP_bound_approximate_single(const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+  Graph G(G0);
+  generate_graph_koala(G, n, params);
+
+  vector<int> S = generate_permutation(n, G0.getVertNo());
+  apply_permutation(G, S);
+
+  map<mpz_class, double> permutations = get_permutation_probabilities_sampling(G, G0.getVertNo(), params);
+  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
+  vector<double> solutions;
+  for (const double &eps : epsilon) {
+    solutions.push_back(LP_solve(p_uv, n, G0.getVertNo(), eps));
+  }
+  return solutions;
+}
+
 void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-
   // TODO: parallelize
   vector<double> solution(epsilon.size(), 0.0);
-  for (int i = 0; i < TRIES; i++) {
+  for (int i = 0; i < G_TRIES; i++) {
     vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
     transform(solution.begin(), solution.end(), solution_single.begin(), solution.begin(), std::plus<double>());
   }
-  
-  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
-    cout << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
-        << fixed << setw(6) << setprecision(3) << solution[i] / TRIES << endl;
+  for (auto &s : solution) {
+    s /= G_TRIES;
   }
-  // export to file
+  print(epsilon, solution);
+}
+
+void LP_bound_approximate(const int &n, const int &n0, const Parameters &params) {
+  Graph G0 = generate_seed_koala(n0, 1.0);
+  vector<double> epsilon;
+  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+    epsilon.push_back(eps);
+  }
+  // TODO: parallelize
+  vector<double> solution(epsilon.size(), 0.0);
+  for (int i = 0; i < G_TRIES; i++) {
+    vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
+    transform(solution.begin(), solution.end(), solution_single.begin(), solution.begin(), std::plus<double>());
+    cerr << "Finished run " << i + 1 << endl;
+  }
+  for (auto &sol : solution) {
+    sol /= G_TRIES;
+  }
+  print(epsilon, solution);
 }
 
 int main(int, char *argv[]) {
@@ -292,6 +379,9 @@ int main(int, char *argv[]) {
     params.initialize(mode, argv + 5);
     if (action == "exact_bound") {
       LP_bound_exact(n, n0, params);
+    }
+    else if (action == "approximate_bound") {
+      LP_bound_approximate(n, n0, params);
     }
     else {
       throw invalid_argument("Invalid action: " + action);
