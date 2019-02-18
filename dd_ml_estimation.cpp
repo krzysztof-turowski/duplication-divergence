@@ -33,32 +33,32 @@ const bool ML_PARALLEL = false;
 class LikelihoodValue {
 public:
   Parameters params;
-  double likelihood;
+  long double likelihood;
 
-  LikelihoodValue(const Parameters& params_v, const double likelihood_v) : params(params_v), likelihood(likelihood_v) { }
+  LikelihoodValue(const Parameters& params_v, const long double &likelihood_v) : params(params_v), likelihood(likelihood_v) { }
 };
 
-double likelihood_value(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
+long double likelihood_value(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   random_device device;
   mt19937 generator(device());
   Graph H(G);
   NeighborhoodStructure aux(H);
 
-  double ML_value = 0;
+  long double ML_value = 0;
   while (H.getVertNo() > n0) {
-    vector<double> P = get_transition_probability(H, params_0, aux);
-    double P_sum = accumulate(P.begin(), P.end(), 0.0);
+    vector<long double> P = get_transition_probability(H, params_0, aux);
+    long double P_sum = accumulate(P.begin(), P.end(), 0.0L);
     if (P_sum == 0.0L) {
       return 0.0L;
     }
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
     Vertex v = H.vertByNo(index);
-    double p_transition = get_transition_probability(H, params, v, aux);
+    long double p_transition = get_transition_probability(H, params, v, aux);
     if (p_transition == 0.0L) {
       return 0.0L;
     }
-    double log_p_transition = log(p_transition);
+    long double log_p_transition = log(p_transition);
     ML_value += log(P_sum) + log_p_transition - log(P[index]);
 
     aux.remove_vertex(v, H.getNeighSet(v));
@@ -69,9 +69,9 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
 }
 
 LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
-  vector<double> likelihood_values(IS_TRIES);
+  vector<long double> likelihood_values(IS_TRIES);
   if (ML_PARALLEL) {
-    vector<future<double>> futures(IS_TRIES);
+    vector<future<long double>> futures(IS_TRIES);
     for(int i = 0; i < IS_TRIES; i++) {
       futures[i] = async(launch::async, &likelihood_value, cref(G), cref(n0), cref(params), cref(params_0));
     }
@@ -83,7 +83,7 @@ LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Paramet
       likelihood_values[i] = likelihood_value(G, n0, params, params_0);
     }
   }
-  double likelihood_score = accumulate(likelihood_values.begin(), likelihood_values.end(), 0.0) / IS_TRIES;
+  long double likelihood_score = accumulate(likelihood_values.begin(), likelihood_values.end(), 0.0L) / IS_TRIES;
   return LikelihoodValue(params, likelihood_score);
 }
 

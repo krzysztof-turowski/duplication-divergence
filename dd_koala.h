@@ -163,7 +163,7 @@ public:
     }
   }
 
-  bool verify(const Koala::Graph<int, int> &G) {
+  bool verify(const Koala::Graph<int, int> &G) const {
     for (auto v = G.getVert(); v; v = G.getVertNext(v)) {
       std::set<Koala::Graph<int, int>::PVertex> N_v = G.getNeighSet(v);
       for (auto u = G.getVert(); u; u = G.getVertNext(u)) {
@@ -179,32 +179,33 @@ public:
   }
 };
 
-double get_transition_probability(
+long double get_transition_probability(
     const Koala::Graph<int, int> &G, const Parameters &params, const Koala::Graph<int, int>::PVertex &v, const Koala::Graph<int, int>::PVertex &u,
     const NeighborhoodStructure &aux) {
   bool uv = (G.getEdge(u, v) != NULL);
   int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both - uv, only_u = G.deg(u) - both - uv, none = (G.getVertNo() - 2) - both - only_u - only_v;
+  long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (only_v > 0 || (abs(params.p) < EPS && both > 0) || (abs(params.p - 1.0) < EPS && only_u > 0)) {
+      if (only_v > 0 || (abs(p) < EPS && both > 0) || (abs(p - 1.0) < EPS && only_u > 0)) {
         return 0.0;
       }
-      return pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1);
+      return pow(p, both) * pow(1 - p, only_u) / (G.getVertNo() - 1);
     case Mode::PASTOR_SATORRAS:
-      if ((abs(params.p) < EPS && both > 0) || (abs(params.p - 1.0) < EPS && only_u > 0)
-          || (abs(params.r) < EPS && only_v > 0) || (abs(params.r - (G.getVertNo() - 1)) < EPS && none > 0)) {
+      if ((abs(p) < EPS && both > 0) || (abs(p - 1.0) < EPS && only_u > 0)
+          || (abs(r) < EPS && only_v > 0) || (abs(r - (G.getVertNo() - 1)) < EPS && none > 0)) {
         return 0.0;
       }
-      return pow(params.p, both) * pow(params.r / (G.getVertNo() - 1), only_v)
-          * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 1)), none) / (G.getVertNo() - 1);
+      return pow(p, both) * pow(params.r / (G.getVertNo() - 1), only_v)
+          * pow(1 - p, only_u) * pow(1 - (r / (G.getVertNo() - 1)), none) / (G.getVertNo() - 1);
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }
 }
 
-double get_transition_probability(
+long double get_transition_probability(
     const Koala::Graph<int, int> &G, const Parameters &params, const Koala::Graph<int, int>::PVertex &v, const NeighborhoodStructure &aux) {
-  double p_v = 0;
+  long double p_v = 0;
   for (auto u = G.getVert(); u; u = G.getVertNext(u)) {
     if (u != v) {
       p_v += get_transition_probability(G, params, v, u, aux);
@@ -213,8 +214,8 @@ double get_transition_probability(
   return p_v;
 }
 
-std::vector<double> get_transition_probability(const Koala::Graph<int, int> &G, const Parameters &params, const NeighborhoodStructure &aux) {
-  std::vector<double> out;
+std::vector<long double> get_transition_probability(const Koala::Graph<int, int> &G, const Parameters &params, const NeighborhoodStructure &aux) {
+  std::vector<long double> out;
   for (auto v = G.getVert(); v; v = G.getVertNext(v)) {
     out.push_back(get_transition_probability(G, params, v, aux));
   }
