@@ -378,6 +378,9 @@ int main(int, char *argv[]) {
     Parameters params;
     params.initialize(mode, argv + 5);
     if (action == "exact_bound") {
+      if (exp(lgamma(n) - lgamma(n0)) > 10e8) {
+        throw out_of_range("Graph too large for exact_bound mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
+      }
       LP_bound_exact(n, n0, params);
     }
     else if (action == "approximate_bound") {
