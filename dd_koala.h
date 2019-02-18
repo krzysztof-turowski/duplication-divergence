@@ -184,14 +184,10 @@ double get_transition_probability(
   int both = aux.common_neighbors(v, u), only_v = G.deg(v) - both - uv, only_u = G.deg(u) - both - uv, none = (G.getVertNo() - 2) - both - only_u - only_v;
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (G.deg(v) <= G.deg(u)) {
-        return only_v == 0 ? pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1) : 0.0;
-      }
-      return 0.0;
-    case Mode::PASTOR_SATORRAS: {
-        return pow(params.p, both) * pow(params.r / (G.getVertNo() - 2), only_v)
-            * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 2)), none) / (G.getVertNo() - 1);
-      }
+      return only_v == 0 ? pow(params.p, both) * pow(1 - params.p, only_u) / (G.getVertNo() - 1) : 0.0;
+    case Mode::PASTOR_SATORRAS:
+      return pow(params.p, both) * pow(params.r / (G.getVertNo() - 2), only_v)
+          * pow(1 - params.p, only_u) * pow(1 - (params.r / (G.getVertNo() - 2)), none) / (G.getVertNo() - 1);
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }

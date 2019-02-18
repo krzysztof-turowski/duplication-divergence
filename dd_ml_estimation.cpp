@@ -49,17 +49,23 @@ double likelihood_value(const Graph &G, const int &n0, const Parameters &params,
     vector<double> P = get_transition_probability(H, params_0, aux);
     double P_sum = accumulate(P.begin(), P.end(), 0.0);
     if (P_sum == 0.0L) {
-      return -numeric_limits<double>::infinity();
+      return 0.0L;
     }
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
     Vertex v = H.vertByNo(index);
-    ML_value += log(P_sum) + log(get_transition_probability(H, params, v, aux)) - log(P[index]);
+    double p_transition = get_transition_probability(H, params, v, aux);
+    if (p_transition == 0.0L) {
+      return 0.0L;
+    }
+    double log_p_transition = log(p_transition);
+    ML_value += log(P_sum) + log_p_transition - log(P[index]);
 
-    aux.remove_vertex(v, G.getNeighSet(v));
+    aux.remove_vertex(v, H.getNeighSet(v));
     H.delVert(v);
+    aux.verify(H);
   }
-  return ML_value;
+  return exp(ML_value);
 }
 
 LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
@@ -113,12 +119,12 @@ void print(const string &name, const vector<LikelihoodValue> &likelihood_values,
   auto ML = *max_element(
       likelihood_values.begin(), likelihood_values.end(),
       [&] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) { return lhs.likelihood < rhs.likelihood; });
-  cout << "Best found: " << ML.params.to_string() << " ML score: " << ML.likelihood << endl;
+  cout << "Best found: " << ML.params.to_string() << " ML score: " << log(ML.likelihood) << endl;
   for (auto const& value : likelihood_values) {
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
   }
   for (auto const& value : likelihood_values) {
-    out_file << value.params.to_csv() << "," << value.likelihood << " ";
+    out_file << value.params.to_csv() << "," << log(value.likelihood) << " ";
   }
 }
 
