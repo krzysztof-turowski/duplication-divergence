@@ -1,18 +1,30 @@
-CC = g++
-CC_FLAGS = -O3 -std=c++17 -Wall -Wextra -Wstrict-aliasing -Wpedantic -fmax-errors=5 -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -Wno-unused -Wno-variadic-macros -Wno-parentheses -fdiagnostics-show-option
-
-PARALLEL_FLAG = -pthread
-FLAGS = $(PARALLEL_FLAG)
+FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
 
 NAUTY_LIB = lib/nauty/nauty.a
 
 SRCS := $(wildcard *.cpp)
 EXEC := $(patsubst %.cpp,%,$(SRCS))
 
-all: $(EXEC)
+all: g++
+
+g++: CC = g++
+g++: COMPILER_FLAGS =-fmax-errors=5
+g++: $(EXEC)
+
+clang++: CC = clang++
+clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unknown-warning-option -Wno-c++11-extensions -Wno-unused-const-variable
+clang++: $(EXEC)
 
 %: %.cpp
-	@$(CC) $(CC_FLAGS) $(FLAGS) $< -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< -o $@
 
 dd_automorphisms: dd_automorphisms.cpp
-	@$(CC) $(CC_FLAGS) $(FLAGS) $< $(NAUTY_LIB) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
+
+check:
+	cppcheck --enable=all --force --suppress=*:lib/* $(SRCS)
+
+clean:
+	@rm $(EXEC)
+
+.PHONY: check clean

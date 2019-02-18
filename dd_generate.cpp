@@ -31,7 +31,7 @@ void generate_graph(const int &n, const int &n0, const Parameters &params) {
   export_graph(FILES_FOLDER + "G-" + name(n, n0, params) + ".txt", G);
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     string mode(argv[1]);
     Parameters params;

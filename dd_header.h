@@ -15,7 +15,7 @@
 const std::string FILES_FOLDER = "files/", TEMP_FOLDER = "temp/";
 const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
-enum Mode { PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS };
+enum Mode { INVALID, PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS };
 
 const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::PURE_DUPLICATION, "PD" },
@@ -43,7 +43,7 @@ public:
   Mode mode;
   double p, q, r;
 
-  Parameters() : p(nan("")), q(nan("")), r(nan("")) { }
+  Parameters() : mode(Mode::INVALID), p(nan("")), q(nan("")), r(nan("")) { }
 
   void initialize(const std::string &mode_v, char *argv[]) {
     if (mode_v == "chung_lu") {

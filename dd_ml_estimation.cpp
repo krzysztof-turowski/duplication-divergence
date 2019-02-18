@@ -6,6 +6,8 @@
 #include "dd_header.h"
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-align"
+#pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wextra"
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -14,6 +16,8 @@
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wswitch-default"
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "lib/koala/graph/graph.h"
 #pragma GCC diagnostic pop
 
@@ -290,7 +294,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   print(graph_name, likelihood_values, out_file);
 }
 
-int main(int argc, char *argv[]) {
+int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
     if (action == "synthetic") {
