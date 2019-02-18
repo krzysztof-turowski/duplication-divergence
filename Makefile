@@ -1,3 +1,4 @@
+CC = g++
 FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
 
 NAUTY_LIB = lib/nauty/nauty.a
@@ -8,7 +9,6 @@ EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
 
 all: g++ check
 
-g++: CC = g++
 g++: COMPILER_FLAGS =-fmax-errors=5
 g++: $(EXEC)
 
