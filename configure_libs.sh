@@ -7,7 +7,8 @@ if [ "$#" -gt 0 ]; then
   do
     if [[ "$lib" == "nauty" ]]; then
       cd lib/nauty
-      bash -e ./configure
+      chmod +x ./configure
+      ./configure
       if [ $? -ne 0 ]; then
         echo "ERROR: couldn't configure nauty"
         exit
