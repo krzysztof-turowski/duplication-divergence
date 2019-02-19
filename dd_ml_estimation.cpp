@@ -95,10 +95,10 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
     case PASTOR_SATORRAS:
       {
         // TODO: parametrize parameter ranges and driving values
-        const double MAX_R = n0;
+        const double MAX_R = n0 - 1;
         params_0.initialize_pastor_satorras(0.5, MAX_R / 2);
-        for (double p = 0.0; p <= 1.0 + EPS; p += STEP_P) {
-          for (double r = 0.0; r <= MAX_R + EPS; r += STEP_R) {
+        for (double p = 0; p <= 1.0 + EPS; p += STEP_P) {
+          for (double r = 0; r <= MAX_R + EPS; r += STEP_R) {
             Parameters params;
             params.initialize_pastor_satorras(p, r);
             LikelihoodValue value = importance_sampling(G, n0, params, params_0);
@@ -155,15 +155,15 @@ int main(int, char *argv[]) {
     else if (action == "real_data") {
       // TODO: make datasets parameter-variable
       real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", REVERSE_NAME.find(mode)->second);
+      // real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
     }
     else {
       throw std::invalid_argument("Invalid action: " + action);
