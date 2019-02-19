@@ -65,7 +65,7 @@ long double likelihood_value(const Graph &G, const int &n0, const Parameters &pa
     H.delVert(v);
     aux.verify(H);
   }
-  return exp(ML_value);
+  return ML_value;
 }
 
 LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
@@ -118,12 +118,12 @@ void print(const string &name, const vector<LikelihoodValue> &likelihood_values,
   auto ML = *max_element(
       likelihood_values.begin(), likelihood_values.end(),
       [&] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) { return lhs.likelihood < rhs.likelihood; });
-  cout << "Best found: " << ML.params.to_string() << " ML score: " << log(ML.likelihood) << endl;
+  cout << "Best found: " << ML.params.to_string() << " ML score: " << ML.likelihood << endl;
   for (auto const& value : likelihood_values) {
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
   }
   for (auto const& value : likelihood_values) {
-    out_file << value.params.to_csv() << "," << log(value.likelihood) << " ";
+    out_file << value.params.to_csv() << "," << value.likelihood << " ";
   }
 }
 
