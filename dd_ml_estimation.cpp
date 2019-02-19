@@ -1,7 +1,6 @@
 // Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
 // Compile: g++ dd_ml_estimation.cpp -O3 -o ./dd_ml_estimation
-// Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS - e.g. ./dd_ml_estimation synthetic pastor_satorras 100 20 0.5 2.0
-//      ./dd_ml_estimation real_data MODE                 - e.g. ./dd_ml_estimation real_data pastor_satorras
+// Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS or ./dd_ml_estimation real_data MODE
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
@@ -16,7 +15,7 @@
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
-#include "dd_koala.h"
+#include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
 #include <future>
@@ -31,14 +30,16 @@ const int IS_TRIES = 100;
 const bool ML_PARALLEL = false;
 
 class LikelihoodValue {
-public:
+ public:
   Parameters params;
   long double likelihood;
 
-  LikelihoodValue(const Parameters& params_v, const long double &likelihood_v) : params(params_v), likelihood(likelihood_v) { }
+  LikelihoodValue(const Parameters& params_v, const long double &likelihood_v)
+      : params(params_v), likelihood(likelihood_v) { }
 };
 
-long double likelihood_value(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
+long double likelihood_value(
+    const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   random_device device;
   mt19937 generator(device());
   Graph H(G);
@@ -68,27 +69,30 @@ long double likelihood_value(const Graph &G, const int &n0, const Parameters &pa
   return ML_value;
 }
 
-LikelihoodValue importance_sampling(const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
+LikelihoodValue importance_sampling(
+    const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   vector<long double> likelihood_values(IS_TRIES);
   if (ML_PARALLEL) {
     vector<future<long double>> futures(IS_TRIES);
-    for(int i = 0; i < IS_TRIES; i++) {
-      futures[i] = async(launch::async, &likelihood_value, cref(G), cref(n0), cref(params), cref(params_0));
+    for (int i = 0; i < IS_TRIES; i++) {
+      futures[i] =
+          async(launch::async, &likelihood_value, cref(G), cref(n0), cref(params), cref(params_0));
     }
-    for(int i = 0; i < IS_TRIES; i++) {
+    for (int i = 0; i < IS_TRIES; i++) {
       likelihood_values[i] = futures[i].get();
     }
   } else {
-    for(int i = 0; i < IS_TRIES; i++) {
+    for (int i = 0; i < IS_TRIES; i++) {
       likelihood_values[i] = likelihood_value(G, n0, params, params_0);
     }
   }
-  long double likelihood_score = accumulate(likelihood_values.begin(), likelihood_values.end(), 0.0L) / IS_TRIES;
+  long double likelihood_score =
+      accumulate(likelihood_values.begin(), likelihood_values.end(), 0.0L) / IS_TRIES;
   return LikelihoodValue(params, likelihood_score);
 }
 
-// TODO: split into 2 functionalities: finding ML (gradient search etc.) and sampling likelihood over some parameters interval
-vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mode &mode) {
+// TODO: split into gradient search and sampling likelihood over some parameters interval
+vector<LikelihoodValue> find_likelihood_values(const Graph &G, const int &n0, const Mode &mode) {
   Parameters params_0;
   vector<LikelihoodValue> likelihood_values;
   switch (mode) {
@@ -113,11 +117,14 @@ vector<LikelihoodValue> find_likelihood_values(Graph &G, const int &n0, const Mo
   }
 }
 
-void print(const string &name, const vector<LikelihoodValue> &likelihood_values, ostream &out_file) {
+void print(
+    const string &name, const vector<LikelihoodValue> &likelihood_values, ostream &out_file) {
   cout << name << endl;
   auto ML = *max_element(
       likelihood_values.begin(), likelihood_values.end(),
-      [&] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) { return lhs.likelihood < rhs.likelihood; });
+      [&] (const LikelihoodValue& lhs, const LikelihoodValue& rhs) {
+          return lhs.likelihood < rhs.likelihood;
+      });
   cout << "Best found: " << ML.params.to_string() << " ML score: " << ML.likelihood << endl;
   for (auto const& value : likelihood_values) {
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
@@ -139,7 +146,8 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   Graph G = read_graph_koala(FILES_FOLDER + graph_name);
   int n0 = read_graph_size(FILES_FOLDER + seed_name);
   auto likelihood_values = find_likelihood_values(G, n0, mode);
-  ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of(".")) + "_" + SHORT_NAME.find(mode)->second + "-ML.txt");
+  ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of("."))
+      + "_" + SHORT_NAME.find(mode)->second + "-ML.txt");
   print(graph_name, likelihood_values, out_file);
 }
 
@@ -151,21 +159,20 @@ int main(int, char *argv[]) {
       Parameters params;
       params.initialize(mode, argv + 5);
       synthetic_data(n, n0, params);
-    }
-    else if (action == "real_data") {
+    } else if (action == "real_data") {
       // TODO: make datasets parameter-variable
-      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", REVERSE_NAME.find(mode)->second);
-      real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", REVERSE_NAME.find(mode)->second);
-    }
-    else {
+      Mode mode_v = REVERSE_NAME.find(mode)->second;
+      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", mode_v);
+      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", mode_v);
+      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", mode_v);
+      real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", mode_v);
+      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", mode_v);
+      real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", mode_v);
+      real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", mode_v);
+      real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", mode_v);
+      real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", mode_v);
+      real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", mode_v);
+    } else {
       throw std::invalid_argument("Invalid action: " + action);
     }
   } catch (const exception &e) {
