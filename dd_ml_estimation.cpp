@@ -34,7 +34,7 @@ class LikelihoodValue {
   Parameters params;
   long double likelihood;
 
-  LikelihoodValue(const Parameters& params_v, const long double &likelihood_v)
+  LikelihoodValue(const Parameters& params_v, long double const &likelihood_v)
       : params(params_v), likelihood(likelihood_v) { }
 };
 
@@ -91,14 +91,14 @@ LikelihoodValue importance_sampling(
   return LikelihoodValue(params, likelihood_score);
 }
 
-// TODO: split into gradient search and sampling likelihood over some parameters interval
+// TODO(unknown): split into gradient search and sampling likelihood over some parameters interval
 vector<LikelihoodValue> find_likelihood_values(const Graph &G, const int &n0, const Mode &mode) {
   Parameters params_0;
   vector<LikelihoodValue> likelihood_values;
   switch (mode) {
     case PASTOR_SATORRAS:
       {
-        // TODO: parametrize parameter ranges and driving values
+        // TODO(unknown): parametrize parameter ranges and driving values
         const double MAX_R = n0 - 1;
         params_0.initialize_pastor_satorras(0.5, MAX_R / 2);
         for (double p = 0; p <= 1.0 + EPS; p += STEP_P) {
@@ -160,7 +160,7 @@ int main(int, char *argv[]) {
       params.initialize(mode, argv + 5);
       synthetic_data(n, n0, params);
     } else if (action == "real_data") {
-      // TODO: make datasets parameter-variable
+      // TODO(unknown): make datasets parameter-variable
       Mode mode_v = REVERSE_NAME.find(mode)->second;
       real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", mode_v);
       real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", mode_v);
