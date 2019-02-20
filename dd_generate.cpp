@@ -2,7 +2,7 @@
 // Compile: g++ dd_generate.cpp -O3 -o ./dd_generate
 // Run: ./dd_generate MODE n n0 PARAMETERS - e.g. ./dd_generate pastor_satorras 100 20 0.5 2.0
 
-#include "dd_header.h"
+#include "./dd_header.h"
 
 #include <exception>
 
@@ -38,16 +38,14 @@ int main(int, char *argv[]) {
     int n = stoi(argv[2]), n0 = stoi(argv[3]);
     if (mode == "chung_lu") {
       params.initialize_chung_lu(stof(argv[4]), stof(argv[5]));
-    }
-    else if (mode == "pastor_satorras") {
+    } else if (mode == "pastor_satorras") {
       params.initialize_pastor_satorras(stof(argv[4]), stof(argv[5]));
-    }
-    else {
+    } else {
       assert(0);
     }
     generate_graph(n, n0, params);
-  } catch (exception &e) {
-    cout << "ERROR: " << e.what() << endl;
+  } catch (const exception &e) {
+    cerr << "ERROR: " << e.what() << endl;
   }
   return 0;
 }

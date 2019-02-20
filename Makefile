@@ -10,7 +10,6 @@ EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
 
 all: g++ check
 
-g++: CC = g++
 g++: COMPILER_FLAGS =-fmax-errors=5
 g++: $(EXEC)
 
