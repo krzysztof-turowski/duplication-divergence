@@ -47,7 +47,7 @@ double LP_solve(
     for (int j = n0; j < n; j++) {
       auto index = LP_get_variable_index(i, j, n, n0);
       glp_set_col_name(LP, index + 1, LP_name_variable(i, j).c_str());
-      if (i != j) {
+      if (i < j) {
         glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
         glp_set_obj_coef(LP, index + 1, p_uv.find(std::make_pair(i, j))->second);
       }

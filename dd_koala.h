@@ -119,6 +119,7 @@ struct counting_iterator {
 
   counting_iterator() : count(0) { }
   counting_iterator& operator++() { ++count; return *this; }
+  counting_iterator operator++(int) { ++count; return *this; }
   T& operator*() { return dummy; }
 };
 
