@@ -66,7 +66,7 @@ long double likelihood_value(
     H.delVert(v);
     aux.verify(H);
   }
-  return ML_value;
+  return exp(ML_value);
 }
 
 LikelihoodValue importance_sampling(
@@ -130,7 +130,7 @@ void print(
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
   }
   for (auto const& value : likelihood_values) {
-    out_file << value.params.to_csv() << "," << value.likelihood << " ";
+    out_file << value.params.to_csv() << "," << log(value.likelihood) << " ";
   }
 }
 

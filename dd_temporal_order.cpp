@@ -1,6 +1,6 @@
 // Tools for computation the temporal order for various duplication-divergence models.
 // Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
-// Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS - e.g. ./dd_temporal_order exact_bound pastor_satorras 100 20 0.5 2.0
+// Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
@@ -15,13 +15,12 @@
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
-#include "dd_koala.h"
+#include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#include <random>
+#include "./dd_glpk.h"
 
-#include <glpk.h>
-#include <gmpxx.h>
+#include <random>
 
 using namespace std;
 
@@ -92,7 +91,8 @@ void apply_permutation(Graph &G, const vector<int> &S) {
 }
 
 map<mpz_class, double> get_permutation_probabilities(
-    Graph &G, const int &n0, const Parameters &params, NeighborhoodStructure &aux, vector<int> &S, const double &p_sigma) {
+    Graph &G, const int &n0, const Parameters &params,
+    NeighborhoodStructure &aux, vector<int> &S, const double &p_sigma) {
   map<mpz_class, double> permutations;
   if (G.getVertNo() == n0) {
     mpz_class sigma = encode_permutation(S);
@@ -113,7 +113,8 @@ map<mpz_class, double> get_permutation_probabilities(
       aux.remove_vertex(v, neighbors_v), S[G.getVertNo() - 1] = v->getInfo(), H.move(G, v);
       assert(aux.verify(G) == true);
 
-      map<mpz_class, double> permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
+      map<mpz_class, double> permutations_v =
+        get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       G.move(H, v), aux.restore_vertex(v, neighbors_v), S[G.getVertNo() - 1] = -1;
@@ -126,7 +127,8 @@ map<mpz_class, double> get_permutation_probabilities(
   return permutations;
 }
 
-map<mpz_class, double> get_permutation_probabilities(const Graph &G, const int &n0, const Parameters &params) {
+map<mpz_class, double> get_permutation_probabilities(
+    const Graph &G, const int &n0, const Parameters &params) {
   Graph H(G);
   NeighborhoodStructure aux(H);
   vector<int> S(H.getVertNo(), -1);
@@ -135,15 +137,18 @@ map<mpz_class, double> get_permutation_probabilities(const Graph &G, const int &
   }
   map<mpz_class, double> permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0);
   double total_probability = accumulate(
-    permutations.begin(), permutations.end(), 0.0,
-    [] (double value, const map<mpz_class, double>::value_type &permutation) { return value + permutation.second; });
+      permutations.begin(), permutations.end(), 0.0,
+      [] (double value, const map<mpz_class, double>::value_type &permutation) {
+          return value + permutation.second;
+      });
   for (auto &permutation : permutations) {
     permutation.second /= total_probability;
   }
   return permutations;
 }
 
-pair<mpz_class, double> get_permutation_sample(const Graph &G, const int &n0, const Parameters &params) {
+pair<mpz_class, double> get_permutation_sample(
+    const Graph &G, const int &n0, const Parameters &params) {
   random_device device;
   mt19937 generator(device());
   Graph H(G);
@@ -175,23 +180,27 @@ pair<mpz_class, double> get_permutation_sample(const Graph &G, const int &n0, co
   return make_pair(encode_permutation(S), p_sigma);
 }
 
-map<mpz_class, double> get_permutation_probabilities_sampling(const Graph &G, const int &n0, const Parameters &params, const int &tries) {
+map<mpz_class, double> get_permutation_probabilities_sampling(
+    const Graph &G, const int &n0, const Parameters &params, const int &tries) {
   map<mpz_class, double> permutations;
-  // TODO: parallelize
+  // TODO(unknown): parallelize
   for (int i = 0; i < tries; i++) {
     pair<mpz_class, double> sigma_with_probability = get_permutation_sample(G, n0, params);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
   }
   double total_probability = accumulate(
-    permutations.begin(), permutations.end(), 0.0,
-    [] (double value, const map<mpz_class, double>::value_type &permutation) { return value + permutation.second; });
+      permutations.begin(), permutations.end(), 0.0,
+      [] (double value, const map<mpz_class, double>::value_type &permutation) {
+          return value + permutation.second;
+      });
   for (auto &permutation : permutations) {
     permutation.second /= total_probability;
   }
   return permutations;
 }
 
-map<pair<int, int>, double> get_p_uv_from_permutations(const map<mpz_class, double> &permutations, const int &n, const int &n0) {
+map<pair<int, int>, double> get_p_uv_from_permutations(
+    const map<mpz_class, double> &permutations, const int &n, const int &n0) {
   map<pair<int, int>, double> p_uv;
   for (auto &permutation : permutations) {
     vector<int> S = decode_permutation(permutation.first, n);
@@ -204,99 +213,6 @@ map<pair<int, int>, double> get_p_uv_from_permutations(const map<mpz_class, doub
   return p_uv;
 }
 
-string LP_row_name(const string &prefix, const initializer_list<int> &vertices) {
-  ostringstream out;
-  out << prefix;
-  if (vertices.size() > 0) {
-    out << "_{";
-    for (auto v : vertices) {
-      out << to_string(v) << ",";
-    }
-    out.seekp(-1, ios_base::end), out << "}";
-  }
-  return out.str();
-}
-
-double LP_solve(const map<pair<int, int>, double> &p_uv, const int &n, const int &n0, const double &epsilon) {
-  glp_prob *LP = glp_create_prob();
-  glp_set_prob_name(LP, ("Solve " + to_string(epsilon)).c_str());
-  glp_set_obj_dir(LP, GLP_MAX);
-  double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
-
-  auto get_variable_index = [&](const int &u, const int &v) {
-    return (u - n0) * (n - n0) + (v - n0);
-  };
-  auto name_variable = [&](const int &u, const int &v) {
-    return "x_{" + to_string(u) + "," + to_string(v) + "}";
-  };
-
-  // Objective function
-  glp_add_cols(LP, (n - n0) * (n - n0) + 1);
-  int s_index = (n - n0) * (n - n0);
-  for (int i = n0; i < n; i++) {
-    for (int j = n0; j < n; j++) {
-      auto index = get_variable_index(i, j);
-      glp_set_col_name(LP, index + 1, name_variable(i, j).c_str());
-      if (i != j) {
-        glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
-        glp_set_obj_coef(LP, index + 1, p_uv.find(make_pair(i, j))->second);
-      }
-    }
-  }
-  glp_set_col_name(LP, s_index + 1, "s");
-  glp_set_col_bnds(LP, s_index + 1, GLP_DB, 0.0, 1 / density);
-
-  vector<int> X, Y;
-  vector<double> A;
-  int row = 1;
-  glp_add_rows(LP, (n - n0) * (n - n0 - 1) * (n - n0 - 2) + (n - n0) * (n - n0 - 1) / 2 + 1);
-  // Antisymmetry
-  for (int i = n0; i < n; i++) {
-    for (int j = i + 1; j < n; j++) {
-      glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
-      X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
-      X.push_back(row), Y.push_back(get_variable_index(j, i) + 1), A.push_back(1);
-      X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-      glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
-    }
-  }
-  // Transitivity
-  for (int i = n0; i < n; i++) {
-    for (int j = n0; j < n; j++) {
-      for (int k = n0; k < n; k++) {
-        if (i != j && j != k && i != k) {
-          glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
-          X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
-          X.push_back(row), Y.push_back(get_variable_index(j, k) + 1), A.push_back(1);
-          X.push_back(row), Y.push_back(get_variable_index(i, k) + 1), A.push_back(-1);
-          X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-          glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
-        }
-      }
-    }
-  }
-  // Density
-  glp_set_row_name(LP, row, LP_row_name("D", {}).c_str());
-  for (int i = n0; i < n; i++) {
-    for (int j = n0; j < n; j++) {
-      if (i != j) {
-        X.push_back(row), Y.push_back(get_variable_index(i, j) + 1), A.push_back(1);
-      }
-    }
-  }
-  glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
-
-  glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
-  // glp_write_lp(LP, NULL, "/dev/stdout");
-  glp_term_out(0);
-  glp_simplex(LP, NULL);
-
-  double solution = glp_get_obj_val(LP);
-  glp_delete_prob(LP);
-  glp_free_env();
-  return solution;
-}
-
 void print(const vector<double> &epsilon, const vector<double> &solution) {
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
     cout << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
@@ -305,7 +221,8 @@ void print(const vector<double> &epsilon, const vector<double> &solution) {
   // export to file
 }
 
-vector<double> LP_bound_exact_single(const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+vector<double> LP_bound_exact_single(
+    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
   Graph G(G0);
   generate_graph_koala(G, n, params);
 
@@ -321,14 +238,16 @@ vector<double> LP_bound_exact_single(const Graph &G0, const int &n, const Parame
   return solutions;
 }
 
-vector<double> LP_bound_approximate_single(const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+vector<double> LP_bound_approximate_single(
+    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
   Graph G(G0);
   generate_graph_koala(G, n, params);
 
   vector<int> S = generate_permutation(n, G0.getVertNo());
   apply_permutation(G, S);
 
-  map<mpz_class, double> permutations = get_permutation_probabilities_sampling(G, G0.getVertNo(), params, SIGMA_TRIES);
+  map<mpz_class, double> permutations =
+      get_permutation_probabilities_sampling(G, G0.getVertNo(), params, SIGMA_TRIES);
   map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
   vector<double> solutions;
   for (const double &eps : epsilon) {
@@ -343,11 +262,13 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-  // TODO: parallelize
+  // TODO(unknown): parallelize
   vector<double> solution(epsilon.size(), 0.0);
   for (int i = 0; i < G_TRIES; i++) {
     vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-    transform(solution.begin(), solution.end(), solution_single.begin(), solution.begin(), std::plus<double>());
+    transform(
+        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+        std::plus<double>());
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   for (auto &s : solution) {
@@ -362,11 +283,13 @@ void LP_bound_approximate(const int &n, const int &n0, const Parameters &params)
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-  // TODO: parallelize
+  // TODO(unknown): parallelize
   vector<double> solution(epsilon.size(), 0.0);
   for (int i = 0; i < G_TRIES; i++) {
     vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
-    transform(solution.begin(), solution.end(), solution_single.begin(), solution.begin(), std::plus<double>());
+    transform(
+        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+        std::plus<double>());
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   for (auto &sol : solution) {
@@ -396,21 +319,25 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     vector<int> S = generate_permutation(n, G0.getVertNo());
     apply_permutation(G, S);
 
-    map<mpz_class, double> permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
+    map<mpz_class, double> permutations_opt =
+        get_permutation_probabilities(G, G0.getVertNo(), params);
     for (auto &it : mse) {
-      map<mpz_class, double> permutations_apx = get_permutation_probabilities_sampling(G, G0.getVertNo(), params, it.first);
+      map<mpz_class, double> permutations_apx =
+          get_permutation_probabilities_sampling(G, G0.getVertNo(), params, it.first);
       it.second += mean_square_error(permutations_opt, permutations_apx);
     }
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   for (auto &it : mse) {
-    cout << setw(6) << it.first << " " << fixed << setw(13) << setprecision(10) << it.second / G_TRIES << endl;
+    cout << setw(6) << it.first << " "
+        << fixed << setw(13) << setprecision(10) << it.second / G_TRIES << endl;
   }
 }
 
 void validate_problem_size(const int &n, const int &n0) {
   if (exp(lgamma(n) - lgamma(n0)) > 10e8) {
-    throw out_of_range("Graph too large for exact_bound mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
+    throw out_of_range(
+        "Graph too large for exact_bound mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
   }
 }
 
@@ -423,15 +350,12 @@ int main(int, char *argv[]) {
     if (action == "exact_bound") {
       validate_problem_size(n, n0);
       LP_bound_exact(n, n0, params);
-    }
-    else if (action == "approximate_bound") {
+    } else if (action == "approximate_bound") {
       LP_bound_approximate(n, n0, params);
-    }
-    else if (action == "compare_probabilities") {
+    } else if (action == "compare_probabilities") {
       validate_problem_size(n, n0);
       compare_probabilities(n, n0, params);
-    }
-    else {
+    } else {
       throw invalid_argument("Invalid action: " + action);
     }
   } catch (const exception &e) {
