@@ -34,15 +34,9 @@ void generate_graph(const int &n, const int &n0, const Parameters &params) {
 int main(int, char *argv[]) {
   try {
     string mode(argv[1]);
-    Parameters params;
     int n = stoi(argv[2]), n0 = stoi(argv[3]);
-    if (mode == "chung_lu") {
-      params.initialize_chung_lu(stof(argv[4]), stof(argv[5]));
-    } else if (mode == "pastor_satorras") {
-      params.initialize_pastor_satorras(stof(argv[4]), stof(argv[5]));
-    } else {
-      assert(0);
-    }
+    Parameters params;
+    params.initialize(mode, argv + 4);
     generate_graph(n, n0, params);
   } catch (const exception &e) {
     cerr << "ERROR: " << e.what() << endl;

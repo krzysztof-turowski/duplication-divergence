@@ -1,7 +1,6 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -39,7 +38,7 @@ const std::map<std::string, Mode> REVERSE_NAME = {
 };
 
 class Parameters {
-public:
+ public:
   Mode mode;
   double p, q, r;
 
@@ -48,15 +47,12 @@ public:
   void initialize(const std::string &mode_v, char *argv[]) {
     if (mode_v == "pure_duplication") {
       initialize_pure_duplication(std::stod(argv[0]));
-    }
-    else if (mode_v == "chung_lu") {
+    } else if (mode_v == "chung_lu") {
       initialize_chung_lu(std::stod(argv[0]), std::stod(argv[1]));
-    }
-    else if (mode_v == "pastor_satorras") {
+    } else if (mode_v == "pastor_satorras") {
       initialize_pastor_satorras(std::stod(argv[0]), std::stod(argv[1]));
-    }
-    else {
-      assert(0);
+    } else {
+      throw std::invalid_argument("Invalid mode: " + mode_v);
     }
   }
 
@@ -92,7 +88,8 @@ public:
       out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R)
+          << this->r << " ";
     }
     return out.str();
   }
@@ -100,12 +97,15 @@ public:
   std::string to_string(const Parameters &low, const Parameters &high) const {
     std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
-    out << "p_min = " << std::fixed << std::setprecision(PRECISION_P) << low.p << " " << "p = " << this->p << " " << "p_max = " << high.p << " ";
+    out << "p_min = " << std::fixed << std::setprecision(PRECISION_P) << low.p << " "
+        << "p = " << std::fixed << std::setprecision(PRECISION_P) << this->p << " "
+        << "p_max = " << std::fixed << std::setprecision(PRECISION_P) << high.p << " ";
     if (!std::isnan(this->q)) {
       out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R)
+          << this->r << " ";
     }
     return out.str();
   }
@@ -118,7 +118,7 @@ public:
     }
     out << ",";
     if (!std::isnan(this->r)) {
-      out  << this->r;
+      out << this->r;
     }
     return out.str();
   }
@@ -139,8 +139,9 @@ std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
   }
   return G;
 }
- 
-std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const int &n, const Parameters &params) {
+
+std::vector<std::set<int>> generate_graph(
+    std::vector<std::set<int>> &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -155,9 +156,8 @@ std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const i
           G[i].insert(j), G[j].insert(i);
         }
       }
-    }
-    else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
-      while(true) {
+    } else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
+      while (true) {
         for (auto j : G[parent]) {
           if (edge_distribution(generator) <= params.p) {
             G[i].insert(j), G[j].insert(i);
@@ -168,8 +168,7 @@ std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const i
         }
         parent = parent_distribution(generator);
       }
-    }
-    else if (params.mode == Mode::CHUNG_LU) {
+    } else if (params.mode == Mode::CHUNG_LU) {
       for (auto j : G[parent]) {
         if (edge_distribution(generator) <= params.p) {
           G[i].insert(j), G[j].insert(i);
@@ -178,23 +177,20 @@ std::vector<std::set<int>> generate_graph(std::vector<std::set<int>> &G, const i
       if (edge_distribution(generator) <= params.q) {
         G[i].insert(parent), G[parent].insert(i);
       }
-    }
-    else if (params.mode == Mode::PASTOR_SATORRAS) {
+    } else if (params.mode == Mode::PASTOR_SATORRAS) {
       for (int j = 0; j < i; j++) {
         if (G[parent].count(j)) {
           if (edge_distribution(generator) <= params.p) {
             G[i].insert(j), G[j].insert(i);
           }
-        }
-        else {
+        } else {
           if (edge_distribution(generator) <= params.r / i) {
             G[i].insert(j), G[j].insert(i);
           }
         }
       }
-    }
-    else {
-      assert(0);
+    } else {
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
     }
   }
   return G;
@@ -207,8 +203,7 @@ std::vector<std::set<int>> read_graph(const std::string &graph_name) {
   }
   std::vector<std::set<int>> G;
   int u, v;
-  while (!graph_file.eof())
-  {
+  while (!graph_file.eof()) {
     graph_file >> u >> v;
     if (v >= static_cast<int>(G.size())) {
       G.resize(v + 1);
@@ -227,8 +222,7 @@ int read_graph_size(const std::string &graph_name) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
   int n = 0, u, v;
-  while (!graph_file.eof())
-  {
+  while (!graph_file.eof()) {
     graph_file >> u >> v;
     n = std::max(n, v + 1);
   }

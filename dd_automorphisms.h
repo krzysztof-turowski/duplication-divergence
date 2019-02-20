@@ -1,12 +1,14 @@
 #pragma once
 
-extern "C" {
-  #include "lib/nauty/nauty.h"
-  #include "lib/nauty/nausparse.h"
-  #include "lib/nauty/traces.h"
-}
-
+#include <set>
 #include <stack>
+#include <vector>
+
+extern "C" {
+  #include "./lib/nauty/nauty.h"
+  #include "./lib/nauty/nausparse.h"
+  #include "./lib/nauty/traces.h"
+}
 
 double log_automorphisms_dense(const std::vector<std::set<int>> &G) {
   DYNALLSTAT(graph, g, g_size);
@@ -40,7 +42,7 @@ double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
   DYNALLSTAT(int, orbits, orbits_size);
   statsblk stats;
   static DEFAULTOPTIONS_SPARSEGRAPH(options);
-  
+
   int n = G.size(), word = SETWORDSNEEDED(n);
   nauty_check(WORDSIZE, word, n, NAUTYVERSIONID);
 
@@ -111,7 +113,7 @@ double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
 std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
   std::vector<int> C(G.size()), sizes;
   for (int i = 0, count = 0; i < static_cast<int>(G.size()); i++) {
-		if (C[i] == 0) {
+    if (C[i] == 0) {
       int vertices = 0;
       std::stack<int> S;
       S.push(i), count++;
@@ -128,7 +130,7 @@ std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
       }
       sizes.push_back(vertices);
     }
-	}
+  }
   return sizes;
 }
 
