@@ -4,6 +4,7 @@ FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -
 NAUTY_LIB = lib/nauty/nauty.a
 LP_FLAGS = -lgmp -lgmpxx -lglpk
 
+CPP_HDRS := $(wildcard *.h)
 CPP_SRCS := $(wildcard *.cpp)
 PY_SRCS := $(wildcard *.py)
 EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
@@ -27,7 +28,7 @@ dd_temporal_order: dd_temporal_order.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) $(LP_FLAGS) -o $@
 
 check:
-	cppcheck --enable=all --force --suppress=*:lib/* $(CPP_SRCS)
+	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
 	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
 
 clean:
