@@ -30,7 +30,7 @@ clang++: $(EXEC)
 dd_automorphisms: dd_automorphisms.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
-dd_temporal_order: dd_temporal_order.cpp
+dd_temporal_bound: dd_temporal_bound.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(LP_FLAGS) -o $@
 
 check:

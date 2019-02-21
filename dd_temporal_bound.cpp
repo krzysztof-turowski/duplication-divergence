@@ -1,6 +1,6 @@
 // Tools for computation the temporal order for various duplication-divergence models.
-// Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
-// Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS
+// Compile: g++ dd_temporal_bound.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_bound
+// Run: ./dd_temporal_bound exact_bound MODE n n0 PARAMETERS
 
 // TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
 
