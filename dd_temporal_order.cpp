@@ -34,6 +34,7 @@
 
 #include <gmpxx.h>
 
+#include <future>
 #include <random>
 
 using namespace std;
@@ -42,6 +43,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
+const bool G_PARALLEL = false, SIGMA_PARALLEL = false;
 const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
@@ -276,14 +278,29 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-  // TODO(unknown): parallelize
   vector<double> solution(epsilon.size(), 0.0);
-  for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+  if (G_PARALLEL) {
+    vector<future<vector<double>>> futures(G_TRIES);
+    for (int i = 0; i < G_TRIES; i++) {
+      futures[i] = async(
+          launch::async, &LP_bound_exact_single,
+          cref(G0), cref(n), cref(params), cref(epsilon));
+    }
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = futures[i].get();
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  } else {
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
   }
   for (auto &s : solution) {
     s /= G_TRIES;
@@ -297,14 +314,29 @@ void LP_bound_approximate(const int &n, const int &n0, const Parameters &params)
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-  // TODO(unknown): parallelize
   vector<double> solution(epsilon.size(), 0.0);
-  for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+  if (G_PARALLEL) {
+    vector<future<vector<double>>> futures(G_TRIES);
+    for (int i = 0; i < G_TRIES; i++) {
+      futures[i] = async(
+          launch::async, &LP_bound_approximate_single,
+          cref(G0), cref(n), cref(params), cref(epsilon));
+    }
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = futures[i].get();
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  } else {
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
   }
   for (auto &sol : solution) {
     sol /= G_TRIES;
