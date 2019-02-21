@@ -28,8 +28,10 @@
 
 #if defined(glpk)
   #include "./dd_glpk.h"
+  const bool G_PARALLEL = true;
 #elif defined(gurobi)
   #include "./dd_gurobi.h"
+  const bool G_PARALLEL = false;
 #endif
 
 #include <gmpxx.h>
@@ -43,7 +45,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
-const bool G_PARALLEL = false, SIGMA_PARALLEL = false;
+const bool SIGMA_PARALLEL = false;
 const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
