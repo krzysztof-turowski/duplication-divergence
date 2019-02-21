@@ -2,7 +2,7 @@ CC = g++
 COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept
 FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
 NAUTY_LIB = lib/nauty/nauty.a -Wno-unused-variable
-LP_SOLVER = gurobi
+LP_SOLVER = glpk
 
 ifeq ($(LP_SOLVER),glpk)
 	LP_FLAGS = -Dglpk -lglpk -lgmp -lgmpxx
