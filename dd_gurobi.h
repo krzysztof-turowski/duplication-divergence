@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <gmpxx.h>
 #include <gurobi_c++.h>
 
 #include <map>
@@ -87,7 +86,7 @@ double LP_solve(
   }
   LP.addConstr(row, GRB_EQUAL, 0.0, LP_row_name("D", {}));
 
-  LP.set("OutputFlag", false);
+  LP.set(GRB_IntParam_OutputFlag, 0);
   LP.optimize();
   int status = LP.get(GRB_IntAttr_Status);
   if (status == GRB_OPTIMAL) {

@@ -3,7 +3,6 @@
 #pragma once
 
 #include <glpk.h>
-#include <gmpxx.h>
 
 #include <map>
 #include <sstream>

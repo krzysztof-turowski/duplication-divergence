@@ -24,14 +24,13 @@
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#define GLPK 0
-#define GUROBI 1
-#define LP_SOLVER GLPK
-#if LP_SOLVER == GLPK
+#if defined(glpk)
   #include "./dd_glpk.h"
-#elif LP_SOLVER == GUROBI
+#elif defined(gurobi)
   #include "./dd_gurobi.h"
 #endif
+
+#include <gmpxx.h>
 
 #include <random>
 
