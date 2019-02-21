@@ -229,12 +229,20 @@ map<pair<int, int>, double> get_p_uv_from_permutations(
   return p_uv;
 }
 
-void print(const vector<double> &epsilon, const vector<double> &solution) {
+void print(
+    const string &name, const vector<double> &epsilon, const vector<double> &solution,
+    const Parameters &params, ostream &out_file) {
+  cerr << "Method: " << name << endl;
+  cerr << "Parameters: " + params.to_string() << endl;
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
     cerr << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
         << fixed << setw(6) << setprecision(3) << solution[i] << endl;
   }
-  // export to file
+  out_file << name << " ";
+  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
+    out_file << epsilon[i] << "," << solution[i] << " ";
+  }
+  out_file << endl;
 }
 
 vector<double> LP_bound_exact_single(
@@ -272,7 +280,8 @@ vector<double> LP_bound_approximate_single(
   return solutions;
 }
 
-void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
+void LP_bound_exact(
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
@@ -305,10 +314,11 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
   for (auto &s : solution) {
     s /= G_TRIES;
   }
-  print(epsilon, solution);
+  print("exact", epsilon, solution, params, out_file);
 }
 
-void LP_bound_approximate(const int &n, const int &n0, const Parameters &params) {
+void LP_bound_approximate(
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
@@ -341,7 +351,9 @@ void LP_bound_approximate(const int &n, const int &n0, const Parameters &params)
   for (auto &sol : solution) {
     sol /= G_TRIES;
   }
-  print(epsilon, solution);
+  print(
+      "wiuf-" + to_string(G_TRIES) + "-" + to_string(SIGMA_TRIES),
+      epsilon, solution, params, out_file);
 }
 
 double mean_square_error(const map<mpz_class, double> &opt, const map<mpz_class, double> &apx) {
@@ -393,11 +405,14 @@ int main(int, char *argv[]) {
     int n = stoi(argv[3]), n0 = stoi(argv[4]);
     Parameters params;
     params.initialize(mode, argv + 5);
+    string name(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + "-TC.txt");
     if (action == "exact_bound") {
       validate_problem_size(n, n0);
-      LP_bound_exact(n, n0, params);
+      ofstream out_file(name, ios_base::ate);
+      LP_bound_exact(n, n0, params, out_file);
     } else if (action == "approximate_bound") {
-      LP_bound_approximate(n, n0, params);
+      ofstream out_file(name, ios_base::ate);
+      LP_bound_approximate(n, n0, params, out_file);
     } else if (action == "compare_probabilities") {
       validate_problem_size(n, n0);
       compare_probabilities(n, n0, params);
