@@ -7,6 +7,7 @@ Note: FILE is here *without* "-TC.txt" or "-TA.txt" suffix
 import os
 
 import matplotlib.pyplot as pyplot
+import numpy
 
 import dd_plot
 
