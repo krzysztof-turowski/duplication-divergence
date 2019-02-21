@@ -7,7 +7,7 @@ LP_SOLVER = glpk
 ifeq ($(LP_SOLVER),glpk)
 	LP_FLAGS = -Dglpk -lglpk -lgmp -lgmpxx
 else ifeq ($(LP_SOLVER),gurobi)
-	LP_FLAGS = -Dgurobi -Ilib/gurobi/include -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
+	LP_FLAGS = -Dgurobi -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
 else
 endif
 
