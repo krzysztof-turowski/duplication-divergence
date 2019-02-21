@@ -24,7 +24,14 @@
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#include "./dd_glpk.h"
+#define GLPK 0
+#define GUROBI 1
+#define LP_SOLVER GLPK
+#if LP_SOLVER == GLPK
+  #include "./dd_glpk.h"
+#elif LP_SOLVER == GUROBI
+  #include "./dd_gurobi.h"
+#endif
 
 #include <random>
 
@@ -34,7 +41,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
-const double EPS_STEP = 0.05;
+const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
@@ -286,7 +293,7 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
 void LP_bound_approximate(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
-  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+  for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
   // TODO(unknown): parallelize
