@@ -6,8 +6,9 @@ LP_SOLVER = gurobi
 
 ifeq ($(LP_SOLVER),glpk)
 	LP_FLAGS = -Dglpk -lglpk -lgmp -lgmpxx
+else ifeq ($(LP_SOLVER),gurobi)
+	LP_FLAGS = -Dgurobi -Ilib/gurobi/include -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
 else
-	LP_FLAGS = -Dgurobi -Ilib/gurobi/include -Llib/gurobi/lib -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx
 endif
 
 CPP_HDRS := $(wildcard *.h)
