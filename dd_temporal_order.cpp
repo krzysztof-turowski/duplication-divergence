@@ -284,7 +284,7 @@ void LP_bound_exact(
     const int &n, const int &n0, const Parameters &params, ostream &out_file) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
-  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+  for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
   vector<double> solution(epsilon.size(), 0.0);
@@ -405,13 +405,13 @@ int main(int, char *argv[]) {
     int n = stoi(argv[3]), n0 = stoi(argv[4]);
     Parameters params;
     params.initialize(mode, argv + 5);
-    string name(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + "-TC.txt");
+    string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
     if (action == "exact_bound") {
       validate_problem_size(n, n0);
-      ofstream out_file(name, ios_base::ate);
+      ofstream out_file(name, ios_base::app);
       LP_bound_exact(n, n0, params, out_file);
     } else if (action == "approximate_bound") {
-      ofstream out_file(name, ios_base::ate);
+      ofstream out_file(name, ios_base::app);
       LP_bound_approximate(n, n0, params, out_file);
     } else if (action == "compare_probabilities") {
       validate_problem_size(n, n0);

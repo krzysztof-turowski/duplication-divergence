@@ -110,6 +110,19 @@ class Parameters {
     return out.str();
   }
 
+  std::string to_filename() const {
+    std::stringstream out;
+    out << SHORT_NAME.find(this->mode)->second << "-";
+    out << std::fixed << std::setprecision(PRECISION_P) << this->p;
+    if (!std::isnan(this->q)) {
+      out << "-" << std::fixed << std::setprecision(PRECISION_Q) << this->q;
+    }
+    if (!std::isnan(this->r)) {
+      out << "-" << std::fixed << std::setprecision(PRECISION_R) << this->r;
+    }
+    return out.str();
+  }
+
   std::string to_csv() const {
     std::stringstream out;
     out << this->p << ",";
@@ -123,6 +136,18 @@ class Parameters {
     return out.str();
   }
 };
+
+inline std::string get_synthetic_filename(
+    const int &n, const int &n0, const Parameters &params, const std::string &suffix) {
+  return "synthetic-" + std::to_string(n) + "-"  + std::to_string(n0)
+      + "-" + params.to_filename() + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
+}
+
+inline std::string get_real_filename(
+    const std::string &graph_name, const Mode &mode, const std::string &suffix) {
+  return graph_name.substr(0, graph_name.find_last_of(".")) + "-"
+      + SHORT_NAME.find(mode)->second + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
+}
 
 std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
   std::vector<std::set<int>> G(n0);
