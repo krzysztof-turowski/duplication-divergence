@@ -1,6 +1,6 @@
 // Tools for computation the temporal order for various duplication-divergence models.
-// Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
-// Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS
+// Compile: g++ dd_temporal_bound.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_bound
+// Run: ./dd_temporal_bound exact_bound MODE n n0 PARAMETERS
 
 // TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
 
@@ -28,12 +28,15 @@
 
 #if defined(glpk)
   #include "./dd_glpk.h"
+  const bool G_PARALLEL = true;
 #elif defined(gurobi)
   #include "./dd_gurobi.h"
+  const bool G_PARALLEL = false;
 #endif
 
 #include <gmpxx.h>
 
+#include <future>
 #include <random>
 
 using namespace std;
@@ -42,6 +45,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
+const bool SIGMA_PARALLEL = false;
 const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
@@ -227,12 +231,20 @@ map<pair<int, int>, double> get_p_uv_from_permutations(
   return p_uv;
 }
 
-void print(const vector<double> &epsilon, const vector<double> &solution) {
+void print(
+    const string &name, const vector<double> &epsilon, const vector<double> &solution,
+    const Parameters &params, ostream &out_file) {
+  cerr << "Method: " << name << endl;
+  cerr << "Parameters: " + params.to_string() << endl;
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
     cerr << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
         << fixed << setw(6) << setprecision(3) << solution[i] << endl;
   }
-  // export to file
+  out_file << name << " ";
+  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
+    out_file << epsilon[i] << "," << solution[i] << " ";
+  }
+  out_file << endl;
 }
 
 vector<double> LP_bound_exact_single(
@@ -270,46 +282,80 @@ vector<double> LP_bound_approximate_single(
   return solutions;
 }
 
-void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
-  vector<double> epsilon;
-  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
-    epsilon.push_back(eps);
-  }
-  // TODO(unknown): parallelize
-  vector<double> solution(epsilon.size(), 0.0);
-  for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
-  }
-  for (auto &s : solution) {
-    s /= G_TRIES;
-  }
-  print(epsilon, solution);
-}
-
-void LP_bound_approximate(const int &n, const int &n0, const Parameters &params) {
+void LP_bound_exact(
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
-  // TODO(unknown): parallelize
   vector<double> solution(epsilon.size(), 0.0);
-  for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+  if (G_PARALLEL) {
+    vector<future<vector<double>>> futures(G_TRIES);
+    for (int i = 0; i < G_TRIES; i++) {
+      futures[i] = async(
+          launch::async, &LP_bound_exact_single,
+          cref(G0), cref(n), cref(params), cref(epsilon));
+    }
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = futures[i].get();
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  } else {
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  }
+  for (auto &s : solution) {
+    s /= G_TRIES;
+  }
+  print("exact", epsilon, solution, params, out_file);
+}
+
+void LP_bound_approximate(
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
+  Graph G0 = generate_seed_koala(n0, 1.0);
+  vector<double> epsilon;
+  for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+    epsilon.push_back(eps);
+  }
+  vector<double> solution(epsilon.size(), 0.0);
+  if (G_PARALLEL) {
+    vector<future<vector<double>>> futures(G_TRIES);
+    for (int i = 0; i < G_TRIES; i++) {
+      futures[i] = async(
+          launch::async, &LP_bound_approximate_single,
+          cref(G0), cref(n), cref(params), cref(epsilon));
+    }
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = futures[i].get();
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  } else {
+    for (int i = 0; i < G_TRIES; i++) {
+      vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
+      transform(
+          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+          std::plus<double>());
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
   }
   for (auto &sol : solution) {
     sol /= G_TRIES;
   }
-  print(epsilon, solution);
+  print(
+      "wiuf-" + to_string(G_TRIES) + "-" + to_string(SIGMA_TRIES),
+      epsilon, solution, params, out_file);
 }
 
 double mean_square_error(const map<mpz_class, double> &opt, const map<mpz_class, double> &apx) {
@@ -361,11 +407,14 @@ int main(int, char *argv[]) {
     int n = stoi(argv[3]), n0 = stoi(argv[4]);
     Parameters params;
     params.initialize(mode, argv + 5);
+    string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
     if (action == "exact_bound") {
       validate_problem_size(n, n0);
-      LP_bound_exact(n, n0, params);
+      ofstream out_file(name, ios_base::app);
+      LP_bound_exact(n, n0, params, out_file);
     } else if (action == "approximate_bound") {
-      LP_bound_approximate(n, n0, params);
+      ofstream out_file(name, ios_base::app);
+      LP_bound_approximate(n, n0, params, out_file);
     } else if (action == "compare_probabilities") {
       validate_problem_size(n, n0);
       compare_probabilities(n, n0, params);

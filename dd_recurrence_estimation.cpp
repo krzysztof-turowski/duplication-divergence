@@ -424,10 +424,10 @@ void process_graph(
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  ofstream out_file(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + ".txt");
   vector<set<int>> G0 = generate_seed(n0, 1.0);
   vector<set<int>> G = G0;
   generate_graph(G, n, params);
+  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
   cout << "Synthetic data: " + params.to_string() << endl;
   process_graph(G, G0, params.mode, out_file);
 }
@@ -435,9 +435,7 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
   vector<set<int>> G = read_graph(FILES_FOLDER + graph_name);
   vector<set<int>> G0 = read_graph(FILES_FOLDER + seed_name);
-  ofstream out_file(
-      TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of(".")) + "_"
-          + SHORT_NAME.find(mode)->second + ".txt");
+  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, ""));
   cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);
 }

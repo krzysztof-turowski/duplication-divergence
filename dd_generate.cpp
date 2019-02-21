@@ -8,9 +8,8 @@
 
 using namespace std;
 
-string name(const int &n, const int &n0, const Parameters &params) {
-  return to_string(n) + "-" + to_string(n0) + "-" + SHORT_NAME.find(params.mode)->second
-      + "-" + to_string(params.p) + "-" + to_string(params.r);
+inline string name(const int &n, const int &n0, const Parameters &params) {
+  return to_string(n) + "-" + to_string(n0) + "-" + params.to_filename();
 }
 
 void export_graph(const string &name, const vector<set<int>> &G) {
