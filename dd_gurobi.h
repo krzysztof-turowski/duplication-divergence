@@ -35,9 +35,9 @@ double LP_solve(
     const std::map<std::pair<int, int>, double> &p_uv, const int &n, const int &n0,
     const double &epsilon) {
   GRBEnv* environment = new GRBEnv();
-  GRBModel LP = GRBModel(*environment);
-  LP.set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
-  LP.set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
+  GRBModel *LP = new GRBModel(*environment);
+  LP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
+  LP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
   double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
   // Objective function
@@ -46,20 +46,26 @@ double LP_solve(
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       auto index = LP_get_variable_index(i, j, n, n0);
-      vars[index] =
-          LP.addVar(
-              0.0, 1.0, i < j ? p_uv.find(std::make_pair(i, j))->second : 0.0,
-              GRB_CONTINUOUS, LP_name_variable(i, j));
+      if (i < j) {
+        vars[index] =
+            LP->addVar(
+                0.0, 1.0, p_uv.find(std::make_pair(i, j))->second,
+                GRB_CONTINUOUS, LP_name_variable(i, j));
+      } else if (j < i) {
+        vars[index] = LP->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS, LP_name_variable(i, j));
+      } else {
+        vars[index] = LP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name_variable(i, j));
+      }
     }
   }
-  vars[s_index] = LP.addVar(0.0, 1.0, 1 / density, GRB_CONTINUOUS, "s");
+  vars[s_index] = LP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
 
   // Antisymmetry
   for (int i = n0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
       GRBLinExpr row =
           vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, i, n, n0)];
-      LP.addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("A", { i, j }));
+      LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("A", { i, j }));
     }
   }
   // Transitivity
@@ -69,8 +75,8 @@ double LP_solve(
         if (i != j && j != k && i != k) {
           GRBLinExpr row =
               vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, k, n, n0)]
-                  + vars[LP_get_variable_index(j, i, n, n0)];
-          LP.addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("T", { i, j, k }));
+                  - vars[LP_get_variable_index(i, k, n, n0)];
+          LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("T", { i, j, k }));
         }
       }
     }
@@ -80,21 +86,21 @@ double LP_solve(
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       if (i != j) {
-      row += vars[LP_get_variable_index(i, j, n, n0)];
+        row += vars[LP_get_variable_index(i, j, n, n0)];
       }
     }
   }
-  LP.addConstr(row, GRB_EQUAL, 0.0, LP_row_name("D", {}));
+  LP->addConstr(row, GRB_EQUAL, 1.0, LP_row_name("D", {}));
 
-  LP.set(GRB_IntParam_OutputFlag, 0);
-  LP.optimize();
-  int status = LP.get(GRB_IntAttr_Status);
+  LP->set(GRB_IntParam_OutputFlag, 0);
+  LP->optimize();
+  int status = LP->get(GRB_IntAttr_Status);
   if (status == GRB_OPTIMAL) {
-    double solution = LP.get(GRB_DoubleAttr_ObjVal);
-    delete environment;
+    double solution = LP->get(GRB_DoubleAttr_ObjVal);
+    delete LP, delete environment;
     return solution;
   } else {
-    delete environment;
+    delete LP, delete environment;
     throw std::domain_error("Invalid LP status: " + status);
   }
 }
