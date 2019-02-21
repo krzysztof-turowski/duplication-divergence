@@ -6,15 +6,21 @@
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#if __GNUC__ >= 7
+  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+#if __GNUC__ >= 6
+  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+#ifndef __clang__
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
