@@ -2,6 +2,8 @@
 // Compile: g++ dd_temporal_order.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_order
 // Run: ./dd_temporal_order exact_bound MODE n n0 PARAMETERS
 
+// TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wcast-qual"
@@ -24,7 +26,13 @@
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#include "./dd_glpk.h"
+#if defined(glpk)
+  #include "./dd_glpk.h"
+#elif defined(gurobi)
+  #include "./dd_gurobi.h"
+#endif
+
+#include <gmpxx.h>
 
 #include <random>
 
@@ -34,7 +42,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
-const double EPS_STEP = 0.05;
+const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
@@ -221,7 +229,7 @@ map<pair<int, int>, double> get_p_uv_from_permutations(
 
 void print(const vector<double> &epsilon, const vector<double> &solution) {
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
-    cout << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
+    cerr << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
         << fixed << setw(6) << setprecision(3) << solution[i] << endl;
   }
   // export to file
@@ -286,7 +294,7 @@ void LP_bound_exact(const int &n, const int &n0, const Parameters &params) {
 void LP_bound_approximate(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
-  for (double eps = EPS_STEP; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+  for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
   }
   // TODO(unknown): parallelize
@@ -335,7 +343,7 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   for (auto &it : mse) {
-    cout << setw(6) << it.first << " "
+    cerr << setw(6) << it.first << " "
         << fixed << setw(13) << setprecision(10) << it.second / G_TRIES << endl;
   }
 }
