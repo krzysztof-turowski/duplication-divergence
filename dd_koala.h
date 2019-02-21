@@ -201,13 +201,13 @@ long double get_transition_probability(
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (only_v > 0 || (abs(p) < EPS && both > 0) || (abs(p - 1.0) < EPS && only_u > 0)) {
+      if (only_v > 0 || (fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)) {
         return 0.0;
       }
       return pow(p, both) * pow(1 - p, only_u) / (G.getVertNo() - 1);
     case Mode::PASTOR_SATORRAS:
-      if ((abs(p) < EPS && both > 0) || (abs(p - 1.0) < EPS && only_u > 0)
-          || (abs(r) < EPS && only_v > 0) || (abs(r - (G.getVertNo() - 1)) < EPS && none > 0)) {
+      if ((fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)
+          || (fabsl(r) < EPS && only_v > 0) || (fabsl(r - (G.getVertNo() - 1)) < EPS && none > 0)) {
         return 0.0;
       }
       return pow(p, both) * pow(params.r / (G.getVertNo() - 1), only_v)

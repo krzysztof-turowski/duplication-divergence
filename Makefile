@@ -1,7 +1,7 @@
 CC = g++
-FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wnoexcept -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-null-sentinel -Wstrict-overflow=5 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
-
-NAUTY_LIB = lib/nauty/nauty.a
+COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept
+FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
+NAUTY_LIB = lib/nauty/nauty.a -Wno-unused-variable
 LP_FLAGS = -lgmp -lgmpxx -lglpk
 
 CPP_HDRS := $(wildcard *.h)
@@ -11,11 +11,10 @@ EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
 
 all: g++ check
 
-g++: COMPILER_FLAGS =-fmax-errors=5
 g++: $(EXEC)
 
 clang++: CC = clang++
-clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unknown-warning-option -Wno-c++11-extensions -Wno-unused-const-variable
+clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unused-const-variable
 clang++: $(EXEC)
 
 %: %.cpp
