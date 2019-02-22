@@ -6,15 +6,21 @@
 #pragma GCC diagnostic ignored "-Wcast-align"
 #pragma GCC diagnostic ignored "-Wcast-qual"
 #pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wpedantic"
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wswitch-default"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#if __GNUC__ >= 7
+  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#endif
+#if __GNUC__ >= 6
+  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+#endif
+#ifndef __clang__
+  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
@@ -144,7 +150,7 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
   Graph G = generate_seed_koala(n0, 1.0);
   generate_graph_koala(G, n, params);
   auto likelihood_values = find_likelihood_values(G, n0, params.mode);
-  ofstream out_file(TEMP_FOLDER + "synthetic_" + SHORT_NAME.find(params.mode)->second + "-ML.txt");
+  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "ML"));
   print("Synthetic data: " + params.to_string(), likelihood_values, out_file);
 }
 
@@ -152,8 +158,7 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
   Graph G = read_graph_koala(FILES_FOLDER + graph_name);
   int n0 = read_graph_size(FILES_FOLDER + seed_name);
   auto likelihood_values = find_likelihood_values(G, n0, mode);
-  ofstream out_file(TEMP_FOLDER + graph_name.substr(0, graph_name.find_last_of("."))
-      + "_" + SHORT_NAME.find(mode)->second + "-ML.txt");
+  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "ML"));
   print(graph_name, likelihood_values, out_file);
 }
 

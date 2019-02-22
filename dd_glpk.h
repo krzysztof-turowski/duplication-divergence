@@ -3,7 +3,6 @@
 #pragma once
 
 #include <glpk.h>
-#include <gmpxx.h>
 
 #include <map>
 #include <sstream>
@@ -47,9 +46,11 @@ double LP_solve(
     for (int j = n0; j < n; j++) {
       auto index = LP_get_variable_index(i, j, n, n0);
       glp_set_col_name(LP, index + 1, LP_name_variable(i, j).c_str());
-      if (i != j) {
+      if (i < j) {
         glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
         glp_set_obj_coef(LP, index + 1, p_uv.find(std::make_pair(i, j))->second);
+      } else if (j < i) {
+        glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
       }
     }
   }
@@ -97,7 +98,6 @@ double LP_solve(
   glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
 
   glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
-  // glp_write_lp(LP, NULL, "/dev/stdout");
   glp_term_out(0);
   glp_simplex(LP, NULL);
 
