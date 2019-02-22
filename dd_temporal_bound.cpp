@@ -34,12 +34,12 @@
   const int G_THREADS = 4;
 #endif
 
-#include "./lib/threadpool/ThreadPool.h"
-
 #include <gmpxx.h>
 
 #include <future>
 #include <random>
+
+#include "./lib/threadpool/ThreadPool.h"
 
 using namespace std;
 

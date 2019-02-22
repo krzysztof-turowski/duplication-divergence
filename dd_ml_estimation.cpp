@@ -24,9 +24,9 @@
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#include "./lib/threadpool/ThreadPool.h"
-
 #include <future>
+
+#include "./lib/threadpool/ThreadPool.h"
 
 using namespace std;
 

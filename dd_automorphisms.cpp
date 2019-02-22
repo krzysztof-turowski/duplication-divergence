@@ -10,12 +10,12 @@
 #include "./dd_automorphisms.h"
 #pragma GCC diagnostic pop
 
-#include "./lib/threadpool/ThreadPool.h"
-
 #include <algorithm>
 #include <chrono>
 #include <future>
 #include <string>
+
+#include "./lib/threadpool/ThreadPool.h"
 
 const int PVAL_TRIES = 100;
 const bool AUT_PARALLEL = true;
