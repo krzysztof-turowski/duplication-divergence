@@ -11,35 +11,26 @@ extern "C" {
 }
 
 double log_automorphisms_dense(const std::vector<std::set<int>> &G) {
-  DYNALLSTAT(graph, g, g_size);
-  DYNALLSTAT(int, lab, lab_size);
-  DYNALLSTAT(int, ptn, ptn_size);
-  DYNALLSTAT(int, orbits, orbits_size);
   statsblk stats;
   static DEFAULTOPTIONS_GRAPH(options);
 
   int n = G.size(), word = SETWORDSNEEDED(n);
   nauty_check(WORDSIZE, word, n, NAUTYVERSIONID);
 
-  DYNALLOC2(graph, g, g_size, word, n, "malloc");
-  DYNALLOC1(int, lab, lab_size, n, "malloc");
-  DYNALLOC1(int, ptn, ptn_size, n, "malloc");
-  DYNALLOC1(int, orbits, orbits_size, n, "malloc");
-  EMPTYGRAPH(g, word, n);
+  std::vector<graph> g(word * n);
+  std::vector<int> lab(n), ptn(n), orbits(n);
+  EMPTYGRAPH(&g[0], word, n);
   for (int v = 0; v < n; v++) {
     for (auto u : G[v]) {
-      ADDONEEDGE(g, v, u, word);
+      ADDONEEDGE(&g[0], v, u, word);
     }
   }
-  densenauty(g, lab, ptn, orbits, &options, &stats, word, n, NULL);
+  densenauty(&g[0], &lab[0], &ptn[0], &orbits[0], &options, &stats, word, n, NULL);
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
 double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
   sparsegraph g;
-  DYNALLSTAT(int, lab, lab_size);
-  DYNALLSTAT(int, ptn, ptn_size);
-  DYNALLSTAT(int, orbits, orbits_size);
   statsblk stats;
   static DEFAULTOPTIONS_SPARSEGRAPH(options);
 
@@ -53,9 +44,7 @@ double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
 
   SG_INIT(g);
   SG_ALLOC(g, n, m, "malloc");
-  DYNALLOC1(int, lab, lab_size, n, "malloc");
-  DYNALLOC1(int, ptn, ptn_size, n, "malloc");
-  DYNALLOC1(int, orbits, orbits_size, n, "malloc");
+  std::vector<int> lab(n), ptn(n), orbits(n);
 
   g.nv = n;
   g.nde = m;
@@ -69,14 +58,11 @@ double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
       index++;
     }
   }
-  sparsenauty(&g, lab, ptn, orbits, &options, &stats, NULL);
+  sparsenauty(&g, &lab[0], &ptn[0], &orbits[0], &options, &stats, NULL);
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
 double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
-  DYNALLSTAT(int, lab, lab_size);
-  DYNALLSTAT(int, ptn, ptn_size);
-  DYNALLSTAT(int, orbits, orbits_size);
   static DEFAULTOPTIONS_TRACES(options);
   TracesStats stats;
 
@@ -90,9 +76,7 @@ double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
 
   SG_DECL(g);
   SG_ALLOC(g, n, m, "malloc");
-  DYNALLOC1(int, lab, lab_size, n, "malloc");
-  DYNALLOC1(int, ptn, ptn_size, n, "malloc");
-  DYNALLOC1(int, orbits, orbits_size, n, "malloc");
+  std::vector<int> lab(n), ptn(n), orbits(n);
 
   g.nv = n;
   g.nde = m;
@@ -106,7 +90,7 @@ double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
       index++;
     }
   }
-  Traces(&g, lab, ptn, orbits, &options, &stats, NULL);
+  Traces(&g, &lab[0], &ptn[0], &orbits[0], &options, &stats, NULL);
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 

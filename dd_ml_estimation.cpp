@@ -26,6 +26,8 @@
 
 #include <future>
 
+#include "./lib/threadpool/ThreadPool.h"
+
 using namespace std;
 
 typedef Koala::Graph<int, int> Graph;
@@ -33,7 +35,8 @@ typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const double STEP_P = 0.1, STEP_R = 1.0;
 const int IS_TRIES = 100;
-const bool ML_PARALLEL = false;
+const bool ML_PARALLEL = true;
+const int ML_THREADS = 1;
 
 class LikelihoodValue {
  public:
@@ -80,9 +83,12 @@ LikelihoodValue importance_sampling(
   vector<long double> likelihood_values(IS_TRIES);
   if (ML_PARALLEL) {
     vector<future<long double>> futures(IS_TRIES);
+    ThreadPool pool(ML_THREADS);
     for (int i = 0; i < IS_TRIES; i++) {
       futures[i] =
-          async(launch::async, &likelihood_value, cref(G), cref(n0), cref(params), cref(params_0));
+          pool.enqueue([&] {
+              return likelihood_value(cref(G), cref(n0), cref(params), cref(params_0));
+          });
     }
     for (int i = 0; i < IS_TRIES; i++) {
       likelihood_values[i] = futures[i].get();

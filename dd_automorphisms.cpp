@@ -15,8 +15,11 @@
 #include <future>
 #include <string>
 
+#include "./lib/threadpool/ThreadPool.h"
+
 const int PVAL_TRIES = 100;
-const bool PARALLEL = false;
+const bool AUT_PARALLEL = true;
+const int AUT_THREADS = 1;
 
 enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
@@ -68,13 +71,14 @@ std::vector<double> log_automorphisms(
     const std::vector<std::set<int>> &G0, const int &n, const Parameters &params,
     const int &tries) {
   std::vector<double> log_aut_H(tries);
-  if (PARALLEL) {
+  if (AUT_PARALLEL) {
+    ThreadPool pool(AUT_THREADS);
     std::vector<std::future<double>> futures(tries);
     for (int i = 0; i < tries; i++) {
       futures[i] =
-          std::async(
-              std::launch::async, &log_automorphisms_single,
-              std::cref(G0), std::cref(n), std::cref(params));
+          pool.enqueue([&] {
+              return log_automorphisms_single(std::cref(G0), std::cref(n), std::cref(params));
+          });
     }
     for (int i = 0; i < tries; i++) {
       log_aut_H[i] = futures[i].get();
