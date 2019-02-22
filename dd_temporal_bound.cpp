@@ -1,4 +1,4 @@
-// Tools for computation the temporal order for various duplication-divergence models.
+// Tools for computation the temporal order bound for various duplication-divergence models.
 // Compile: g++ dd_temporal_bound.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_bound
 // Run: ./dd_temporal_bound exact_bound MODE n n0 PARAMETERS
 
@@ -46,7 +46,7 @@ typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
 const bool SIGMA_PARALLEL = false;
-const double EPS_MIN = 0.2, EPS_STEP = 0.025;
+const double EPS_MIN = 0.2, EPS_STEP = 0.05;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
@@ -232,17 +232,18 @@ map<pair<int, int>, double> get_p_uv_from_permutations(
 }
 
 void print(
-    const string &name, const vector<double> &epsilon, const vector<double> &solution,
-    const Parameters &params, ostream &out_file) {
+    const string &name, const vector<double> &density, const vector<double> &precision,
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
+  cout << "Graph - n: " << n << ", n0: " << n0
+      << ", parameters: " << params.to_string() << endl;
   cerr << "Method: " << name << endl;
-  cerr << "Parameters: " + params.to_string() << endl;
-  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
-    cerr << fixed << setw(6) << setprecision(3) << epsilon[i] << " "
-        << fixed << setw(6) << setprecision(3) << solution[i] << endl;
+  for (int i = 0; i < static_cast<int>(precision.size()); i++) {
+    cerr << "density: " << fixed << setw(6) << setprecision(3) << density[i]
+        << " precision: " << fixed << setw(6) << setprecision(3) << precision[i] << endl;
   }
   out_file << name << " ";
-  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
-    out_file << epsilon[i] << "," << solution[i] << " ";
+  for (int i = 0; i < static_cast<int>(precision.size()); i++) {
+    out_file << density[i] << "," << precision[i] << " ";
   }
   out_file << endl;
 }
@@ -316,7 +317,7 @@ void LP_bound_exact(
   for (auto &s : solution) {
     s /= G_TRIES;
   }
-  print("exact", epsilon, solution, params, out_file);
+  print("exact", epsilon, solution, n, n0, params, out_file);
 }
 
 void LP_bound_approximate(
@@ -355,10 +356,11 @@ void LP_bound_approximate(
   }
   print(
       "wiuf-" + to_string(G_TRIES) + "-" + to_string(SIGMA_TRIES),
-      epsilon, solution, params, out_file);
+      epsilon, solution, n, n0, params, out_file);
 }
 
-double mean_square_error(const map<mpz_class, double> &opt, const map<mpz_class, double> &apx) {
+template <typename T>
+double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
   double mse = 0;
   for (auto &sigma : opt) {
     mse += pow(opt.find(sigma.first)->second - apx.find(sigma.first)->second, 2);
@@ -368,10 +370,11 @@ double mean_square_error(const map<mpz_class, double> &opt, const map<mpz_class,
 
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
-  map<int, double> mse;
-  for (int sigma_tries = 10; sigma_tries < 12000; sigma_tries *= 2) {
-    mse.insert(make_pair(sigma_tries, 0.0));
+  vector<int> sigma_tries;
+  for (int tries = 10; tries < 12000; tries *= 2) {
+    sigma_tries.push_back(tries);
   }
+  vector<double> mse_permutations(sigma_tries.size()), mse_p_uv(sigma_tries.size());
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph_koala(G, n, params);
@@ -379,18 +382,24 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     vector<int> S = generate_permutation(n, G0.getVertNo());
     apply_permutation(G, S);
 
-    map<mpz_class, double> permutations_opt =
-        get_permutation_probabilities(G, G0.getVertNo(), params);
-    for (auto &it : mse) {
-      map<mpz_class, double> permutations_apx =
-          get_permutation_probabilities_sampling(G, G0.getVertNo(), params, it.first);
-      it.second += mean_square_error(permutations_opt, permutations_apx);
+    auto permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
+    auto p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
+    for (int j = 0; j < static_cast<int>(sigma_tries.size()); j++) {
+      auto permutations_apx =
+          get_permutation_probabilities_sampling(G, G0.getVertNo(), params, sigma_tries[j]);
+      auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
+      mse_permutations[j] += mean_square_error(permutations_opt, permutations_apx);
+      mse_p_uv[j] += mean_square_error(p_uv_opt, p_uv_apx);
     }
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
-  for (auto &it : mse) {
-    cerr << setw(6) << it.first << " "
-        << fixed << setw(13) << setprecision(10) << it.second / G_TRIES << endl;
+  for (int i = 0; i < static_cast<int>(sigma_tries.size()); i++) {
+    cerr << setw(6) << sigma_tries[i] << " "
+        << fixed << setw(13) << setprecision(10) << mse_permutations[i] / G_TRIES << endl;
+  }
+  for (int i = 0; i < static_cast<int>(sigma_tries.size()); i++) {
+    cerr << setw(6) << sigma_tries[i] << " "
+        << fixed << setw(13) << setprecision(10) << mse_p_uv[i] / G_TRIES << endl;
   }
 }
 
@@ -408,11 +417,11 @@ int main(int, char *argv[]) {
     Parameters params;
     params.initialize(mode, argv + 5);
     string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
-    if (action == "exact_bound") {
+    if (action == "exact") {
       validate_problem_size(n, n0);
       ofstream out_file(name, ios_base::app);
       LP_bound_exact(n, n0, params, out_file);
-    } else if (action == "approximate_bound") {
+    } else if (action == "approximate") {
       ofstream out_file(name, ios_base::app);
       LP_bound_approximate(n, n0, params, out_file);
     } else if (action == "compare_probabilities") {
