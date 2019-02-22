@@ -28,11 +28,13 @@
 
 #if defined(glpk)
   #include "./dd_glpk.h"
-  const bool G_PARALLEL = true;
+  const int G_THREADS = -1;
 #elif defined(gurobi)
   #include "./dd_gurobi.h"
-  const bool G_PARALLEL = false;
+  const int G_THREADS = 4;
 #endif
+
+#include "./lib/threadpool/ThreadPool.h"
 
 #include <gmpxx.h>
 
@@ -45,7 +47,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
-const bool SIGMA_PARALLEL = false;
+const bool G_PARALLEL = true;
 const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
@@ -292,10 +294,20 @@ void LP_bound_exact(
   vector<double> solution(epsilon.size(), 0.0);
   if (G_PARALLEL) {
     vector<future<vector<double>>> futures(G_TRIES);
-    for (int i = 0; i < G_TRIES; i++) {
-      futures[i] = async(
-          launch::async, &LP_bound_exact_single,
-          cref(G0), cref(n), cref(params), cref(epsilon));
+    if (G_THREADS > 0) {
+      ThreadPool pool(G_THREADS);
+      for (int i = 0; i < G_TRIES; i++) {
+        futures[i] =
+            pool.enqueue([&] {
+              return LP_bound_exact_single(cref(G0), cref(n), cref(params), cref(epsilon));
+            });
+      }
+    } else {
+      for (int i = 0; i < G_TRIES; i++) {
+        futures[i] = async(
+            launch::async, &LP_bound_exact_single,
+            cref(G0), cref(n), cref(params), cref(epsilon));
+      }
     }
     for (int i = 0; i < G_TRIES; i++) {
       vector<double> solution_single = futures[i].get();
