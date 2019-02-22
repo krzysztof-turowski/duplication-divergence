@@ -17,7 +17,7 @@ const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
-const bool TI_PARALLEL = false;
+const bool TI_PARALLEL = true;
 const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
 
 enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
