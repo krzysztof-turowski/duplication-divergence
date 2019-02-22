@@ -16,22 +16,24 @@ FIGURE_SIZE_SCALE = 0.5
 
 COLORS = ['r', 'b', 'm', 'k', 'g', 'orange', 'crimson', 'lime', 'gray', 'lightgray', 'pink', \
           'olive', 'khaki', 'saddlebrown', 'deepskyblue']
+POINTS = 30
 
 def plot_algorithms(filename):
     if not os.path.isfile(filename):
         return
     with open(filename) as data_file:
         data = data_file.readlines()
-    for line, color in zip(data, COLORS):
+    for line, color in zip(data, COLORS[-1::-1]):
         values = line.strip().split(' ')
         density, precision = zip(*[[float(parameter) for parameter in value.split(',')]
                                    for value in values[1:]])
         pyplot.plot(
             [numpy.mean(density)], [numpy.mean(precision)], color = color, marker = 'o',
-            linestyle = None, label = values[0], alpha = 0.7)
+            linestyle = 'None', label = values[0], alpha = 0.7)
         pyplot.plot(
-            density, precision, color = color, marker = 'o',
-            linestyle = None, label = None, alpha = 0.3)
+            [numpy.mean(density[offset::POINTS]) for offset in range(POINTS)],
+            [numpy.mean(precision[offset::POINTS]) for offset in range(POINTS)],
+            color = color, marker = 'o', linestyle = 'None', label = None, alpha = 0.3)
 
 def plot_theoterical_curves(filename):
     if not os.path.isfile(filename):
@@ -48,7 +50,7 @@ def plot_labels():
     pyplot.legend(loc = 'upper left')
     pyplot.ylabel(r'$\theta$')
     pyplot.xlabel(r'$\epsilon$')
-    y_bottom, y_top = max(-0.05, sum(pyplot.ylim()) - 1.0), 1.05
+    y_bottom, y_top = max(-0.05, sum(pyplot.ylim()) - 1.05), 1.05
     pyplot.ylim(y_bottom, y_top)
     x_scale, y_scale = 0.2, round((y_top - y_bottom) / 5, 1)
     pyplot.gca().get_xaxis().set_major_locator(pyplot.MultipleLocator(x_scale))
