@@ -1,6 +1,6 @@
 // Tool for computation automorphisms for various duplication-divergence models.
 // Compile: g++ dd_automorphisms.cpp LIB/nauty/nauty.a -O3 -o ./dd_automorphisms
-// Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed MODE PARAMETERS
+// Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed FILE MODE PARAMETERS
 
 #include "./dd_header.h"
 
@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <chrono>
 #include <future>
+#include <regex>
 #include <string>
 
 #include "./lib/threadpool/ThreadPool.h"
@@ -192,7 +193,7 @@ void log_automorphisms_p_value(
           get_average(log_aut_H, get_log_aut_cherries),
           get_average(log_aut_H, get_log_aut_copies));
   print(graph_name, log_aut_avg_values);
-  
+
   PValuesInfo p_values =
       PValuesInfo(
           get_p_value(log_aut_G, log_aut_H, get_log_aut),
@@ -209,25 +210,14 @@ void log_automorphisms(const std::string &graph_name) {
 
 int main(int, char *argv[]) {
   try {
-    std::string action(argv[1]);
+    std::string action(argv[1]), graph_name(argv[2]);
+    // TODO(unknown): test parameters ranges
     if (action == "real_seed") {
-      // TODO(unknown): make datasets parameter-variable
-      // TODO(unknown): make parameters ranges
+      std::string mode(argv[3]);
       Parameters params;
-      std::string mode(argv[2]);
-      params.initialize(mode, argv + 3);
-      log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", params);
-      log_automorphisms_p_value("G-a-thaliana.txt", "G0-a-thaliana.txt", params);
-      log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
-      log_automorphisms_p_value("G-d-melanogaster.txt", "G0-d-melanogaster.txt", params);
-      log_automorphisms_p_value("G-homo-sapiens.txt", "G0-homo-sapiens.txt", params);
-      log_automorphisms_p_value("G-mus-musculus.txt", "G0-mus-musculus.txt", params);
-      log_automorphisms_p_value("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", params);
-      log_automorphisms_p_value("G-s-pombe.txt", "G0-s-pombe.txt", params);
+      params.initialize(mode, argv + 4);
+      log_automorphisms_p_value(graph_name, get_seed_name(graph_name), params);
     } else if (action == "real_graph") {
-      std::string graph_name(argv[2]);
       log_automorphisms(graph_name);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
