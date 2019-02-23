@@ -1,6 +1,6 @@
 // Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
 // Compile: g++ dd_ml_estimation.cpp -O3 -o ./dd_ml_estimation
-// Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS or ./dd_ml_estimation real_data MODE
+// Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS or ./dd_ml_estimation real_data FILE MODE
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
@@ -75,10 +75,10 @@ long double likelihood_value(
 LikelihoodValue importance_sampling(
     const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   vector<long double> likelihood_values(IS_TRIES);
-  #pragma omp parallel
+  #pragma omp parallel for
   for (int i = 0; i < IS_TRIES; i++) {
     likelihood_values[i] = likelihood_value(G, n0, params, params_0);
-    # pragma omp critical
+    #pragma omp critical
     {
       std::cerr << "Run " << i + 1 << "/" << IS_TRIES << std::endl;
     }
@@ -149,25 +149,16 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
 
 int main(int, char *argv[]) {
   try {
-    string action(argv[1]), mode(argv[2]);
+    string action(argv[1]);
     if (action == "synthetic") {
+      string mode(argv[2]);
       int n = stoi(argv[3]), n0 = stoi(argv[4]);
       Parameters params;
       params.initialize(mode, argv + 5);
       synthetic_data(n, n0, params);
     } else if (action == "real_data") {
-      // TODO(unknown): make datasets parameter-variable
-      Mode mode_v = REVERSE_NAME.find(mode)->second;
-      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", mode_v);
-      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", mode_v);
-      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", mode_v);
-      real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", mode_v);
-      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", mode_v);
-      real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", mode_v);
-      real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", mode_v);
-      real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", mode_v);
-      real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", mode_v);
-      real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", mode_v);
+      string graph_name(argv[2]), mode(argv[3]);
+      real_world_data(graph_name, get_seed_name(graph_name), REVERSE_NAME.find(mode)->second);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
     }
