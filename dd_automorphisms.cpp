@@ -1,6 +1,6 @@
 // Tool for computation automorphisms for various duplication-divergence models.
 // Compile: g++ dd_automorphisms.cpp LIB/nauty/nauty.a -O3 -o ./dd_automorphisms
-// Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed MODE
+// Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed MODE PARAMETERS
 
 #include "./dd_header.h"
 
@@ -93,6 +93,42 @@ std::vector<double> log_automorphisms(
   return log_aut_H;
 }
 
+double log_automorphisms_from_isolated_nodes(const std::vector<std::set<int>> &G) {
+  return lgamma(isolated_nodes(G) + 1);
+}
+
+int log_automorphisms_from_cherries(const std::vector<std::set<int>> &G) {
+  std::vector<int> V(G.size());
+  for (int i = 0; i < static_cast<int>(G.size()); i++) {
+    if (G[i].size() == 1) {
+      V[*(G[i].begin())] += 1;
+    }
+  }
+  double out =
+      std::accumulate(
+          V.begin(), V.end(), 0.0,
+          [] (double &value, const double &element) { return value + lgamma(element + 1); });
+  return out;
+}
+
+double log_automorphisms_from_copies(const std::vector<std::set<int>> &G) {
+  std::vector<bool> V(G.size(), false);
+  double out = 0, count;
+  for (int i = 0; i < static_cast<int>(G.size()); i++) {
+    count = 1, V[i] = true;
+    for (int j = i + 1; j < static_cast<int>(G.size()); j++) {
+      if (V[j]) {
+        continue;
+      }
+      if (G[i] == G[j]) {
+        count++, V[j] = true;
+      }
+    }
+    out += lgamma(count);
+  }
+  return out;
+}
+
 void log_automorphisms_p_value(
     const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
   std::vector<std::set<int>> G = read_graph(FILES_FOLDER + graph_name);
@@ -115,20 +151,29 @@ void log_automorphisms_p_value(
 
 void log_automorphisms(const std::string &graph_name) {
   std::vector<std::set<int>> G = read_graph(FILES_FOLDER + graph_name);
-  std::cout << graph_name << " " << log_automorphisms(G) << std::endl;
+  std::cout << std::setw(25) << std::left << graph_name << " " << std::right
+    << std::fixed << std::setw(8) << std::setprecision(3)
+        << log_automorphisms(G) << " "
+    << std::fixed << std::setw(8) << std::setprecision(3)
+        << log_automorphisms_from_isolated_nodes(G) << " "
+    << std::fixed << std::setw(8) << std::setprecision(3)
+        << log_automorphisms_from_cherries(G) << " "
+    << std::fixed << std::setw(8) << std::setprecision(3)
+        << log_automorphisms_from_copies(G) << std::endl;
 }
 
 int main(int, char *argv[]) {
   try {
-    std::string action(argv[1]), mode(argv[2]);
+    std::string action(argv[1]);
     if (action == "real_seed") {
       // TODO(unknown): make datasets parameter-variable
       // TODO(unknown): make parameters ranges
       Parameters params;
+      std::string mode(argv[2]);
       params.initialize(mode, argv + 3);
       log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.1-0.3.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-0.2.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", params);
       log_automorphisms_p_value("G-a-thaliana.txt", "G0-a-thaliana.txt", params);
       log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
       log_automorphisms_p_value("G-d-melanogaster.txt", "G0-d-melanogaster.txt", params);
@@ -137,7 +182,7 @@ int main(int, char *argv[]) {
       log_automorphisms_p_value("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", params);
       log_automorphisms_p_value("G-s-pombe.txt", "G0-s-pombe.txt", params);
     } else if (action == "real_graph") {
-      std::string graph_name(argv[3]);
+      std::string graph_name(argv[2]);
       log_automorphisms(graph_name);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
