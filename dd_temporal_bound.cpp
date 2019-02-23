@@ -424,10 +424,21 @@ double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
   return mse / opt.size();
 }
 
+template <typename T>
+double max_relative_error(const map<T, double> &opt, const map<T, double> &apx) {
+  double mre = 0;
+  for (auto &uv : opt) {
+    double opt_uv = opt.find(uv.first)->second;
+    double apx_uv = apx.find(uv.first)->second;
+    mre = max(mre, fabs(apx_uv / opt_uv - 1));
+  }
+  return mre;
+}
+
 class ErrorStruct {
  private:
   int permutations_counter = 0, p_uv_counter = 0;
-  map<int, double> permutations_mse, p_uv_mse;
+  map<int, double> permutations_mse, p_uv_mse, permutations_lambda, p_uv_lambda;
 
  public:
   void add_permutations(
@@ -435,6 +446,7 @@ class ErrorStruct {
       const map<mpz_class, double> &permutations_opt,
       const map<mpz_class, double> &permutations_apx) {
     this->permutations_mse[tries] += mean_square_error(permutations_opt, permutations_apx);
+    this->permutations_lambda[tries] += max_relative_error(permutations_opt, permutations_apx);
     this->permutations_counter++;
   }
 
@@ -443,6 +455,7 @@ class ErrorStruct {
       const map<pair<int, int>, double> &p_uv_opt,
       const map<pair<int, int>, double> &p_uv_apx) {
     this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx);
+    this->p_uv_lambda[tries] += max_relative_error(p_uv_opt, p_uv_apx);
     this->p_uv_counter++;
   }
 
@@ -452,6 +465,14 @@ class ErrorStruct {
 
   double get_p_uv_mse(const int &tries) const {
     return this->p_uv_mse.find(tries)->second / p_uv_counter;
+  }
+
+  double get_permutations_lambda(const int &tries) const {
+    return this->permutations_lambda.find(tries)->second / permutations_counter;
+  }
+
+  double get_p_uv_lambda(const int &tries) const {
+    return this->p_uv_lambda.find(tries)->second / p_uv_counter;
   }
 };
 
@@ -490,6 +511,22 @@ void print_errors(
       };
   cout << "Mean square errors for p_uv: " << endl;
   print_errors(sigma_tries, errors, p_uv_mse);
+
+  auto permutations_lambda = [](
+      const map<SamplingMethod, ErrorStruct> &e,
+      const SamplingMethod &method, const int &tries) -> double {
+        return e.find(method)->second.get_permutations_lambda(tries);
+      };
+  cout << "Max relative errors for permutations: " << endl;
+  print_errors(sigma_tries, errors, permutations_lambda);
+
+  auto p_uv_lambda = [](
+      const map<SamplingMethod, ErrorStruct> &e,
+      const SamplingMethod &method, const int &tries) -> double {
+        return e.find(method)->second.get_p_uv_lambda(tries);
+      };
+  cout << "Max relative errors for p_uv: " << endl;
+  print_errors(sigma_tries, errors, p_uv_lambda);
 }
 
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
