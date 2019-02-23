@@ -144,7 +144,7 @@ map<mpz_class, double> get_permutation_probabilities(
     if (p_v > 0.0) {
       set<Vertex> neighbors_v = G.getNeighSet(v);
       aux.remove_vertex(v, neighbors_v), S[G.getVertNo() - 1] = v->getInfo(), H.move(G, v);
-      assert(aux.verify(G) == true);
+      assert(aux.verify(G));
 
       map<mpz_class, double> permutations_v =
         get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
@@ -154,7 +154,7 @@ map<mpz_class, double> get_permutation_probabilities(
       for (auto &u : neighbors_v) {
         G.addEdge(v, u);
       }
-      assert(aux.verify(G) == true);
+      assert(aux.verify(G));
     }
   }
   return permutations;
@@ -201,7 +201,7 @@ tuple<Vertex, double> sample_vertex(
     }
     default:
       throw invalid_argument("Invalid algorithm: " + SAMPLING_METHOD_NAME.find(algorithm)->second);
-  }  
+  }
 }
 
 pair<mpz_class, double> get_permutation_sample(
@@ -424,14 +424,81 @@ double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
   return mse / opt.size();
 }
 
+class ErrorStruct {
+ private:
+  int permutations_counter = 0, p_uv_counter = 0;
+  map<int, double> permutations_mse, p_uv_mse;
+
+ public:
+  void add_permutations(
+      const int &tries,
+      const map<mpz_class, double> &permutations_opt,
+      const map<mpz_class, double> &permutations_apx) {
+    this->permutations_mse[tries] += mean_square_error(permutations_opt, permutations_apx);
+    this->permutations_counter++;
+  }
+
+  void add_p_uv(
+      const int &tries,
+      const map<pair<int, int>, double> &p_uv_opt,
+      const map<pair<int, int>, double> &p_uv_apx) {
+    this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx);
+    this->p_uv_counter++;
+  }
+
+  double get_permutations_mse(const int &tries) const {
+    return this->permutations_mse.find(tries)->second / permutations_counter;
+  }
+
+  double get_p_uv_mse(const int &tries) const {
+    return this->p_uv_mse.find(tries)->second / p_uv_counter;
+  }
+};
+
+void print_errors(
+    const vector<int> &sigma_tries, const map<SamplingMethod, ErrorStruct> &errors,
+    function<double(map<SamplingMethod, ErrorStruct>, SamplingMethod, int)> get_value) {
+  cout << setw(6) << "n" << " ";
+  for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+    cout << setw(12) << algorithm.second << " ";
+  }
+  cout << endl;
+  for (const int &tries : sigma_tries) {
+    cout << setw(6) << tries << " ";
+    for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+      cout << fixed << setw(12) << setprecision(9)
+          << get_value(errors, algorithm.first, tries) << " ";
+    }
+    cout << endl;
+  }
+}
+
+void print_errors(
+    const vector<int> &sigma_tries, const map<SamplingMethod, ErrorStruct> &errors) {
+  auto permutations_mse = [](
+      const map<SamplingMethod, ErrorStruct> &e,
+      const SamplingMethod &method, const int &tries) -> double {
+        return e.find(method)->second.get_permutations_mse(tries);
+      };
+  cout << "Mean square errors for permutations: " << endl;
+  print_errors(sigma_tries, errors, permutations_mse);
+
+  auto p_uv_mse = [](
+      const map<SamplingMethod, ErrorStruct> &e,
+      const SamplingMethod &method, const int &tries) -> double {
+        return e.find(method)->second.get_p_uv_mse(tries);
+      };
+  cout << "Mean square errors for p_uv: " << endl;
+  print_errors(sigma_tries, errors, p_uv_mse);
+}
+
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<int> sigma_tries;
   for (int tries = MIN_TRIES_TEST; tries <= MAX_TRIES_TEST; tries *= 2) {
     sigma_tries.push_back(tries);
   }
-  vector<double> mse_permutations(sigma_tries.size()), mse_p_uv(sigma_tries.size());
-  SamplingMethod algorithm = SamplingMethod::WIUF;
+  map<SamplingMethod, ErrorStruct> errors;
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph_koala(G, n, params);
@@ -441,24 +508,20 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
 
     auto permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
     auto p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
-    for (int j = 0; j < static_cast<int>(sigma_tries.size()); j++) {
-      auto permutations_apx =
-          get_permutation_probabilities_sampling(
-              G, G0.getVertNo(), params, algorithm, sigma_tries[j]);
-      auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
-      mse_permutations[j] += mean_square_error(permutations_opt, permutations_apx);
-      mse_p_uv[j] += mean_square_error(p_uv_opt, p_uv_apx);
+    for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+      for (const int &tries : sigma_tries) {
+        auto permutations_apx =
+            get_permutation_probabilities_sampling(
+                G, G0.getVertNo(), params, algorithm.first, tries);
+        errors[algorithm.first].add_permutations(tries, permutations_opt, permutations_apx);
+
+        auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
+        errors[algorithm.first].add_p_uv(tries, p_uv_opt, p_uv_apx);
+      }
     }
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
-  for (int i = 0; i < static_cast<int>(sigma_tries.size()); i++) {
-    cerr << setw(6) << sigma_tries[i] << " "
-        << fixed << setw(13) << setprecision(10) << mse_permutations[i] / G_TRIES << endl;
-  }
-  for (int i = 0; i < static_cast<int>(sigma_tries.size()); i++) {
-    cerr << setw(6) << sigma_tries[i] << " "
-        << fixed << setw(13) << setprecision(10) << mse_p_uv[i] / G_TRIES << endl;
-  }
+  print_errors(sigma_tries, errors);
 }
 
 void validate_problem_size(const int &n, const int &n0) {
