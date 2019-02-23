@@ -4,10 +4,11 @@ FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -
 NAUTY_LIB = lib/nauty/nauty.a -Wno-unused-variable
 LP_SOLVER = glpk
 
+LP_FLAGS = -DNDEBUG
 ifeq ($(LP_SOLVER),glpk)
-	LP_FLAGS = -Dglpk -lglpk -lgmp -lgmpxx
+	LP_FLAGS += -Dglpk -lglpk -lgmp -lgmpxx
 else ifeq ($(LP_SOLVER),gurobi)
-	LP_FLAGS = -Dgurobi -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
+	LP_FLAGS += -Dgurobi -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
 else
 endif
 

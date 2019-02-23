@@ -1,6 +1,6 @@
 // Tools for computation the temporal order bound for various duplication-divergence models.
 // Compile: g++ dd_temporal_bound.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_bound
-// Run: ./dd_temporal_bound exact_bound MODE n n0 PARAMETERS
+// Run: ./dd_temporal_bound [exact|ALGORITHM|check_convergence] MODE n n0 PARAMETERS
 
 // TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
 
@@ -46,9 +46,21 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const int G_TRIES = 100, SIGMA_TRIES = 100;
+const int G_TRIES = 100, SIGMA_TRIES = 200000;
 const bool G_PARALLEL = true;
-const double EPS_MIN = 0.2, EPS_STEP = 0.025;
+const double EPS_MIN = 0.2, EPS_STEP = 0.1;
+
+enum SamplingMethod { WIUF, UNIFORM };
+
+const map<SamplingMethod, string> SAMPLING_METHOD_NAME = {
+  { SamplingMethod::WIUF, "wiuf" },
+  { SamplingMethod::UNIFORM, "uniform" },
+};
+
+const map<string, SamplingMethod> SAMPLING_METHOD_REVERSE_NAME = {
+  { "wiuf", SamplingMethod::WIUF },
+  { "uniform", SamplingMethod::UNIFORM },
+};
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
@@ -167,8 +179,32 @@ map<mpz_class, double> get_permutation_probabilities(
   return permutations;
 }
 
+tuple<Vertex, double> sample_vertex(
+    const vector<Vertex> &V, const vector<double> &P,
+    const SamplingMethod &algorithm, mt19937 &generator) {
+  switch (algorithm) {
+    case WIUF: {
+      double P_sum = accumulate(P.begin(), P.end(), 0.0);
+      discrete_distribution<int> choose_vertex(P.begin(), P.end());
+      int index = choose_vertex(generator);
+      return make_tuple(V[index], P_sum);
+    }
+    case UNIFORM: {
+      vector<int> C(P.size());
+      transform(
+          P.begin(), P.end(), C.begin(), [](const double &value) -> int { return value != 0.0; });
+      int C_sum = accumulate(C.begin(), C.end(), 0.0);
+      discrete_distribution<int> choose_vertex(C.begin(), C.end());
+      int index = choose_vertex(generator);
+      return make_tuple(V[index], C_sum * P[index]);
+    }
+    default:
+      throw invalid_argument("Invalid algorithm: " + SAMPLING_METHOD_NAME.find(algorithm)->second);
+  }  
+}
+
 pair<mpz_class, double> get_permutation_sample(
-    const Graph &G, const int &n0, const Parameters &params) {
+    const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm) {
   random_device device;
   mt19937 generator(device());
   Graph H(G);
@@ -178,7 +214,7 @@ pair<mpz_class, double> get_permutation_sample(
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  double p_sigma = 1.0;
+  double p_sigma = 1.0, pv;
   while (H.getVertNo() > n0) {
     vector<Vertex> V;
     vector<double> P;
@@ -189,23 +225,24 @@ pair<mpz_class, double> get_permutation_sample(
       V.push_back(v);
       P.push_back(get_transition_probability(H, params, v, aux));
     }
-    double P_sum = accumulate(P.begin(), P.end(), 0.0);
-    discrete_distribution<int> choose_vertex(P.begin(), P.end());
-    int index = choose_vertex(generator);
-    S[H.getVertNo() - 1] = V[index]->getInfo(), p_sigma *= P_sum;
-    assert(aux.verify(H) == true);
-    aux.remove_vertex(V[index], H.getNeighSet(V[index])), H.delVert(V[index]);
-    assert(aux.verify(H) == true);
+    Vertex v;
+    tie(v, pv) = sample_vertex(V, P, algorithm, generator);
+    S[H.getVertNo() - 1] = v->getInfo(), p_sigma *= pv;
+    assert(aux.verify(H));
+    aux.remove_vertex(v, H.getNeighSet(v)), H.delVert(v);
+    assert(aux.verify(H));
   }
   return make_pair(encode_permutation(S), p_sigma);
 }
 
 map<mpz_class, double> get_permutation_probabilities_sampling(
-    const Graph &G, const int &n0, const Parameters &params, const int &tries) {
+    const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
+    const int &tries) {
   map<mpz_class, double> permutations;
   // TODO(unknown): parallelize
   for (int i = 0; i < tries; i++) {
-    pair<mpz_class, double> sigma_with_probability = get_permutation_sample(G, n0, params);
+    pair<mpz_class, double> sigma_with_probability
+        = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
   }
   double total_probability = accumulate(
@@ -233,7 +270,7 @@ map<pair<int, int>, double> get_p_uv_from_permutations(
   return p_uv;
 }
 
-void print(
+void print_density_precision(
     const string &name, const vector<double> &density, const vector<double> &precision,
     const int &n, const int &n0, const Parameters &params, ostream &out_file) {
   cout << "Graph - n: " << n << ", n0: " << n0
@@ -268,7 +305,8 @@ vector<double> LP_bound_exact_single(
 }
 
 vector<double> LP_bound_approximate_single(
-    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+    const Graph &G0, const int &n, const Parameters &params, const SamplingMethod &algorithm,
+    const vector<double> &epsilon) {
   Graph G(G0);
   generate_graph_koala(G, n, params);
 
@@ -276,7 +314,7 @@ vector<double> LP_bound_approximate_single(
   apply_permutation(G, S);
 
   map<mpz_class, double> permutations =
-      get_permutation_probabilities_sampling(G, G0.getVertNo(), params, SIGMA_TRIES);
+      get_permutation_probabilities_sampling(G, G0.getVertNo(), params, algorithm, SIGMA_TRIES);
   map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
   vector<double> solutions;
   for (const double &eps : epsilon) {
@@ -329,11 +367,12 @@ void LP_bound_exact(
   for (auto &s : solution) {
     s /= G_TRIES;
   }
-  print("exact", epsilon, solution, n, n0, params, out_file);
+  print_density_precision("exact", epsilon, solution, n, n0, params, out_file);
 }
 
 void LP_bound_approximate(
-    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
+    const int &n, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
+    ostream &out_file) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
@@ -345,7 +384,7 @@ void LP_bound_approximate(
     for (int i = 0; i < G_TRIES; i++) {
       futures[i] = async(
           launch::async, &LP_bound_approximate_single,
-          cref(G0), cref(n), cref(params), cref(epsilon));
+          cref(G0), cref(n), cref(params), cref(algorithm), cref(epsilon));
     }
     for (int i = 0; i < G_TRIES; i++) {
       vector<double> solution_single = futures[i].get();
@@ -356,7 +395,8 @@ void LP_bound_approximate(
     }
   } else {
     for (int i = 0; i < G_TRIES; i++) {
-      vector<double> solution_single = LP_bound_approximate_single(G0, n, params, epsilon);
+      vector<double> solution_single =
+          LP_bound_approximate_single(G0, n, params, algorithm, epsilon);
       transform(
           solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
           std::plus<double>());
@@ -366,8 +406,9 @@ void LP_bound_approximate(
   for (auto &sol : solution) {
     sol /= G_TRIES;
   }
-  print(
-      "wiuf-" + to_string(G_TRIES) + "-" + to_string(SIGMA_TRIES),
+  print_density_precision(
+      SAMPLING_METHOD_NAME.find(algorithm)->second + "-" + to_string(G_TRIES)
+          + "-" + to_string(SIGMA_TRIES),
       epsilon, solution, n, n0, params, out_file);
 }
 
@@ -387,6 +428,7 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     sigma_tries.push_back(tries);
   }
   vector<double> mse_permutations(sigma_tries.size()), mse_p_uv(sigma_tries.size());
+  SamplingMethod algorithm = SamplingMethod::WIUF;
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph_koala(G, n, params);
@@ -398,7 +440,8 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     auto p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
     for (int j = 0; j < static_cast<int>(sigma_tries.size()); j++) {
       auto permutations_apx =
-          get_permutation_probabilities_sampling(G, G0.getVertNo(), params, sigma_tries[j]);
+          get_permutation_probabilities_sampling(
+              G, G0.getVertNo(), params, algorithm, sigma_tries[j]);
       auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
       mse_permutations[j] += mean_square_error(permutations_opt, permutations_apx);
       mse_p_uv[j] += mean_square_error(p_uv_opt, p_uv_apx);
@@ -433,10 +476,11 @@ int main(int, char *argv[]) {
       validate_problem_size(n, n0);
       ofstream out_file(name, ios_base::app);
       LP_bound_exact(n, n0, params, out_file);
-    } else if (action == "approximate") {
+    } else if (SAMPLING_METHOD_REVERSE_NAME.count(action)) {
       ofstream out_file(name, ios_base::app);
-      LP_bound_approximate(n, n0, params, out_file);
-    } else if (action == "compare_probabilities") {
+      LP_bound_approximate(
+          n, n0, params, SAMPLING_METHOD_REVERSE_NAME.find(action)->second, out_file);
+    } else if (action == "check_convergence") {
       validate_problem_size(n, n0);
       compare_probabilities(n, n0, params);
     } else {
