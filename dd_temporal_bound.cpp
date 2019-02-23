@@ -46,9 +46,10 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const int G_TRIES = 100, SIGMA_TRIES = 200000;
+const int G_TRIES = 100, SIGMA_TRIES = 100;
 const bool G_PARALLEL = true;
 const double EPS_MIN = 0.2, EPS_STEP = 0.1;
+const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 
 enum SamplingMethod { WIUF, UNIFORM };
 
@@ -239,11 +240,13 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
   map<mpz_class, double> permutations;
-  // TODO(unknown): parallelize
   for (int i = 0; i < tries; i++) {
     pair<mpz_class, double> sigma_with_probability
         = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
+    if ((i + 1) % 10000 == 0) {
+      cerr << "Finished tries " << i + 1 << "/" << tries << endl;
+    }
   }
   double total_probability = accumulate(
       permutations.begin(), permutations.end(), 0.0,
@@ -424,7 +427,7 @@ double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<int> sigma_tries;
-  for (int tries = 10; tries < 12000; tries *= 2) {
+  for (int tries = MIN_TRIES_TEST; tries <= MAX_TRIES_TEST; tries *= 2) {
     sigma_tries.push_back(tries);
   }
   vector<double> mse_permutations(sigma_tries.size()), mse_p_uv(sigma_tries.size());
