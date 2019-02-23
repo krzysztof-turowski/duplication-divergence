@@ -24,10 +24,6 @@
 #include "./dd_koala.h"
 #pragma GCC diagnostic pop
 
-#include <future>
-
-#include "./lib/threadpool/ThreadPool.h"
-
 using namespace std;
 
 typedef Koala::Graph<int, int> Graph;
@@ -35,8 +31,6 @@ typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const double STEP_P = 0.1, STEP_R = 1.0;
 const int IS_TRIES = 100;
-const bool ML_PARALLEL = true;
-const int ML_THREADS = 1;
 
 class LikelihoodValue {
  public:
@@ -81,21 +75,12 @@ long double likelihood_value(
 LikelihoodValue importance_sampling(
     const Graph &G, const int &n0, const Parameters &params, const Parameters &params_0) {
   vector<long double> likelihood_values(IS_TRIES);
-  if (ML_PARALLEL) {
-    vector<future<long double>> futures(IS_TRIES);
-    ThreadPool pool(ML_THREADS);
-    for (int i = 0; i < IS_TRIES; i++) {
-      futures[i] =
-          pool.enqueue([&] {
-              return likelihood_value(cref(G), cref(n0), cref(params), cref(params_0));
-          });
-    }
-    for (int i = 0; i < IS_TRIES; i++) {
-      likelihood_values[i] = futures[i].get();
-    }
-  } else {
-    for (int i = 0; i < IS_TRIES; i++) {
-      likelihood_values[i] = likelihood_value(G, n0, params, params_0);
+  #pragma omp parallel
+  for (int i = 0; i < IS_TRIES; i++) {
+    likelihood_values[i] = likelihood_value(G, n0, params, params_0);
+    # pragma omp critical
+    {
+      std::cerr << "Run " << i + 1 << "/" << IS_TRIES << std::endl;
     }
   }
   long double likelihood_score =
