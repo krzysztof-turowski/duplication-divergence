@@ -425,12 +425,31 @@ double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
 }
 
 template <typename T>
+double mean_square_error_uniform(const map<T, double> &apx, const double &p, const double &N) {
+  double mse = 0;
+  for (auto &sigma : apx) {
+    mse += pow(p - sigma.second, 2) / p;
+  }
+  mse += p * p * (N - apx.size());
+  return mse / N;
+}
+
+template <typename T>
 double max_relative_error(const map<T, double> &opt, const map<T, double> &apx) {
   double mre = 0;
   for (auto &uv : opt) {
     double opt_uv = opt.find(uv.first)->second;
     double apx_uv = apx.find(uv.first)->second;
     mre = max(mre, fabs(apx_uv / opt_uv - 1));
+  }
+  return mre;
+}
+
+template <typename T>
+double max_relative_error_uniform(const map<T, double> &apx, const double &p) {
+  double mre = 0;
+  for (auto &uv : apx) {
+    mre = max(mre, fabs(uv.second / p - 1));
   }
   return mre;
 }
@@ -450,12 +469,29 @@ class ErrorStruct {
     this->permutations_counter++;
   }
 
+  void add_permutations_uniform(
+      const int &tries, const map<mpz_class, double> &permutations_apx,
+      const int &n, const int &n0) {
+    double p = exp(-lgamma(n - n0 + 1));
+    this->permutations_mse[tries] += mean_square_error_uniform(permutations_apx, p, 1 / p);
+    this->permutations_lambda[tries] += max_relative_error_uniform(permutations_apx, p);
+    this->permutations_counter++;
+  }
+
   void add_p_uv(
       const int &tries,
       const map<pair<int, int>, double> &p_uv_opt,
       const map<pair<int, int>, double> &p_uv_apx) {
     this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx);
     this->p_uv_lambda[tries] += max_relative_error(p_uv_opt, p_uv_apx);
+    this->p_uv_counter++;
+  }
+
+  void add_p_uv_uniform(
+      const int &tries, const map<pair<int, int>, double> &p_uv_apx, const int &n, const int &n0) {
+    this->p_uv_mse[tries] +=
+        mean_square_error_uniform(p_uv_apx, 0.5, (n - n0) * (n - n0 - 1));
+    this->p_uv_lambda[tries] += max_relative_error_uniform(p_uv_apx, 0.5);
     this->p_uv_counter++;
   }
 
@@ -529,12 +565,28 @@ void print_errors(
   print_errors(sigma_tries, errors, p_uv_lambda);
 }
 
+void validate_problem_size(const int &n, const int &n0) {
+  if (exp(lgamma(n) - lgamma(n0)) > 10e8) {
+    throw out_of_range(
+        "Graph too large for exact mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
+  }
+}
+
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
+  bool special_value_uniform =
+      (params.mode == Mode::PURE_DUPLICATION && (params.p == 0.0 || params.p == 1.0));
+  if (special_value_uniform) {
+    cerr << "Special value - validation ignored" << endl;
+  } else {
+    validate_problem_size(n, n0);
+  }
+
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<int> sigma_tries;
   for (int tries = MIN_TRIES_TEST; tries <= MAX_TRIES_TEST; tries *= 2) {
     sigma_tries.push_back(tries);
   }
+
   map<SamplingMethod, ErrorStruct> errors;
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
@@ -543,29 +595,34 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     vector<int> S = generate_permutation(n, G0.getVertNo());
     apply_permutation(G, S);
 
-    auto permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
-    auto p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
+    map<mpz_class, double> permutations_opt;
+    map<pair<int, int>, double> p_uv_opt;
+    if (!special_value_uniform) {
+      permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
+      p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
+    }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
             get_permutation_probabilities_sampling(
                 G, G0.getVertNo(), params, algorithm.first, tries);
-        errors[algorithm.first].add_permutations(tries, permutations_opt, permutations_apx);
+        if (special_value_uniform) {
+          errors[algorithm.first].add_permutations_uniform(tries, permutations_apx, n, n0);
+        } else {
+          errors[algorithm.first].add_permutations(tries, permutations_opt, permutations_apx);
+        }
 
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
-        errors[algorithm.first].add_p_uv(tries, p_uv_opt, p_uv_apx);
+        if (special_value_uniform) {
+          errors[algorithm.first].add_p_uv_uniform(tries, p_uv_apx, n, n0);
+        } else {
+          errors[algorithm.first].add_p_uv(tries, p_uv_opt, p_uv_apx);
+        }
       }
     }
     cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   print_errors(sigma_tries, errors);
-}
-
-void validate_problem_size(const int &n, const int &n0) {
-  if (exp(lgamma(n) - lgamma(n0)) > 10e8) {
-    throw out_of_range(
-        "Graph too large for exact_bound mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
-  }
 }
 
 int main(int, char *argv[]) {
@@ -584,7 +641,6 @@ int main(int, char *argv[]) {
       LP_bound_approximate(
           n, n0, params, SAMPLING_METHOD_REVERSE_NAME.find(action)->second, out_file);
     } else if (action == "check_convergence") {
-      validate_problem_size(n, n0);
       compare_probabilities(n, n0, params);
     } else {
       throw invalid_argument("Invalid action: " + action);
