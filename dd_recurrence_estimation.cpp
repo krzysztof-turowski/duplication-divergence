@@ -1,15 +1,16 @@
 // Tool for inference the values of parameters for various duplication-divergence models.
 // Compile: g++ dd_recurrence_estimation.cpp -O3 -o ./dd_recurrence_estimation
 // Run: ./dd_recurrence_estimation synthetic MODE n n0 PARAMETERS
-//   or ./dd_recurrence_estimation real_data MODE
+//   or ./dd_recurrence_estimation real_data FILE MODE
 
 #include "./dd_header.h"
 
 #include <functional>
-#include <future>
 #include <tuple>
 
 using namespace std;
+
+typedef vector<set<int>> Graph;
 
 const double R_STEP = 1.0;
 const double Q_STEP = 0.1;
@@ -37,7 +38,7 @@ class DataObject {
   }
 };
 
-void degree_distribution(const vector<set<int>> &G, DataObject &data) {
+void degree_distribution(const Graph &G, DataObject &data) {
   data.no_vertices = G.size(), data.low_degree = G.size(), data.high_degree = 0;
   for (auto v : G) {
     data.low_degree = min(data.low_degree, static_cast<int>(v.size()));
@@ -49,7 +50,7 @@ void degree_distribution(const vector<set<int>> &G, DataObject &data) {
   data.average_degree_squared /= data.no_vertices;
 }
 
-void count_triangles(const vector<set<int>> &G, DataObject &data) {
+void count_triangles(const Graph &G, DataObject &data) {
   for (auto v : G) {
     data.open_triangles += v.size() * (v.size() - 1) / 2;
 
@@ -64,7 +65,7 @@ void count_triangles(const vector<set<int>> &G, DataObject &data) {
   data.triangles /= 3;
 }
 
-DataObject get_params_for_graph(const vector<set<int>> &G, bool verbose = false) {
+DataObject get_params_for_graph(const Graph &G, bool verbose = false) {
   DataObject data;
   degree_distribution(G, data);
   count_triangles(G, data);
@@ -76,14 +77,14 @@ DataObject get_params_for_graph(const vector<set<int>> &G, bool verbose = false)
 }
 
 DataObject get_params_for_synthetic_graph(
-    const vector<set<int>> &G0, const int &n, const Parameters &params) {
-  vector<set<int>> G = G0;
+    const Graph &G0, const int &n, const Parameters &params) {
+  Graph G = G0;
   generate_graph(G, n, params);
   return get_params_for_graph(G);
 }
 
 tuple<DataObject, DataObject> get_empirical_interval(
-    DataObject &g_data, const vector<set<int>> &G0, const Parameters &params,
+    DataObject &g_data, const Graph &G0, const Parameters &params,
     function<double& (DataObject&)> get_value) {
   if (!(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1)) {
     throw invalid_argument(
@@ -91,10 +92,10 @@ tuple<DataObject, DataObject> get_empirical_interval(
             + ", TI_TRIES = " + to_string(TI_TRIES));
   }
   vector<DataObject> values(TI_TRIES);
-  #pragma omp parallel
+  #pragma omp parallel for
   for (int i = 0; i < TI_TRIES; i++) {
     values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
-    # pragma omp critical
+    #pragma omp critical
     {
       std::cerr << "Run " << i + 1 << "/" << TI_TRIES << std::endl;
     }
@@ -244,7 +245,7 @@ vector<Parameters> chung_lu_get_parameters(
 }
 
 void chung_lu_estimate_parameter(
-    const string &name, DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0,
+    const string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
     function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval) {
   vector<Parameters> S = chung_lu_get_parameters(g0_data, g_data, get_value);
   if (tolerance_interval) {
@@ -262,7 +263,7 @@ void chung_lu_estimate_parameter(
 }
 
 void chung_lu_estimate(
-    DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
+    DataObject &g_data, DataObject &g0_data, const Graph &G0, ofstream &out_file) {
   auto D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
   chung_lu_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
 
@@ -365,7 +366,7 @@ vector<Parameters> pastor_satorras_get_parameters(
 }
 
 void pastor_satorras_estimate_parameter(
-    const string &name, DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0,
+    const string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
     function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval) {
   vector<Parameters> S = pastor_satorras_get_parameters(g0_data, g_data, get_value);
   if (tolerance_interval) {
@@ -383,7 +384,7 @@ void pastor_satorras_estimate_parameter(
 }
 
 void pastor_satorras_estimate(
-    DataObject &g_data, DataObject &g0_data, const vector<set<int>> &G0, ofstream &out_file) {
+    DataObject &g_data, DataObject &g0_data, const Graph &G0, ofstream &out_file) {
   auto D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
   pastor_satorras_estimate_parameter(
       "Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
@@ -401,7 +402,7 @@ void pastor_satorras_estimate(
 }
 
 void process_graph(
-    const vector<set<int>> &G, const vector<set<int>> &G0, const Mode &mode, ofstream &out_file) {
+    const Graph &G, const Graph &G0, const Mode &mode, ofstream &out_file) {
   DataObject g0_data = get_params_for_graph(G0, true), g_data = get_params_for_graph(G, true);
   switch (mode) {
     case CHUNG_LU:
@@ -416,8 +417,8 @@ void process_graph(
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  vector<set<int>> G0 = generate_seed(n0, 1.0);
-  vector<set<int>> G = G0;
+  Graph G0 = generate_seed(n0, 1.0);
+  Graph G = G0;
   generate_graph(G, n, params);
   ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
   cout << "Synthetic data: " + params.to_string() << endl;
@@ -425,8 +426,8 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
 }
 
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
-  vector<set<int>> G = read_graph(FILES_FOLDER + graph_name);
-  vector<set<int>> G0 = read_graph(FILES_FOLDER + seed_name);
+  Graph G = read_graph(FILES_FOLDER + graph_name);
+  Graph G0 = read_graph(FILES_FOLDER + seed_name);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, ""));
   cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);
@@ -434,25 +435,16 @@ void real_world_data(const string &graph_name, const string &seed_name, const Mo
 
 int main(int, char *argv[]) {
   try {
-    string action(argv[1]), mode(argv[2]);
+    string action(argv[1]);
     if (action == "synthetic") {
+      string mode(argv[2]);
       int n = stoi(argv[3]), n0 = stoi(argv[4]);
       Parameters params;
       params.initialize(mode, argv + 5);
       synthetic_data(n, n0, params);
     } else if (action == "real_data") {
-      // TODO(unknown): make datasets parameter-variable
-      Mode mode_v = REVERSE_NAME.find(mode)->second;
-      real_world_data("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", mode_v);
-      real_world_data("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", mode_v);
-      real_world_data("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", mode_v);
-      real_world_data("G-a-thaliana.txt", "G0-a-thaliana.txt", mode_v);
-      real_world_data("G-c-elegans.txt", "G0-c-elegans.txt", mode_v);
-      real_world_data("G-d-melanogaster.txt", "G0-d-melanogaster.txt", mode_v);
-      real_world_data("G-homo-sapiens.txt", "G0-homo-sapiens.txt", mode_v);
-      real_world_data("G-mus-musculus.txt", "G0-mus-musculus.txt", mode_v);
-      real_world_data("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", mode_v);
-      real_world_data("G-s-pombe.txt", "G0-s-pombe.txt", mode_v);
+      string graph_name(argv[2]), mode(argv[3]);
+      real_world_data(graph_name, get_seed_name(graph_name), REVERSE_NAME.find(mode)->second);
     } else {
       throw invalid_argument("Invalid action: " + action);
     }
