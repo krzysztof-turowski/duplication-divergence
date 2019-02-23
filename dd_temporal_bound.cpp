@@ -48,7 +48,7 @@ typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
 const bool G_PARALLEL = true;
-const double EPS_MIN = 0.2, EPS_STEP = 0.05;
+const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 
 vector<int> generate_permutation(const int &n, const int &n0) {
   random_device device;
