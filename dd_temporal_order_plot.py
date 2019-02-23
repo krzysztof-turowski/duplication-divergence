@@ -20,6 +20,7 @@ POINTS = 30
 
 def plot_algorithms(filename):
     if not os.path.isfile(filename):
+        print('Reconstruction algorithms file missing')
         return
     with open(filename) as data_file:
         data = data_file.readlines()
@@ -37,6 +38,7 @@ def plot_algorithms(filename):
 
 def plot_theoterical_curves(filename):
     if not os.path.isfile(filename):
+        print('Theoretical bound file missing')
         return
     with open(filename) as data_file:
         data = data_file.readlines()
@@ -50,7 +52,7 @@ def plot_labels():
     pyplot.legend(loc = 'upper left')
     pyplot.ylabel(r'$\theta$')
     pyplot.xlabel(r'$\epsilon$')
-    y_bottom, y_top = max(-0.05, sum(pyplot.ylim()) - 1.05), 1.05
+    y_bottom, y_top = min(max(-0.05, sum(pyplot.ylim()) - 1.05), 0.45), 1.05
     pyplot.ylim(y_bottom, y_top)
     x_scale, y_scale = 0.2, round((y_top - y_bottom) / 5, 1)
     pyplot.gca().get_xaxis().set_major_locator(pyplot.MultipleLocator(x_scale))
