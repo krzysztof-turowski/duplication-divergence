@@ -12,19 +12,13 @@
 
 #include <algorithm>
 #include <chrono>
-#include <future>
-#include <regex>
 #include <string>
-
-#include "./lib/threadpool/ThreadPool.h"
 
 typedef std::vector<std::set<int>> Graph;
 typedef std::tuple<double, double, double, double> AutomorphismsInfo;
 typedef std::tuple<double, double, double, double> PValuesInfo;
 
 const int PVAL_TRIES = 100;
-const bool AUT_PARALLEL = true;
-const int AUT_THREADS = 1;
 
 enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
@@ -115,25 +109,16 @@ AutomorphismsInfo log_automorphisms_single(
 }
 
 std::vector<AutomorphismsInfo> log_automorphisms(
-    const Graph &G0, const int &n, const Parameters &params, const int &tries) {
+    const std::vector<std::set<int>> &G0, const int &n, const Parameters &params,
+    const int &tries) {
   std::vector<AutomorphismsInfo> log_aut_H(tries);
-  if (AUT_PARALLEL) {
-    ThreadPool pool(AUT_THREADS);
-    std::vector<std::future<AutomorphismsInfo>> futures(tries);
-    for (int i = 0; i < tries; i++) {
-      futures[i] =
-          pool.enqueue([&] {
-              return log_automorphisms_single(std::cref(G0), std::cref(n), std::cref(params));
-          });
-    }
-    for (int i = 0; i < tries; i++) {
-      log_aut_H[i] = futures[i].get();
-    }
-  } else {
-    for (int i = 0; i < tries; i++) {
-      std::cerr << "Run " << i << " from " << tries << ": ";
-      log_aut_H[i] = log_automorphisms_single(G0, n, params);
-      std::cerr << std::get<0>(log_aut_H[i]) << std::endl;
+  #pragma omp parallel for num_threads(THREADS)
+  for (int i = 0; i < tries; i++) {
+    log_aut_H[i] = log_automorphisms_single(G0, n, params);
+    # pragma omp critical
+    {
+      std::cerr << "Run " << i + 1 << "/" << tries << ": "
+          << std::get<0>(log_aut_H[i]) << std::endl;
     }
   }
   return log_aut_H;
