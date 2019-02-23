@@ -1,6 +1,3 @@
 [submodule "lib/snap"]
 	path = lib/snap
 	url = https://github.com/snap-stanford/snap
-[submodule "lib/threadpool"]
-	path = lib/threadpool
-	url = https://github.com/progschj/ThreadPool.git

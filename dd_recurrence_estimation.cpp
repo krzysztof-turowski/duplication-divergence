@@ -17,7 +17,6 @@ const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
-const bool TI_PARALLEL = true;
 const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
 
 enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
@@ -92,19 +91,12 @@ tuple<DataObject, DataObject> get_empirical_interval(
             + ", TI_TRIES = " + to_string(TI_TRIES));
   }
   vector<DataObject> values(TI_TRIES);
-  if (TI_PARALLEL) {
-    vector<future<DataObject>> futures(TI_TRIES);
-    for (int i = 0; i < TI_TRIES; i++) {
-      futures[i] = async(
-          launch::async, &get_params_for_synthetic_graph,
-          cref(G0), cref(g_data.no_vertices), cref(params));
-    }
-    for (int i = 0; i < TI_TRIES; i++) {
-      values[i] = futures[i].get();
-    }
-  } else {
-    for (int i = 0; i < TI_TRIES; i++) {
-      values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
+  #pragma omp parallel
+  for (int i = 0; i < TI_TRIES; i++) {
+    values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
+    # pragma omp critical
+    {
+      std::cerr << "Run " << i + 1 << "/" << TI_TRIES << std::endl;
     }
   }
   switch (TI_ALGORITHM) {

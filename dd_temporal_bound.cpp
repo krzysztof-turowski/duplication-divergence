@@ -28,18 +28,13 @@
 
 #if defined(glpk)
   #include "./dd_glpk.h"
-  const int G_THREADS = -1;
 #elif defined(gurobi)
   #include "./dd_gurobi.h"
-  const int G_THREADS = 4;
 #endif
 
 #include <gmpxx.h>
 
-#include <future>
 #include <random>
-
-#include "./lib/threadpool/ThreadPool.h"
 
 using namespace std;
 
@@ -47,8 +42,7 @@ typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 100, SIGMA_TRIES = 100;
-const bool G_PARALLEL = true;
-const double EPS_MIN = 0.2, EPS_STEP = 0.1;
+const double EPS_MIN = 0.2, EPS_STEP = 0.025;
 const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 
 enum SamplingMethod { WIUF, UNIFORM };
@@ -240,6 +234,7 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
   map<mpz_class, double> permutations;
+  #pragma omp parallel
   for (int i = 0; i < tries; i++) {
     pair<mpz_class, double> sigma_with_probability
         = get_permutation_sample(G, n0, params, algorithm);
@@ -334,36 +329,14 @@ void LP_bound_exact(
     epsilon.push_back(eps);
   }
   vector<double> solution(epsilon.size(), 0.0);
-  if (G_PARALLEL) {
-    vector<future<vector<double>>> futures(G_TRIES);
-    if (G_THREADS > 0) {
-      ThreadPool pool(G_THREADS);
-      for (int i = 0; i < G_TRIES; i++) {
-        futures[i] =
-            pool.enqueue([&] {
-              return LP_bound_exact_single(cref(G0), cref(n), cref(params), cref(epsilon));
-            });
-      }
-    } else {
-      for (int i = 0; i < G_TRIES; i++) {
-        futures[i] = async(
-            launch::async, &LP_bound_exact_single,
-            cref(G0), cref(n), cref(params), cref(epsilon));
-      }
-    }
-    for (int i = 0; i < G_TRIES; i++) {
-      vector<double> solution_single = futures[i].get();
-      transform(
-          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-          std::plus<double>());
-      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
-    }
-  } else {
-    for (int i = 0; i < G_TRIES; i++) {
-      vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-      transform(
-          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-          std::plus<double>());
+  #pragma omp parallel
+  for (int i = 0; i < G_TRIES; i++) {
+    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
+    transform(
+        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+        std::plus<double>());
+    #pragma omp critical
+    {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
     }
   }
@@ -382,27 +355,15 @@ void LP_bound_approximate(
     epsilon.push_back(eps);
   }
   vector<double> solution(epsilon.size(), 0.0);
-  if (G_PARALLEL) {
-    vector<future<vector<double>>> futures(G_TRIES);
-    for (int i = 0; i < G_TRIES; i++) {
-      futures[i] = async(
-          launch::async, &LP_bound_approximate_single,
-          cref(G0), cref(n), cref(params), cref(algorithm), cref(epsilon));
-    }
-    for (int i = 0; i < G_TRIES; i++) {
-      vector<double> solution_single = futures[i].get();
-      transform(
-          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-          std::plus<double>());
-      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
-    }
-  } else {
-    for (int i = 0; i < G_TRIES; i++) {
-      vector<double> solution_single =
-          LP_bound_approximate_single(G0, n, params, algorithm, epsilon);
-      transform(
-          solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-          std::plus<double>());
+  #pragma omp parallel
+  #pragma omp for
+  for (int i = 0; i < G_TRIES; i++) {
+    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
+    transform(
+        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
+        std::plus<double>());
+    #pragma omp critical
+    {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
     }
   }
