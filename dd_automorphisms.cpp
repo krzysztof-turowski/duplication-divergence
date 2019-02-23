@@ -17,6 +17,10 @@
 
 #include "./lib/threadpool/ThreadPool.h"
 
+typedef std::vector<std::set<int>> Graph;
+typedef std::tuple<double, double, double, double> AutomorphismsInfo;
+typedef std::tuple<double, double, double, double> PValuesInfo;
+
 const int PVAL_TRIES = 100;
 const bool AUT_PARALLEL = true;
 const int AUT_THREADS = 1;
@@ -25,7 +29,7 @@ enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
 const AutomorphismsDetection ALGORITHM = AutomorphismsDetection::NAUTY_DENSE;
 
-double log_automorphisms(const std::vector<std::set<int>> &G) {
+double log_automorphisms(const Graph &G) {
   switch (ALGORITHM) {
     case NAUTY_DENSE:
       return log_automorphisms_dense(G);
@@ -60,44 +64,11 @@ double log_automorphisms(const std::vector<std::set<int>> &G) {
   }
 }
 
-double log_automorphisms_single(
-    const std::vector<std::set<int>> &G0, const int &n, const Parameters &params) {
-  std::vector<std::set<int>> H = G0;
-  generate_graph(H, n, params);
-  return log_automorphisms(H);
-}
-
-std::vector<double> log_automorphisms(
-    const std::vector<std::set<int>> &G0, const int &n, const Parameters &params,
-    const int &tries) {
-  std::vector<double> log_aut_H(tries);
-  if (AUT_PARALLEL) {
-    ThreadPool pool(AUT_THREADS);
-    std::vector<std::future<double>> futures(tries);
-    for (int i = 0; i < tries; i++) {
-      futures[i] =
-          pool.enqueue([&] {
-              return log_automorphisms_single(std::cref(G0), std::cref(n), std::cref(params));
-          });
-    }
-    for (int i = 0; i < tries; i++) {
-      log_aut_H[i] = futures[i].get();
-    }
-  } else {
-    for (int i = 0; i < tries; i++) {
-      std::cerr << "Run " << i << " from " << tries << ": ";
-      log_aut_H[i] = log_automorphisms_single(G0, n, params);
-      std::cerr << log_aut_H[i] << std::endl;
-    }
-  }
-  return log_aut_H;
-}
-
-double log_automorphisms_from_isolated_nodes(const std::vector<std::set<int>> &G) {
+double log_automorphisms_from_isolated_nodes(const Graph &G) {
   return lgamma(isolated_nodes(G) + 1);
 }
 
-int log_automorphisms_from_cherries(const std::vector<std::set<int>> &G) {
+double log_automorphisms_from_cherries(const Graph &G) {
   std::vector<int> V(G.size());
   for (int i = 0; i < static_cast<int>(G.size()); i++) {
     if (G[i].size() == 1) {
@@ -111,15 +82,15 @@ int log_automorphisms_from_cherries(const std::vector<std::set<int>> &G) {
   return out;
 }
 
-double log_automorphisms_from_copies(const std::vector<std::set<int>> &G) {
+double log_automorphisms_from_copies(const Graph &G) {
   std::vector<bool> V(G.size(), false);
   double out = 0, count;
   for (int i = 0; i < static_cast<int>(G.size()); i++) {
+    if (V[i]) {
+      continue;
+    }
     count = 1, V[i] = true;
     for (int j = i + 1; j < static_cast<int>(G.size()); j++) {
-      if (V[j]) {
-        continue;
-      }
       if (G[i] == G[j]) {
         count++, V[j] = true;
       }
@@ -129,37 +100,111 @@ double log_automorphisms_from_copies(const std::vector<std::set<int>> &G) {
   return out;
 }
 
-void log_automorphisms_p_value(
-    const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
-  std::vector<std::set<int>> G = read_graph(FILES_FOLDER + graph_name);
-  std::vector<std::set<int>> G0 = read_graph(FILES_FOLDER + seed_name);
-  double log_aut_G = log_automorphisms(G);
-  std::vector<double> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
+AutomorphismsInfo log_automorphisms_single(const Graph &G) {
+  return AutomorphismsInfo(
+      log_automorphisms(G), log_automorphisms_from_isolated_nodes(G),
+      log_automorphisms_from_cherries(G), log_automorphisms_from_copies(G));
+}
+
+AutomorphismsInfo log_automorphisms_single(
+    const Graph &G0, const int &n, const Parameters &params) {
+  Graph H(G0);
+  generate_graph(H, n, params);
+  return log_automorphisms_single(H);
+}
+
+std::vector<AutomorphismsInfo> log_automorphisms(
+    const Graph &G0, const int &n, const Parameters &params, const int &tries) {
+  std::vector<AutomorphismsInfo> log_aut_H(tries);
+  if (AUT_PARALLEL) {
+    ThreadPool pool(AUT_THREADS);
+    std::vector<std::future<AutomorphismsInfo>> futures(tries);
+    for (int i = 0; i < tries; i++) {
+      futures[i] =
+          pool.enqueue([&] {
+              return log_automorphisms_single(std::cref(G0), std::cref(n), std::cref(params));
+          });
+    }
+    for (int i = 0; i < tries; i++) {
+      log_aut_H[i] = futures[i].get();
+    }
+  } else {
+    for (int i = 0; i < tries; i++) {
+      std::cerr << "Run " << i << " from " << tries << ": ";
+      log_aut_H[i] = log_automorphisms_single(G0, n, params);
+      std::cerr << std::get<0>(log_aut_H[i]) << std::endl;
+    }
+  }
+  return log_aut_H;
+}
+
+template <typename T>
+void print(const std::string &graph_name, const T &info) {
+  std::cout << std::left << std::setw(25) << graph_name << " " << std::right;
+  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<0>(info) << " ";
+  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<1>(info) << " ";
+  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<2>(info) << " ";
+  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<3>(info) << " ";
+  std::cout << std::endl;
+}
+
+double get_average(
+    const std::vector<AutomorphismsInfo> &log_aut_H,
+    std::function<double(const AutomorphismsInfo&)> get_value) {
+  return std::accumulate(
+      log_aut_H.begin(), log_aut_H.end(), 0.0,
+      [&](double &value, const AutomorphismsInfo &info){
+          return value + get_value(info);
+      }) / log_aut_H.size();
+}
+
+double get_p_value(
+    const AutomorphismsInfo log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H,
+    std::function<double(const AutomorphismsInfo&)> get_value) {
+  double log_aut_G_value = get_value(log_aut_G);
   double p_lower =
       std::count_if(
           log_aut_H.begin(), log_aut_H.end(),
-          [&](const double &value){ return value < log_aut_G; }) / PVAL_TRIES;
+          [&](const AutomorphismsInfo &info){ return get_value(info) < log_aut_G_value; });
   double p_upper =
       std::count_if(
           log_aut_H.begin(), log_aut_H.end(),
-          [&](const double &value){ return value > log_aut_G; }) / PVAL_TRIES;
-  double p_value = 2 * std::min(p_lower, p_upper);
-  std::cout << graph_name << " "
-      << std::accumulate(log_aut_H.begin(), log_aut_H.end(), 0.0) / PVAL_TRIES << " "
-      << p_value << std::endl;
+          [&](const AutomorphismsInfo &info){ return get_value(info) > log_aut_G_value; });
+  return 2 * std::min(p_lower, p_upper) / log_aut_H.size();
+}
+
+void log_automorphisms_p_value(
+    const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
+  Graph G = read_graph(FILES_FOLDER + graph_name);
+  Graph G0 = read_graph(FILES_FOLDER + seed_name);
+  AutomorphismsInfo log_aut_G = log_automorphisms_single(G);
+  std::vector<AutomorphismsInfo> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
+
+  auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
+  auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
+  auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
+  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+
+  AutomorphismsInfo log_aut_avg_values =
+      AutomorphismsInfo(
+          get_average(log_aut_H, get_log_aut),
+          get_average(log_aut_H, get_log_aut_isolated),
+          get_average(log_aut_H, get_log_aut_cherries),
+          get_average(log_aut_H, get_log_aut_copies));
+  print(graph_name, log_aut_avg_values);
+  
+  PValuesInfo p_values =
+      PValuesInfo(
+          get_p_value(log_aut_G, log_aut_H, get_log_aut),
+          get_p_value(log_aut_G, log_aut_H, get_log_aut_isolated),
+          get_p_value(log_aut_G, log_aut_H, get_log_aut_cherries),
+          get_p_value(log_aut_G, log_aut_H, get_log_aut_copies));
+  print("", p_values);
 }
 
 void log_automorphisms(const std::string &graph_name) {
-  std::vector<std::set<int>> G = read_graph(FILES_FOLDER + graph_name);
-  std::cout << std::setw(25) << std::left << graph_name << " " << std::right
-    << std::fixed << std::setw(8) << std::setprecision(3)
-        << log_automorphisms(G) << " "
-    << std::fixed << std::setw(8) << std::setprecision(3)
-        << log_automorphisms_from_isolated_nodes(G) << " "
-    << std::fixed << std::setw(8) << std::setprecision(3)
-        << log_automorphisms_from_cherries(G) << " "
-    << std::fixed << std::setw(8) << std::setprecision(3)
-        << log_automorphisms_from_copies(G) << std::endl;
+  Graph G(read_graph(FILES_FOLDER + graph_name));
+  print(graph_name, log_automorphisms_single(G));
 }
 
 int main(int, char *argv[]) {
@@ -172,7 +217,7 @@ int main(int, char *argv[]) {
       std::string mode(argv[2]);
       params.initialize(mode, argv + 3);
       log_automorphisms_p_value("G-100-20-PS-0.1-0.3.txt", "G0-100-20-PS-0.1-0.3.txt", params);
-      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-0.2.txt", params);
+      log_automorphisms_p_value("G-100-20-PS-0.7-2.txt", "G0-100-20-PS-0.7-2.txt", params);
       log_automorphisms_p_value("G-100-20-PS-0.99-3.txt", "G0-100-20-PS-0.99-3.txt", params);
       log_automorphisms_p_value("G-a-thaliana.txt", "G0-a-thaliana.txt", params);
       log_automorphisms_p_value("G-c-elegans.txt", "G0-c-elegans.txt", params);
