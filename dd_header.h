@@ -6,6 +6,7 @@
 #include <iostream>
 #include <map>
 #include <random>
+#include <regex>
 #include <set>
 #include <string>
 #include <sstream>
@@ -147,6 +148,10 @@ inline std::string get_real_filename(
     const std::string &graph_name, const Mode &mode, const std::string &suffix) {
   return graph_name.substr(0, graph_name.find_last_of(".")) + "-"
       + SHORT_NAME.find(mode)->second + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
+}
+
+inline std::string get_seed_name(const std::string &graph_name) {
+  return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
 std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
