@@ -41,8 +41,8 @@ using namespace std;
 typedef Koala::Graph<int, int> Graph;
 typedef Koala::Graph<int, int>::PVertex Vertex;
 
-const int G_TRIES = 100, SIGMA_TRIES = 100;
-const double EPS_MIN = 0.2, EPS_STEP = 0.025;
+const int G_TRIES = 20, SIGMA_TRIES = 200000;
+const double EPS_MIN = 0.2, EPS_STEP = 0.1;
 const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 
 enum SamplingMethod { WIUF, UNIFORM };
@@ -234,7 +234,6 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
   map<mpz_class, double> permutations;
-  #pragma omp parallel
   for (int i = 0; i < tries; i++) {
     pair<mpz_class, double> sigma_with_probability
         = get_permutation_sample(G, n0, params, algorithm);
@@ -329,16 +328,19 @@ void LP_bound_exact(
     epsilon.push_back(eps);
   }
   vector<double> solution(epsilon.size(), 0.0);
-  #pragma omp parallel
+  vector<vector<double>> solutions(G_TRIES);
+  #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
+    solutions[i] = LP_bound_exact_single(G0, n, params, epsilon);
     #pragma omp critical
     {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
     }
+  }
+  for (int i = 0; i < G_TRIES; i++) {
+    transform(
+        solution.begin(), solution.end(), solutions[i].begin(), solution.begin(),
+        std::plus<double>());
   }
   for (auto &s : solution) {
     s /= G_TRIES;
@@ -355,17 +357,19 @@ void LP_bound_approximate(
     epsilon.push_back(eps);
   }
   vector<double> solution(epsilon.size(), 0.0);
-  #pragma omp parallel
-  #pragma omp for
+  vector<vector<double>> solutions(G_TRIES);
+  #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    vector<double> solution_single = LP_bound_exact_single(G0, n, params, epsilon);
-    transform(
-        solution.begin(), solution.end(), solution_single.begin(), solution.begin(),
-        std::plus<double>());
+    solutions[i] = LP_bound_approximate_single(G0, n, params, algorithm, epsilon);
     #pragma omp critical
     {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
     }
+  }
+  for (int i = 0; i < G_TRIES; i++) {
+    transform(
+        solution.begin(), solution.end(), solutions[i].begin(), solution.begin(),
+        std::plus<double>());
   }
   for (auto &sol : solution) {
     sol /= G_TRIES;
@@ -535,7 +539,8 @@ void validate_problem_size(const int &n, const int &n0) {
 
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   bool special_value_uniform =
-      (params.mode == Mode::PURE_DUPLICATION && (params.p == 0.0 || params.p == 1.0));
+      (params.mode == Mode::PURE_DUPLICATION
+          && (fabs(params.p) < EPS || fabs(params.p - 1.0) < EPS));
   if (special_value_uniform) {
     cerr << "Special value - validation ignored" << endl;
   } else {
