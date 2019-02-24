@@ -239,7 +239,10 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
         = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
     if ((i + 1) % 10000 == 0) {
-      cerr << "Finished tries " << i + 1 << "/" << tries << endl;
+      #pragma omp critical
+      {
+        cerr << "Finished tries " << i + 1 << "/" << tries << endl;
+      }
     }
   }
   double total_probability = accumulate(
@@ -554,6 +557,7 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
   }
 
   map<SamplingMethod, ErrorStruct> errors;
+  #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph_koala(G, n, params);
@@ -572,21 +576,28 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
         auto permutations_apx =
             get_permutation_probabilities_sampling(
                 G, G0.getVertNo(), params, algorithm.first, tries);
-        if (special_value_uniform) {
-          errors[algorithm.first].add_permutations_uniform(tries, permutations_apx, n, n0);
-        } else {
-          errors[algorithm.first].add_permutations(tries, permutations_opt, permutations_apx);
-        }
-
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
-        if (special_value_uniform) {
-          errors[algorithm.first].add_p_uv_uniform(tries, p_uv_apx, n, n0);
-        } else {
-          errors[algorithm.first].add_p_uv(tries, p_uv_opt, p_uv_apx);
+        
+        #pragma omp critical
+        {
+          ErrorStruct &error = errors[algorithm.first];
+          if (special_value_uniform) {
+            error.add_permutations_uniform(tries, permutations_apx, n, n0);
+          } else {
+            error.add_permutations(tries, permutations_opt, permutations_apx);
+          }
+          if (special_value_uniform) {
+            error.add_p_uv_uniform(tries, p_uv_apx, n, n0);
+          } else {
+            error.add_p_uv(tries, p_uv_opt, p_uv_apx);
+          }
         }
       }
     }
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    #pragma omp critical
+    {
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
   }
   print_errors(sigma_tries, errors);
 }
