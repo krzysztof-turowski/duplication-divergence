@@ -533,22 +533,12 @@ void print_errors(
   print_errors(sigma_tries, errors, p_uv_lambda);
 }
 
-void validate_problem_size(const int &n, const int &n0) {
-  if (exp(lgamma(n) - lgamma(n0)) > 10e8) {
-    throw out_of_range(
-        "Graph too large for exact mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
-  }
+inline bool validate_problem_size(const int &n, const int &n0) {
+  return exp(lgamma(n) - lgamma(n0)) <= 10e8;
 }
 
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
-  bool special_value_uniform =
-      (params.mode == Mode::PURE_DUPLICATION
-          && (fabs(params.p) < EPS || fabs(params.p - 1.0) < EPS));
-  if (special_value_uniform) {
-    cerr << "Special value - validation ignored" << endl;
-  } else {
-    validate_problem_size(n, n0);
-  }
+  bool exact_mode = validate_problem_size(n, n0);
 
   Graph G0 = generate_seed_koala(n0, 1.0);
   vector<int> sigma_tries;
@@ -567,29 +557,31 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
 
     map<mpz_class, double> permutations_opt;
     map<pair<int, int>, double> p_uv_opt;
-    if (!special_value_uniform) {
+    if (exact_mode) {
       permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
     }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+      auto permutations_apx_prev =
+            get_permutation_probabilities_sampling(
+                G, G0.getVertNo(), params, algorithm.first, MIN_TRIES_TEST);
+      auto p_uv_apx_prev = get_p_uv_from_permutations(permutations_apx_prev, n, G0.getVertNo());
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
             get_permutation_probabilities_sampling(
                 G, G0.getVertNo(), params, algorithm.first, tries);
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
-        
+
         #pragma omp critical
         {
           ErrorStruct &error = errors[algorithm.first];
-          if (special_value_uniform) {
-            error.add_permutations_uniform(tries, permutations_apx, n, n0);
-          } else {
+          if (exact_mode) {
             error.add_permutations(tries, permutations_opt, permutations_apx);
-          }
-          if (special_value_uniform) {
-            error.add_p_uv_uniform(tries, p_uv_apx, n, n0);
-          } else {
             error.add_p_uv(tries, p_uv_opt, p_uv_apx);
+          } else {
+            error.add_permutations(tries, permutations_apx_prev, permutations_apx);
+            error.add_p_uv(tries, p_uv_apx_prev, p_uv_apx);
+            permutations_apx_prev = permutations_apx, p_uv_apx_prev = p_uv_apx;
           }
         }
       }
@@ -610,7 +602,10 @@ int main(int, char *argv[]) {
     params.initialize(mode, argv + 5);
     string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
     if (action == "exact") {
-      validate_problem_size(n, n0);
+      if (!validate_problem_size(n, n0)) {
+        throw out_of_range(
+            "Graph too large for exact mode: n = " + to_string(n) + ", n0 = " + to_string(n0));
+      }
       ofstream out_file(name, ios_base::app);
       LP_bound_exact(n, n0, params, out_file);
     } else if (SAMPLING_METHOD_REVERSE_NAME.count(action)) {
