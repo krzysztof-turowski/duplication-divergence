@@ -10,7 +10,7 @@
 
 const double EPS = 10e-9;
 
-Koala::Graph<int, int> generate_seed_koala(const int &n0, const double &p0) {
+Koala::Graph<int, int> generate_seed_graph(const int &n0, const double &p0) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -30,7 +30,7 @@ Koala::Graph<int, int> generate_seed_koala(const int &n0, const double &p0) {
   return G;
 }
 
-Koala::Graph<int, int> generate_graph_koala(
+Koala::Graph<int, int> generate_graph(
     Koala::Graph<int, int> &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
@@ -112,16 +112,47 @@ Koala::Graph<int, int> read_graph_koala(const std::string &graph_name) {
   return G;
 }
 
-template <typename T>
-struct counting_iterator {
-  size_t count;
-  T dummy;
+inline int get_graph_size(const Koala::Graph<int, int> &G) {
+  return G.getVertNo();
+}
 
-  counting_iterator() : count(0) { }
-  counting_iterator& operator++() { ++count; return *this; }
-  counting_iterator operator++(int) { ++count; return *this; }
-  T& operator*() { return dummy; }
-};
+inline int get_index(const Koala::Graph<int, int>::PVertex &v) {
+  return v->getInfo();
+}
+
+inline void set_index(Koala::Graph<int, int>::PVertex &v, const int &value) {
+  v->setInfo(value);
+}
+
+inline void add_edge(
+    Koala::Graph<int, int> &G, Koala::Graph<int, int>::PVertex &v,
+    Koala::Graph<int, int>::PVertex &u) {
+  G.addEdge(v, u);
+}
+
+inline void move_vertex(
+    Koala::Graph<int, int> &G, Koala::Graph<int, int> &H,
+    Koala::Graph<int, int>::PVertex &v) {
+  G.move(H, v);
+}
+
+inline void delete_vertex(
+    Koala::Graph<int, int> &G, Koala::Graph<int, int>::PVertex &v) {
+  G.delVert(v);
+}
+
+std::vector<Koala::Graph<int, int>::Vertex*> get_vertices(const Koala::Graph<int, int> &G) {
+  std::vector<Koala::Graph<int, int>::Vertex*> V(get_graph_size(G));
+  G.getVerts(V.begin());
+  return V;
+}
+
+inline std::vector<Koala::Graph<int, int>::PVertex> get_neighbors(
+    const Koala::Graph<int, int> &G, Koala::Graph<int, int>::PVertex &v) {
+  std::vector<Koala::Graph<int, int>::PVertex> S(G.deg(v));
+  G.getNeighs(S.begin(), v);
+  return S;
+}
 
 class NeighborhoodStructure {
  private:
@@ -132,6 +163,17 @@ class NeighborhoodStructure {
       const Koala::Graph<int, int>::PVertex &v, const Koala::Graph<int, int>::PVertex &u) const {
     return u->getInfo() * n + v->getInfo();
   }
+
+  template <typename T>
+  struct counting_iterator {
+    size_t count;
+    T dummy;
+
+    counting_iterator() : count(0) { }
+    counting_iterator& operator++() { ++count; return *this; }
+    counting_iterator operator++(int) { ++count; return *this; }
+    T& operator*() { return dummy; }
+  };
 
  public:
   explicit NeighborhoodStructure(
@@ -155,7 +197,7 @@ class NeighborhoodStructure {
 
   void remove_vertex(
       const Koala::Graph<int, int>::PVertex &v,
-      const std::set<Koala::Graph<int, int>::PVertex> &neighbors) {
+      const std::vector<Koala::Graph<int, int>::PVertex> &neighbors) {
     for (const auto &w : neighbors) {
       for (const auto &u : neighbors) {
         --V[get_index(w, u)];
@@ -165,7 +207,7 @@ class NeighborhoodStructure {
 
   void restore_vertex(
       const Koala::Graph<int, int>::PVertex &v,
-      const std::set<Koala::Graph<int, int>::PVertex> &neighbors) {
+      const std::vector<Koala::Graph<int, int>::PVertex> &neighbors) {
     for (const auto &w : neighbors) {
       for (const auto &u : neighbors) {
         ++V[get_index(w, u)];

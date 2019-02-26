@@ -4,27 +4,34 @@
 
 // TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-align"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#if __GNUC__ >= 7
-  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+#if defined(koala)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wcast-align"
+  #pragma GCC diagnostic ignored "-Wcast-qual"
+  #pragma GCC diagnostic ignored "-Wextra"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wpedantic"
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #pragma GCC diagnostic ignored "-Wswitch-default"
+  #pragma GCC diagnostic ignored "-Wunused-parameter"
+  #pragma GCC diagnostic ignored "-Wunused-variable"
+  #if __GNUC__ >= 7
+    #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+  #endif
+  #if __GNUC__ >= 6
+    #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+  #endif
+  #ifndef __clang__
+    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+  #endif
+  #include "./dd_koala.h"
+  #pragma GCC diagnostic pop
+
+  typedef Koala::Graph<int, int> Graph;
+  typedef Koala::Graph<int, int>::PVertex Vertex;
+#elif defined(snap)
+#elif defined(networkit)
 #endif
-#if __GNUC__ >= 6
-  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
-#ifndef __clang__
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "./dd_koala.h"
-#pragma GCC diagnostic pop
 
 #if defined(glpk)
   #include "./dd_glpk.h"
@@ -37,9 +44,6 @@
 #include <random>
 
 using namespace std;
-
-typedef Koala::Graph<int, int> Graph;
-typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 20, SIGMA_TRIES = 200000;
 const double EPS_MIN = 0.2, EPS_STEP = 0.1;
@@ -110,10 +114,9 @@ mpz_class encode_permutation(const vector<int> &S) {
 }
 
 void apply_permutation(Graph &G, const vector<int> &S) {
-  vector<Vertex> V(G.getVertNo());
-  G.getVerts(V.begin());
+  vector<Vertex> V(get_vertices(G));
   for (auto v : V) {
-    v->setInfo(S[v->getInfo()]);
+    set_index(v, S[get_index(v)]);
   }
 }
 
@@ -121,32 +124,31 @@ map<mpz_class, double> get_permutation_probabilities(
     Graph &G, const int &n0, const Parameters &params,
     NeighborhoodStructure &aux, vector<int> &S, const double &p_sigma) {
   map<mpz_class, double> permutations;
-  if (G.getVertNo() == n0) {
+  if (get_graph_size(G) == n0) {
     mpz_class sigma = encode_permutation(S);
     permutations.insert(make_pair(sigma, p_sigma));
     return permutations;
   }
 
-  vector<Vertex> V(G.getVertNo());
-  G.getVerts(V.begin());
+  vector<Vertex> V(get_vertices(G));
   Graph H;
   for (auto v : V) {
-    if (v->getInfo() < n0) {
+    if (get_index(v) < n0) {
       continue;
     }
     double p_v = get_transition_probability(G, params, v, aux);
     if (p_v > 0.0) {
-      set<Vertex> neighbors_v = G.getNeighSet(v);
-      aux.remove_vertex(v, neighbors_v), S[G.getVertNo() - 1] = v->getInfo(), H.move(G, v);
+      vector<Vertex> neighbors_v = get_neighbors(G, v);
+      aux.remove_vertex(v, neighbors_v), S[get_graph_size(G) - 1] = get_index(v);
+      move_vertex(H, G, v);
       assert(aux.verify(G));
 
-      map<mpz_class, double> permutations_v =
-        get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
+      auto permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
-      G.move(H, v), aux.restore_vertex(v, neighbors_v), S[G.getVertNo() - 1] = -1;
+      move_vertex(G, H, v), aux.restore_vertex(v, neighbors_v), S[get_graph_size(G) - 1] = -1;
       for (auto &u : neighbors_v) {
-        G.addEdge(v, u);
+        add_edge(G, v, u);
       }
       assert(aux.verify(G));
     }
@@ -158,11 +160,11 @@ map<mpz_class, double> get_permutation_probabilities(
     const Graph &G, const int &n0, const Parameters &params) {
   Graph H(G);
   NeighborhoodStructure aux(H);
-  vector<int> S(H.getVertNo(), -1);
+  vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  map<mpz_class, double> permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0);
+  auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0);
   double total_probability = accumulate(
       permutations.begin(), permutations.end(), 0.0,
       [] (double value, const map<mpz_class, double>::value_type &permutation) {
@@ -205,26 +207,28 @@ pair<mpz_class, double> get_permutation_sample(
   Graph H(G);
   NeighborhoodStructure aux(H);
 
-  vector<int> S(H.getVertNo(), -1);
+  vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
   double p_sigma = 1.0, pv;
-  while (H.getVertNo() > n0) {
+  while (get_graph_size(H) > n0) {
     vector<Vertex> V;
     vector<double> P;
     for (auto v = H.getVert(); v; v = H.getVertNext(v)) {
-      if (v->getInfo() < n0) {
+      if (get_index(v) < n0) {
         continue;
       }
       V.push_back(v);
+    }
+    for (auto v : V) {
       P.push_back(get_transition_probability(H, params, v, aux));
     }
     Vertex v;
     tie(v, pv) = sample_vertex(V, P, algorithm, generator);
-    S[H.getVertNo() - 1] = v->getInfo(), p_sigma *= pv;
+    S[get_graph_size(H) - 1] = get_index(v), p_sigma *= pv;
     assert(aux.verify(H));
-    aux.remove_vertex(v, H.getNeighSet(v)), H.delVert(v);
+    aux.remove_vertex(v, get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
   }
   return make_pair(encode_permutation(S), p_sigma);
@@ -235,8 +239,7 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
     const int &tries) {
   map<mpz_class, double> permutations;
   for (int i = 0; i < tries; i++) {
-    pair<mpz_class, double> sigma_with_probability
-        = get_permutation_sample(G, n0, params, algorithm);
+    auto sigma_with_probability = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
     if ((i + 1) % 10000 == 0) {
       #pragma omp critical
@@ -290,16 +293,16 @@ void print_density_precision(
 vector<double> LP_bound_exact_single(
     const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
   Graph G(G0);
-  generate_graph_koala(G, n, params);
+  generate_graph(G, n, params);
 
-  vector<int> S = generate_permutation(n, G0.getVertNo());
+  vector<int> S = generate_permutation(n, get_graph_size(G0));
   apply_permutation(G, S);
 
-  map<mpz_class, double> permutations = get_permutation_probabilities(G, G0.getVertNo(), params);
-  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
+  auto permutations = get_permutation_probabilities(G, get_graph_size(G0), params);
+  auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
-    solutions.push_back(LP_solve(p_uv, n, G0.getVertNo(), eps));
+    solutions.push_back(LP_solve(p_uv, n, get_graph_size(G0), eps));
   }
   return solutions;
 }
@@ -308,24 +311,25 @@ vector<double> LP_bound_approximate_single(
     const Graph &G0, const int &n, const Parameters &params, const SamplingMethod &algorithm,
     const vector<double> &epsilon) {
   Graph G(G0);
-  generate_graph_koala(G, n, params);
+  generate_graph(G, n, params);
 
-  vector<int> S = generate_permutation(n, G0.getVertNo());
+  vector<int> S = generate_permutation(n, get_graph_size(G0));
   apply_permutation(G, S);
 
-  map<mpz_class, double> permutations =
-      get_permutation_probabilities_sampling(G, G0.getVertNo(), params, algorithm, SIGMA_TRIES);
-  map<pair<int, int>, double> p_uv = get_p_uv_from_permutations(permutations, n, G0.getVertNo());
+  auto permutations =
+      get_permutation_probabilities_sampling(
+          G, get_graph_size(G0), params, algorithm, SIGMA_TRIES);
+  auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
-    solutions.push_back(LP_solve(p_uv, n, G0.getVertNo(), eps));
+    solutions.push_back(LP_solve(p_uv, n, get_graph_size(G0), eps));
   }
   return solutions;
 }
 
 void LP_bound_exact(
     const int &n, const int &n0, const Parameters &params, ostream &out_file) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
+  Graph G0 = generate_seed_graph(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
@@ -354,7 +358,7 @@ void LP_bound_exact(
 void LP_bound_approximate(
     const int &n, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     ostream &out_file) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
+  Graph G0 = generate_seed_graph(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
@@ -540,7 +544,7 @@ inline bool validate_problem_size(const int &n, const int &n0) {
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   bool exact_mode = validate_problem_size(n, n0);
 
-  Graph G0 = generate_seed_koala(n0, 1.0);
+  Graph G0 = generate_seed_graph(n0, 1.0);
   vector<int> sigma_tries;
   for (int tries = MIN_TRIES_TEST; tries <= MAX_TRIES_TEST; tries *= 2) {
     sigma_tries.push_back(tries);
@@ -550,27 +554,28 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
-    generate_graph_koala(G, n, params);
+    generate_graph(G, n, params);
 
-    vector<int> S = generate_permutation(n, G0.getVertNo());
+    vector<int> S = generate_permutation(n, get_graph_size(G0));
     apply_permutation(G, S);
 
     map<mpz_class, double> permutations_opt;
     map<pair<int, int>, double> p_uv_opt;
     if (exact_mode) {
-      permutations_opt = get_permutation_probabilities(G, G0.getVertNo(), params);
-      p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, G0.getVertNo());
+      permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
+      p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
       auto permutations_apx_prev =
             get_permutation_probabilities_sampling(
-                G, G0.getVertNo(), params, algorithm.first, MIN_TRIES_TEST);
-      auto p_uv_apx_prev = get_p_uv_from_permutations(permutations_apx_prev, n, G0.getVertNo());
+                G, get_graph_size(G0), params, algorithm.first, MIN_TRIES_TEST);
+      auto p_uv_apx_prev =
+          get_p_uv_from_permutations(permutations_apx_prev, n, get_graph_size(G0));
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
             get_permutation_probabilities_sampling(
-                G, G0.getVertNo(), params, algorithm.first, tries);
-        auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, G0.getVertNo());
+                G, get_graph_size(G0), params, algorithm.first, tries);
+        auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
 
         #pragma omp critical
         {
