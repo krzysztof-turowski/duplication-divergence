@@ -33,6 +33,15 @@
   typedef Koala::Graph<int, int>::PVertex Vertex;
 #elif defined(snap)
 #elif defined(networkit)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #pragma GCC diagnostic ignored "-Wunused-parameter"
+  #include "./dd_networkit.h"
+  #pragma GCC diagnostic pop
+
+  typedef NetworKit::Graph Graph;
+  typedef NetworKit::node Vertex;
 #endif
 
 const double EPS = 10e-9;
