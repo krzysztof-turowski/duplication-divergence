@@ -4,34 +4,7 @@
 
 // TODO(kturowski): deal gurobi output suppression and output to cout instead of cerr
 
-#if defined(koala)
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wcast-align"
-  #pragma GCC diagnostic ignored "-Wcast-qual"
-  #pragma GCC diagnostic ignored "-Wextra"
-  #pragma GCC diagnostic ignored "-Wold-style-cast"
-  #pragma GCC diagnostic ignored "-Wpedantic"
-  #pragma GCC diagnostic ignored "-Wshadow"
-  #pragma GCC diagnostic ignored "-Wswitch-default"
-  #pragma GCC diagnostic ignored "-Wunused-parameter"
-  #pragma GCC diagnostic ignored "-Wunused-variable"
-  #if __GNUC__ >= 7
-    #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-  #endif
-  #if __GNUC__ >= 6
-    #pragma GCC diagnostic ignored "-Wmisleading-indentation"
-  #endif
-  #ifndef __clang__
-    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-  #endif
-  #include "./dd_koala.h"
-  #pragma GCC diagnostic pop
-
-  typedef Koala::Graph<int, int> Graph;
-  typedef Koala::Graph<int, int>::PVertex Vertex;
-#elif defined(snap)
-#elif defined(networkit)
-#endif
+#include "./dd_graph.h"
 
 #if defined(glpk)
   #include "./dd_glpk.h"
@@ -138,15 +111,15 @@ map<mpz_class, double> get_permutation_probabilities(
     }
     double p_v = get_transition_probability(G, params, v, aux);
     if (p_v > 0.0) {
-      vector<Vertex> neighbors_v = get_neighbors(G, v);
-      aux.remove_vertex(v, neighbors_v), S[get_graph_size(G) - 1] = get_index(v);
+      set<Vertex> neighbors_v(get_neighbors(G, v));
+      aux.remove_vertex(neighbors_v), S[get_graph_size(G) - 1] = get_index(v);
       move_vertex(H, G, v);
       assert(aux.verify(G));
 
       auto permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
-      move_vertex(G, H, v), aux.restore_vertex(v, neighbors_v), S[get_graph_size(G) - 1] = -1;
+      move_vertex(G, H, v), aux.restore_vertex(neighbors_v), S[get_graph_size(G) - 1] = -1;
       for (auto &u : neighbors_v) {
         add_edge(G, v, u);
       }
@@ -213,9 +186,9 @@ pair<mpz_class, double> get_permutation_sample(
   }
   double p_sigma = 1.0, pv;
   while (get_graph_size(H) > n0) {
-    vector<Vertex> V;
+    vector<Vertex> V, U(get_vertices(G));
     vector<double> P;
-    for (auto v = H.getVert(); v; v = H.getVertNext(v)) {
+    for (const auto &v : U) {
       if (get_index(v) < n0) {
         continue;
       }
@@ -228,7 +201,7 @@ pair<mpz_class, double> get_permutation_sample(
     tie(v, pv) = sample_vertex(V, P, algorithm, generator);
     S[get_graph_size(H) - 1] = get_index(v), p_sigma *= pv;
     assert(aux.verify(H));
-    aux.remove_vertex(v, get_neighbors(H, v)), delete_vertex(H, v);
+    aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
   }
   return make_pair(encode_permutation(S), p_sigma);
