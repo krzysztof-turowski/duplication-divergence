@@ -3,34 +3,11 @@
 // Run: ./dd_temporal_algorithms synthetic all MODE n n0 PARAMETERS
 //   or ./dd_temporal_algorithms synthetic ALGORITHM MODE n n0 PARAMETERS
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-align"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#if __GNUC__ >= 7
-  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#endif
-#if __GNUC__ >= 6
-  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
-#ifndef __clang__
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "./dd_koala.h"
-#pragma GCC diagnostic pop
+#include "./dd_graph.h"
 
 #include <vector>
 
 using namespace std;
-
-typedef Koala::Graph<int, int> Graph;
-typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const int G_TRIES = 10000;
 
@@ -49,10 +26,9 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
 };
 
 void apply_permutation(Graph &G, const vector<int> &S) {
-  vector<Vertex> V(G.getVertNo());
-  G.getVerts(V.begin());
-  for (auto v : V) {
-    v->setInfo(S[v->getInfo()]);
+  vector<Vertex> V(get_vertices(G));
+  for (auto &v : V) {
+    set_index(v, S[get_index(v)]);
   }
 }
 
@@ -87,7 +63,7 @@ pair<double, double> score(const vector<set<int>> &solution) {
 pair<double, double> temporal_algorithm_single(
     const Graph &G0, const int &n, const Parameters &params, const TemporalAlgorithm &algorithm) {
   Graph G(G0);
-  generate_graph_koala(G, n, params);
+  generate_graph(G, n, params);
 
   switch (algorithm) {
     case DEGREE_SORT:
@@ -119,7 +95,7 @@ void print(
 void temporal_algorithm(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm,
     ostream &out_file) {
-  Graph G0 = generate_seed_koala(n0, 1.0);
+  Graph G0 = generate_seed(n0, 1.0);
   // TODO(kturowski): parallelize
   vector<pair<double, double>> solution(G_TRIES);
   for (int i = 0; i < G_TRIES; i++) {

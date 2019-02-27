@@ -79,7 +79,7 @@ DataObject get_params_for_graph(const Graph &G, bool verbose = false) {
 DataObject get_params_for_synthetic_graph(
     const Graph &G0, const int &n, const Parameters &params) {
   Graph G = G0;
-  generate_graph(G, n, params);
+  generate_graph_simple(G, n, params);
   return get_params_for_graph(G);
 }
 
@@ -417,17 +417,17 @@ void process_graph(
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed(n0, 1.0);
+  Graph G0 = generate_seed_simple(n0, 1.0);
   Graph G = G0;
-  generate_graph(G, n, params);
+  generate_graph_simple(G, n, params);
   ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
   cout << "Synthetic data: " + params.to_string() << endl;
   process_graph(G, G0, params.mode, out_file);
 }
 
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
-  Graph G = read_graph(FILES_FOLDER + graph_name);
-  Graph G0 = read_graph(FILES_FOLDER + seed_name);
+  Graph G = read_graph_simple(FILES_FOLDER + graph_name);
+  Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, ""));
   cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);

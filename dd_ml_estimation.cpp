@@ -2,32 +2,9 @@
 // Compile: g++ dd_ml_estimation.cpp -O3 -o ./dd_ml_estimation
 // Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS or ./dd_ml_estimation real_data FILE MODE
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-align"
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#pragma GCC diagnostic ignored "-Wextra"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wpedantic"
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma GCC diagnostic ignored "-Wswitch-default"
-#pragma GCC diagnostic ignored "-Wunused-parameter"
-#pragma GCC diagnostic ignored "-Wunused-variable"
-#if __GNUC__ >= 7
-  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
-#endif
-#if __GNUC__ >= 6
-  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
-#ifndef __clang__
-  #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-#include "./dd_koala.h"
-#pragma GCC diagnostic pop
+#include "./dd_graph.h"
 
 using namespace std;
-
-typedef Koala::Graph<int, int> Graph;
-typedef Koala::Graph<int, int>::PVertex Vertex;
 
 const double STEP_P = 0.1, STEP_R = 1.0;
 const int IS_TRIES = 100;
@@ -49,7 +26,8 @@ long double likelihood_value(
   NeighborhoodStructure aux(H);
 
   long double ML_value = 0;
-  while (H.getVertNo() > n0) {
+  while (get_graph_size(H) > n0) {
+    vector<Vertex> V = get_vertices(H);
     vector<long double> P = get_transition_probability(H, params_0, aux);
     long double P_sum = accumulate(P.begin(), P.end(), 0.0L);
     if (P_sum == 0.0L) {
@@ -57,16 +35,15 @@ long double likelihood_value(
     }
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
-    Vertex v = H.vertByNo(index);
-    long double p_transition = get_transition_probability(H, params, v, aux);
+    long double p_transition = get_transition_probability(H, params, V[index], aux);
     if (p_transition == 0.0L) {
       return 0.0L;
     }
     long double log_p_transition = log(p_transition);
     ML_value += log(P_sum) + log_p_transition - log(P[index]);
 
-    aux.remove_vertex(v, H.getNeighSet(v));
-    H.delVert(v);
+    aux.remove_vertex(get_neighbors(H, V[index]));
+    delete_vertex(H, V[index]);
     aux.verify(H);
   }
   return exp(ML_value);
@@ -132,15 +109,15 @@ void print(
 }
 
 void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G = generate_seed_koala(n0, 1.0);
-  generate_graph_koala(G, n, params);
+  Graph G = generate_seed(n0, 1.0);
+  generate_graph(G, n, params);
   auto likelihood_values = find_likelihood_values(G, n0, params.mode);
   ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "ML"));
   print("Synthetic data: " + params.to_string(), likelihood_values, out_file);
 }
 
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
-  Graph G = read_graph_koala(FILES_FOLDER + graph_name);
+  Graph G = read_graph(FILES_FOLDER + graph_name);
   int n0 = read_graph_size(FILES_FOLDER + seed_name);
   auto likelihood_values = find_likelihood_values(G, n0, mode);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "ML"));

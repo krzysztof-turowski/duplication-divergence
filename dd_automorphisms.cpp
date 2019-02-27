@@ -104,7 +104,7 @@ AutomorphismsInfo log_automorphisms_single(const Graph &G) {
 AutomorphismsInfo log_automorphisms_single(
     const Graph &G0, const int &n, const Parameters &params) {
   Graph H(G0);
-  generate_graph(H, n, params);
+  generate_graph_simple(H, n, params);
   return log_automorphisms_single(H);
 }
 
@@ -161,8 +161,8 @@ double get_p_value(
 
 void log_automorphisms_p_value(
     const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
-  Graph G = read_graph(FILES_FOLDER + graph_name);
-  Graph G0 = read_graph(FILES_FOLDER + seed_name);
+  Graph G = read_graph_simple(FILES_FOLDER + graph_name);
+  Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
   AutomorphismsInfo log_aut_G = log_automorphisms_single(G);
   std::vector<AutomorphismsInfo> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
 
@@ -189,7 +189,7 @@ void log_automorphisms_p_value(
 }
 
 void log_automorphisms(const std::string &graph_name) {
-  Graph G(read_graph(FILES_FOLDER + graph_name));
+  Graph G(read_graph_simple(FILES_FOLDER + graph_name));
   print(graph_name, log_automorphisms_single(G));
 }
 

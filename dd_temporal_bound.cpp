@@ -302,7 +302,7 @@ vector<double> LP_bound_approximate_single(
 
 void LP_bound_exact(
     const int &n, const int &n0, const Parameters &params, ostream &out_file) {
-  Graph G0 = generate_seed_graph(n0, 1.0);
+  Graph G0 = generate_seed(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
@@ -331,7 +331,7 @@ void LP_bound_exact(
 void LP_bound_approximate(
     const int &n, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     ostream &out_file) {
-  Graph G0 = generate_seed_graph(n0, 1.0);
+  Graph G0 = generate_seed(n0, 1.0);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);
@@ -517,7 +517,7 @@ inline bool validate_problem_size(const int &n, const int &n0) {
 void compare_probabilities(const int &n, const int &n0, const Parameters &params) {
   bool exact_mode = validate_problem_size(n, n0);
 
-  Graph G0 = generate_seed_graph(n0, 1.0);
+  Graph G0 = generate_seed(n0, 1.0);
   vector<int> sigma_tries;
   for (int tries = MIN_TRIES_TEST; tries <= MAX_TRIES_TEST; tries *= 2) {
     sigma_tries.push_back(tries);

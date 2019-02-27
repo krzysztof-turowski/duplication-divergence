@@ -37,7 +37,7 @@
 
 const double EPS = 10e-9;
 
-Graph generate_seed_graph(const int &n0, const double &p0) {
+Graph generate_seed(const int &n0, const double &p0) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
