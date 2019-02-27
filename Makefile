@@ -1,7 +1,7 @@
 CC = g++
 COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept
 FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread -fopenmp
-FLAGS += -Dkoala
+GRAPH_LIB = koala
 NAUTY_LIB = lib/nauty/nauty.a -Wno-unused-variable -DTHREADS=1
 LP_SOLVER = glpk
 
@@ -26,14 +26,17 @@ clang++: CC = clang++
 clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unused-const-variable
 clang++: $(EXEC)
 
+debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
+debug: $(EXEC)
+
 %: %.cpp
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) -D$(GRAPH_LIB) $< -o $@
 
 dd_automorphisms: dd_automorphisms.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
 dd_temporal_bound: dd_temporal_bound.cpp
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(LP_FLAGS) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) -D$(GRAPH_LIB) $< $(LP_FLAGS) -o $@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
