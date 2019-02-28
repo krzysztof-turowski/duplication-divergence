@@ -9,8 +9,8 @@ inline int get_graph_size(const TNodeNet<TInt> &G) {
   return G.GetNodes();
 }
 
-inline int get_index(const int &v) {
-  return v;
+inline int get_index(const TNodeNet<TInt> &G, const int &v) {
+  return G.GetNI(v).GetDat();
 }
 
 inline int get_index(const int &u, const int &v, const int &n) {
@@ -21,7 +21,7 @@ inline void set_index(TNodeNet<TInt> &G, int &v, const int &value) {
   G.GetNI(v).GetDat() = value;
 }
 
-inline int get_degree(TNodeNet<TInt> &G, const int &v) {
+inline int get_degree(const TNodeNet<TInt> &G, const int &v) {
   return G.GetNI(v).GetDeg();
 }
 
@@ -29,7 +29,7 @@ inline void add_edge(TNodeNet<TInt> &G, const int &v, const int &u) {
   G.AddEdge(v, u);
 }
 
-inline bool check_edge(TNodeNet<TInt> &G, const int &v, const int &u) {
+inline bool check_edge(const TNodeNet<TInt> &G, const int &v, const int &u) {
   return G.IsEdge(v, u);
 }
 
@@ -40,7 +40,9 @@ inline int add_vertex(TNodeNet<TInt> &G, const int &value) {
 }
 
 inline void move_vertex(TNodeNet<TInt> &G, TNodeNet<TInt> &H, int &v) {
+  int index = H.GetNI(v).GetDat();
   H.DelNode(v), G.AddNode(v);
+  set_index(G, v, index);
 }
 
 inline void delete_vertex(TNodeNet<TInt> &G, int &v) {

@@ -90,7 +90,7 @@ mpz_class encode_permutation(const vector<int> &S) {
 void apply_permutation(Graph &G, const vector<int> &S) {
   vector<Vertex> V(get_vertices(G));
   for (auto v : V) {
-    set_index(G, v, S[get_index(v)]);
+    set_index(G, v, S[get_index(G, v)]);
   }
 }
 
@@ -107,13 +107,13 @@ map<mpz_class, double> get_permutation_probabilities(
   vector<Vertex> V(get_vertices(G));
   Graph H;
   for (auto v : V) {
-    if (get_index(v) < n0) {
+    if (get_index(G, v) < n0) {
       continue;
     }
     double p_v = get_transition_probability(G, params, v, aux);
     if (p_v > 0.0) {
       set<Vertex> neighbors_v(get_neighbors(G, v));
-      aux.remove_vertex(neighbors_v), S[get_graph_size(G) - 1] = get_index(v);
+      aux.remove_vertex(neighbors_v), S[get_graph_size(G) - 1] = get_index(G, v);
       move_vertex(H, G, v);
       assert(aux.verify(G));
 
@@ -190,7 +190,7 @@ pair<mpz_class, double> get_permutation_sample(
     vector<Vertex> V, U(get_vertices(H));
     vector<double> P;
     for (const auto &v : U) {
-      if (get_index(v) < n0) {
+      if (get_index(G, v) < n0) {
         continue;
       }
       V.push_back(v);
@@ -200,7 +200,7 @@ pair<mpz_class, double> get_permutation_sample(
     }
     Vertex v;
     tie(v, pv) = sample_vertex(V, P, algorithm, generator);
-    S[get_graph_size(H) - 1] = get_index(v), p_sigma *= pv;
+    S[get_graph_size(H) - 1] = get_index(G, v), p_sigma *= pv;
     assert(aux.verify(H));
     aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
@@ -525,7 +525,6 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
   }
 
   map<SamplingMethod, ErrorStruct> errors;
-  #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph(G, n, params);
@@ -540,35 +539,25 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
-      auto permutations_apx_prev =
-            get_permutation_probabilities_sampling(
-                G, get_graph_size(G0), params, algorithm.first, MIN_TRIES_TEST);
-      auto p_uv_apx_prev =
-          get_p_uv_from_permutations(permutations_apx_prev, n, get_graph_size(G0));
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
             get_permutation_probabilities_sampling(
                 G, get_graph_size(G0), params, algorithm.first, tries);
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
 
-        #pragma omp critical
-        {
-          ErrorStruct &error = errors[algorithm.first];
-          if (exact_mode) {
-            error.add_permutations(tries, permutations_opt, permutations_apx);
-            error.add_p_uv(tries, p_uv_opt, p_uv_apx);
-          } else {
-            error.add_permutations(tries, permutations_apx_prev, permutations_apx);
-            error.add_p_uv(tries, p_uv_apx_prev, p_uv_apx);
-            permutations_apx_prev = permutations_apx, p_uv_apx_prev = p_uv_apx;
-          }
+        ErrorStruct &error = errors[algorithm.first];
+        if (!exact_mode) {
+          permutations_opt =
+                get_permutation_probabilities_sampling(
+                    G, get_graph_size(G0), params, algorithm.first, tries);
+          p_uv_opt =
+              get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
         }
+        error.add_permutations(tries, permutations_opt, permutations_apx);
+        error.add_p_uv(tries, p_uv_opt, p_uv_apx);
       }
     }
-    #pragma omp critical
-    {
-      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
-    }
+    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
   }
   print_errors(sigma_tries, errors);
 }

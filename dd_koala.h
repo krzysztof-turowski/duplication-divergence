@@ -9,7 +9,8 @@ inline int get_graph_size(const Koala::Graph<int, int> &G) {
   return G.getVertNo();
 }
 
-inline int get_index(const Koala::Graph<int, int>::PVertex &v) {
+inline int get_index(
+    const Koala::Graph<int, int>&, const Koala::Graph<int, int>::PVertex &v) {
   return v->getInfo();
 }
 
