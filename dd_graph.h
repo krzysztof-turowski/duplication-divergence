@@ -32,6 +32,19 @@
   typedef Koala::Graph<int, int> Graph;
   typedef Koala::Graph<int, int>::PVertex Vertex;
 #elif defined(snap)
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wcast-qual"
+  #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
+  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wpedantic"
+  #pragma GCC diagnostic ignored "-Wshadow"
+  #pragma GCC diagnostic ignored "-Wunused-parameter"
+  #include "./dd_snap.h"
+  #pragma GCC diagnostic pop
+
+  typedef TNodeNet<TInt> Graph;
+  typedef TNodeNet<TInt>::TNodeI Vertex;
 #elif defined(networkit)
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -72,6 +85,7 @@ Graph generate_graph(Graph &G, const int &n, const Parameters &params) {
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
   std::vector<Vertex> V(get_vertices(G));
+  V.resize(n);
   for (int i = get_graph_size(G); i < n; i++) {
     std::uniform_int_distribution<int> parent_distribution(0, i - 1);
     int parent = parent_distribution(generator);

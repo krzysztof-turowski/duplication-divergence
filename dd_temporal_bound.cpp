@@ -14,6 +14,7 @@
 
 #include <gmpxx.h>
 
+#include <cassert>
 #include <random>
 
 using namespace std;
@@ -186,7 +187,7 @@ pair<mpz_class, double> get_permutation_sample(
   }
   double p_sigma = 1.0, pv;
   while (get_graph_size(H) > n0) {
-    vector<Vertex> V, U(get_vertices(G));
+    vector<Vertex> V, U(get_vertices(H));
     vector<double> P;
     for (const auto &v : U) {
       if (get_index(v) < n0) {
