@@ -40,11 +40,7 @@ inline int add_vertex(TNodeNet<TInt> &G, const int &value) {
 }
 
 inline void move_vertex(TNodeNet<TInt> &G, TNodeNet<TInt> &H, int &v) {
-  if (G.Empty()) {
-    H.DelNode(v);
-  } else {
-    throw std::logic_error("Restore not yet implemented");
-  }
+  H.DelNode(v), G.AddNode(v);
 }
 
 inline void delete_vertex(TNodeNet<TInt> &G, int &v) {
