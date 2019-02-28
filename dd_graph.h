@@ -44,7 +44,7 @@
   #pragma GCC diagnostic pop
 
   typedef TNodeNet<TInt> Graph;
-  typedef TNodeNet<TInt>::TNodeI Vertex;
+  typedef int Vertex;
 #elif defined(networkit)
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -65,9 +65,9 @@ Graph generate_seed(const int &n0, const double &p0) {
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
   Graph G;
-  std::vector<Vertex> V;
+  std::vector<Vertex> V(n0);
   for (int i = 0; i < n0; i++) {
-    V.push_back(add_vertex(G, i));
+    V[i] = add_vertex(G, i);
   }
   for (int i = 0; i < n0; i++) {
     for (int j = i + 1; j < n0; j++) {

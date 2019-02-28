@@ -90,7 +90,7 @@ mpz_class encode_permutation(const vector<int> &S) {
 void apply_permutation(Graph &G, const vector<int> &S) {
   vector<Vertex> V(get_vertices(G));
   for (auto v : V) {
-    set_index(v, S[get_index(v)]);
+    set_index(G, v, S[get_index(v)]);
   }
 }
 

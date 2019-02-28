@@ -19,7 +19,8 @@ inline int get_index(
   return u->getInfo() * n + v->getInfo();
 }
 
-inline void set_index(Koala::Graph<int, int>::PVertex &v, const int &value) {
+inline void set_index(
+    Koala::Graph<int, int>&, Koala::Graph<int, int>::PVertex &v, const int &value) {
   v->setInfo(value);
 }
 
