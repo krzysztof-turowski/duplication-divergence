@@ -32,7 +32,7 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
 }
 
 double LP_solve(
-    const std::map<std::pair<int, int>, double> &p_uv, const int &n, const int &n0,
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon) {
   GRBEnv* environment = new GRBEnv();
   GRBModel *LP = new GRBModel(*environment);
@@ -49,7 +49,7 @@ double LP_solve(
       if (i != j) {
         vars[index] =
             LP->addVar(
-                0.0, 1.0, p_uv.find(std::make_pair(i, j))->second,
+                0.0, 1.0, static_cast<double>(p_uv.find(std::make_pair(i, j))->second),
                 GRB_CONTINUOUS, LP_name_variable(i, j));
       } else {
         vars[index] = LP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name_variable(i, j));

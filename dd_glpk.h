@@ -32,7 +32,7 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
 }
 
 double LP_solve(
-    const std::map<std::pair<int, int>, double> &p_uv, const int &n, const int &n0,
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon) {
   glp_prob *LP = glp_create_prob();
   glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
@@ -48,7 +48,8 @@ double LP_solve(
       glp_set_col_name(LP, index + 1, LP_name_variable(i, j).c_str());
       if (i != j) {
         glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
-        glp_set_obj_coef(LP, index + 1, p_uv.find(std::make_pair(i, j))->second);
+        glp_set_obj_coef(
+            LP, index + 1, static_cast<double>(p_uv.find(std::make_pair(i, j))->second));
       }
     }
   }

@@ -94,10 +94,10 @@ void apply_permutation(Graph &G, const vector<int> &S) {
   }
 }
 
-map<mpz_class, double> get_permutation_probabilities(
+map<mpz_class, long double> get_permutation_probabilities(
     Graph &G, const int &n0, const Parameters &params,
-    NeighborhoodStructure &aux, vector<int> &S, const double &p_sigma) {
-  map<mpz_class, double> permutations;
+    NeighborhoodStructure &aux, vector<int> &S, const long double &p_sigma) {
+  map<mpz_class, long double> permutations;
   if (get_graph_size(G) == n0) {
     mpz_class sigma = encode_permutation(S);
     permutations.insert(make_pair(sigma, p_sigma));
@@ -110,7 +110,7 @@ map<mpz_class, double> get_permutation_probabilities(
     if (get_index(G, v) < n0) {
       continue;
     }
-    double p_v = get_transition_probability(G, params, v, aux);
+    long double p_v = get_transition_probability(G, params, v, aux);
     if (p_v > 0.0) {
       set<Vertex> neighbors_v(get_neighbors(G, v));
       aux.remove_vertex(neighbors_v), S[get_graph_size(G) - 1] = get_index(G, v);
@@ -130,7 +130,7 @@ map<mpz_class, double> get_permutation_probabilities(
   return permutations;
 }
 
-map<mpz_class, double> get_permutation_probabilities(
+map<mpz_class, long double> get_permutation_probabilities(
     const Graph &G, const int &n0, const Parameters &params) {
   Graph H(G);
   NeighborhoodStructure aux(H);
@@ -138,10 +138,10 @@ map<mpz_class, double> get_permutation_probabilities(
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0);
-  double total_probability = accumulate(
+  auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0L);
+  long double total_probability = accumulate(
       permutations.begin(), permutations.end(), 0.0,
-      [] (double value, const map<mpz_class, double>::value_type &permutation) {
+      [] (long double value, const map<mpz_class, long double>::value_type &permutation) {
           return value + permutation.second;
       });
   for (auto &permutation : permutations) {
@@ -151,11 +151,11 @@ map<mpz_class, double> get_permutation_probabilities(
 }
 
 tuple<Vertex, double> sample_vertex(
-    const vector<Vertex> &V, const vector<double> &P,
+    const vector<Vertex> &V, const vector<long double> &P,
     const SamplingMethod &algorithm, mt19937 &generator) {
   switch (algorithm) {
     case WIUF: {
-      double P_sum = accumulate(P.begin(), P.end(), 0.0);
+      long double P_sum = accumulate(P.begin(), P.end(), 0.0);
       discrete_distribution<int> choose_vertex(P.begin(), P.end());
       int index = choose_vertex(generator);
       return make_tuple(V[index], P_sum);
@@ -163,7 +163,8 @@ tuple<Vertex, double> sample_vertex(
     case UNIFORM: {
       vector<int> C(P.size());
       transform(
-          P.begin(), P.end(), C.begin(), [](const double &value) -> int { return value != 0.0; });
+          P.begin(), P.end(), C.begin(),
+          [](const long double &value) -> int { return value != 0.0; });
       int C_sum = accumulate(C.begin(), C.end(), 0.0);
       discrete_distribution<int> choose_vertex(C.begin(), C.end());
       int index = choose_vertex(generator);
@@ -174,7 +175,7 @@ tuple<Vertex, double> sample_vertex(
   }
 }
 
-pair<mpz_class, double> get_permutation_sample(
+pair<mpz_class, long double> get_permutation_sample(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm) {
   random_device device;
   mt19937 generator(device());
@@ -185,10 +186,10 @@ pair<mpz_class, double> get_permutation_sample(
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  double p_sigma = 1.0, pv;
+  long double p_sigma = 1.0, pv;
   while (get_graph_size(H) > n0) {
     vector<Vertex> V, U(get_vertices(H));
-    vector<double> P;
+    vector<long double> P;
     for (const auto &v : U) {
       if (get_index(G, v) < n0) {
         continue;
@@ -208,10 +209,10 @@ pair<mpz_class, double> get_permutation_sample(
   return make_pair(encode_permutation(S), p_sigma);
 }
 
-map<mpz_class, double> get_permutation_probabilities_sampling(
+map<mpz_class, long double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
-  map<mpz_class, double> permutations;
+  map<mpz_class, long double> permutations;
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
@@ -222,9 +223,9 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
       }
     }
   }
-  double total_probability = accumulate(
+  long double total_probability = accumulate(
       permutations.begin(), permutations.end(), 0.0,
-      [] (double value, const map<mpz_class, double>::value_type &permutation) {
+      [] (double value, const map<mpz_class, long double>::value_type &permutation) {
           return value + permutation.second;
       });
   for (auto &permutation : permutations) {
@@ -233,9 +234,9 @@ map<mpz_class, double> get_permutation_probabilities_sampling(
   return permutations;
 }
 
-map<pair<int, int>, double> get_p_uv_from_permutations(
-    const map<mpz_class, double> &permutations, const int &n, const int &n0) {
-  map<pair<int, int>, double> p_uv;
+map<pair<int, int>, long double> get_p_uv_from_permutations(
+    const map<mpz_class, long double> &permutations, const int &n, const int &n0) {
+  map<pair<int, int>, long double> p_uv;
   for (auto &permutation : permutations) {
     vector<int> S = decode_permutation(permutation.first, n);
     for (int i = n0; i < n; i++) {
@@ -361,99 +362,67 @@ void LP_bound_approximate(
       epsilon, solution, n, n0, params, out_file);
 }
 
-template <typename T>
-double mean_square_error(const map<T, double> &opt, const map<T, double> &apx) {
-  double mse = 0;
-  for (auto &sigma : opt) {
-    mse += pow(opt.find(sigma.first)->second - apx.find(sigma.first)->second, 2);
-  }
-  return mse / opt.size();
-}
-
-template <typename T>
-double mean_square_error_uniform(const map<T, double> &apx, const double &p, const double &N) {
-  double mse = 0;
-  for (auto &sigma : apx) {
-    mse += pow(p - sigma.second, 2) / p;
-  }
-  mse += p * p * (N - apx.size());
-  return mse / N;
-}
-
-template <typename T>
-double max_relative_error(const map<T, double> &opt, const map<T, double> &apx) {
-  double mre = 0;
-  for (auto &uv : opt) {
-    double opt_uv = opt.find(uv.first)->second;
-    double apx_uv = apx.find(uv.first)->second;
-    mre = max(mre, fabs(apx_uv / opt_uv - 1));
-  }
-  return mre;
-}
-
-template <typename T>
-double max_relative_error_uniform(const map<T, double> &apx, const double &p) {
-  double mre = 0;
-  for (auto &uv : apx) {
-    mre = max(mre, fabs(uv.second / p - 1));
-  }
-  return mre;
-}
-
 class ErrorStruct {
  private:
-  int permutations_counter = 0, p_uv_counter = 0;
-  map<int, double> permutations_mse, p_uv_mse, permutations_lambda, p_uv_lambda;
+  int p_uv_counter = 0;
+  map<int, long double> p_uv_mse, p_uv_lambda;
+
+  template <typename T>
+  long double mean_square_error(
+      const map<T, long double> &opt, const map<T, long double> &apx,
+      const int &n0, const int &n) {
+    long double mse = 0;
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i == j) {
+          continue;
+        }
+        auto uv(make_pair(i, j));
+        long double opt_uv = opt.count(uv) ? opt.find(uv)->second : 0.0L;
+        long double apx_uv = apx.count(uv) ? apx.find(uv)->second : 0.0L;
+        mse += powl(opt_uv - apx_uv, 2);
+      }
+    }
+    return mse / opt.size();
+  }
+
+  template <typename T>
+  long double max_relative_error(
+      const map<T, long double> &opt, const map<T, long double> &apx,
+      const int &n0, const int &n) {
+    long double mre = 0;
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i == j) {
+          continue;
+        }
+        auto uv(make_pair(i, j));
+        long double opt_uv = opt.count(uv) ? opt.find(uv)->second : 0.0L;
+        long double apx_uv = apx.count(uv) ? apx.find(uv)->second : 0.0L;
+        if (opt_uv > 0.0L) {
+          mre = max(mre, fabsl(apx_uv / opt_uv - 1.0L));
+        }
+      }
+    }
+    return mre;
+  }
 
  public:
-  void add_permutations(
-      const int &tries,
-      const map<mpz_class, double> &permutations_opt,
-      const map<mpz_class, double> &permutations_apx) {
-    this->permutations_mse[tries] += mean_square_error(permutations_opt, permutations_apx);
-    this->permutations_lambda[tries] += max_relative_error(permutations_opt, permutations_apx);
-    this->permutations_counter++;
-  }
-
-  void add_permutations_uniform(
-      const int &tries, const map<mpz_class, double> &permutations_apx,
-      const int &n, const int &n0) {
-    double p = exp(-lgamma(n - n0 + 1));
-    this->permutations_mse[tries] += mean_square_error_uniform(permutations_apx, p, 1 / p);
-    this->permutations_lambda[tries] += max_relative_error_uniform(permutations_apx, p);
-    this->permutations_counter++;
-  }
-
   void add_p_uv(
       const int &tries,
-      const map<pair<int, int>, double> &p_uv_opt,
-      const map<pair<int, int>, double> &p_uv_apx) {
-    this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx);
-    this->p_uv_lambda[tries] += max_relative_error(p_uv_opt, p_uv_apx);
+      const map<pair<int, int>, long double> &p_uv_opt,
+      const map<pair<int, int>, long double> &p_uv_apx,
+      const int &n0, const int &n) {
+    this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx, n0, n);
+    this->p_uv_lambda[tries] += max_relative_error(p_uv_opt, p_uv_apx, n0, n);
     this->p_uv_counter++;
   }
 
-  void add_p_uv_uniform(
-      const int &tries, const map<pair<int, int>, double> &p_uv_apx, const int &n, const int &n0) {
-    this->p_uv_mse[tries] +=
-        mean_square_error_uniform(p_uv_apx, 0.5, (n - n0) * (n - n0 - 1));
-    this->p_uv_lambda[tries] += max_relative_error_uniform(p_uv_apx, 0.5);
-    this->p_uv_counter++;
-  }
-
-  double get_permutations_mse(const int &tries) const {
-    return this->permutations_mse.find(tries)->second / permutations_counter;
-  }
-
-  double get_p_uv_mse(const int &tries) const {
+  long double get_p_uv_mse(const int &tries) const {
     return this->p_uv_mse.find(tries)->second / p_uv_counter;
   }
 
-  double get_permutations_lambda(const int &tries) const {
-    return this->permutations_lambda.find(tries)->second / permutations_counter;
-  }
-
-  double get_p_uv_lambda(const int &tries) const {
+  long double get_p_uv_lambda(const int &tries) const {
     return this->p_uv_lambda.find(tries)->second / p_uv_counter;
   }
 };
@@ -463,13 +432,13 @@ void print_errors(
     function<double(map<SamplingMethod, ErrorStruct>, SamplingMethod, int)> get_value) {
   cout << setw(6) << "n" << " ";
   for (const auto &algorithm : SAMPLING_METHOD_NAME) {
-    cout << setw(12) << algorithm.second << " ";
+    cout << setw(20) << algorithm.second << " ";
   }
   cout << endl;
   for (const int &tries : sigma_tries) {
     cout << setw(6) << tries << " ";
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
-      cout << fixed << setw(12) << setprecision(9)
+      cout << fixed << setw(20) << setprecision(9)
           << get_value(errors, algorithm.first, tries) << " ";
     }
     cout << endl;
@@ -478,33 +447,17 @@ void print_errors(
 
 void print_errors(
     const vector<int> &sigma_tries, const map<SamplingMethod, ErrorStruct> &errors) {
-  auto permutations_mse = [](
-      const map<SamplingMethod, ErrorStruct> &e,
-      const SamplingMethod &method, const int &tries) -> double {
-        return e.find(method)->second.get_permutations_mse(tries);
-      };
-  cout << "Mean square errors for permutations: " << endl;
-  print_errors(sigma_tries, errors, permutations_mse);
-
   auto p_uv_mse = [](
       const map<SamplingMethod, ErrorStruct> &e,
-      const SamplingMethod &method, const int &tries) -> double {
+      const SamplingMethod &method, const int &tries) -> long double {
         return e.find(method)->second.get_p_uv_mse(tries);
       };
   cout << "Mean square errors for p_uv: " << endl;
   print_errors(sigma_tries, errors, p_uv_mse);
 
-  auto permutations_lambda = [](
-      const map<SamplingMethod, ErrorStruct> &e,
-      const SamplingMethod &method, const int &tries) -> double {
-        return e.find(method)->second.get_permutations_lambda(tries);
-      };
-  cout << "Max relative errors for permutations: " << endl;
-  print_errors(sigma_tries, errors, permutations_lambda);
-
   auto p_uv_lambda = [](
       const map<SamplingMethod, ErrorStruct> &e,
-      const SamplingMethod &method, const int &tries) -> double {
+      const SamplingMethod &method, const int &tries) -> long double {
         return e.find(method)->second.get_p_uv_lambda(tries);
       };
   cout << "Max relative errors for p_uv: " << endl;
@@ -525,6 +478,8 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
   }
 
   map<SamplingMethod, ErrorStruct> errors;
+
+  #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph(G, n, params);
@@ -532,10 +487,9 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
     vector<int> S = generate_permutation(n, get_graph_size(G0));
     apply_permutation(G, S);
 
-    map<mpz_class, double> permutations_opt;
-    map<pair<int, int>, double> p_uv_opt;
+    map<pair<int, int>, long double> p_uv_opt;
     if (exact_mode) {
-      permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
+      auto permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
@@ -545,19 +499,24 @@ void compare_probabilities(const int &n, const int &n0, const Parameters &params
                 G, get_graph_size(G0), params, algorithm.first, tries);
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
 
-        ErrorStruct &error = errors[algorithm.first];
         if (!exact_mode) {
-          permutations_opt =
+          auto permutations_opt =
                 get_permutation_probabilities_sampling(
                     G, get_graph_size(G0), params, algorithm.first, tries);
           p_uv_opt =
               get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
         }
-        error.add_permutations(tries, permutations_opt, permutations_apx);
-        error.add_p_uv(tries, p_uv_opt, p_uv_apx);
+        #pragma omp critical
+        {
+          ErrorStruct &error = errors[algorithm.first];
+          error.add_p_uv(tries, p_uv_opt, p_uv_apx, n0, n);
+        }
       }
     }
-    cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    #pragma omp critical
+    {
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
   }
   print_errors(sigma_tries, errors);
 }
