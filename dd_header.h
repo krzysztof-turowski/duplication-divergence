@@ -154,7 +154,7 @@ inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
-std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
+std::vector<std::set<int>> generate_seed_simple(const int &n0, const double &p0) {
   std::vector<std::set<int>> G(n0);
   std::random_device device;
   std::mt19937 generator(device());
@@ -170,7 +170,7 @@ std::vector<std::set<int>> generate_seed(const int &n0, const double &p0) {
   return G;
 }
 
-std::vector<std::set<int>> generate_graph(
+std::vector<std::set<int>> generate_graph_simple(
     std::vector<std::set<int>> &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
@@ -226,7 +226,7 @@ std::vector<std::set<int>> generate_graph(
   return G;
 }
 
-std::vector<std::set<int>> read_graph(const std::string &graph_name) {
+std::vector<std::set<int>> read_graph_simple(const std::string &graph_name) {
   std::ifstream graph_file(graph_name);
   if (graph_file.fail()) {
     throw std::invalid_argument("Missing " + graph_name + " file");

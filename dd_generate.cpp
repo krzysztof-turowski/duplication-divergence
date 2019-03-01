@@ -24,9 +24,9 @@ void export_graph(const string &name, const vector<set<int>> &G) {
 }
 
 void generate_graph(const int &n, const int &n0, const Parameters &params) {
-  vector<set<int>> G = generate_seed(n0, 1.0);
+  vector<set<int>> G = generate_seed_simple(n0, 1.0);
   export_graph(FILES_FOLDER + "G0-" + name(n, n0, params) + ".txt", G);
-  generate_graph(G, n, params);
+  generate_graph_simple(G, n, params);
   export_graph(FILES_FOLDER + "G-" + name(n, n0, params) + ".txt", G);
 }
 
