@@ -47,7 +47,7 @@ dd_temporal_bound: dd_temporal_bound.cpp
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
-	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
+	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme,superfluous-parens --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
 
 clean:
 	@rm -vf $(EXEC)
