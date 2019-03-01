@@ -8,6 +8,8 @@ LP_SOLVER = glpk
 GRAPH_FLAGS = -D$(GRAPH_LIB) -DNDEBUG
 ifeq ($(GRAPH_LIB),snap)
 	GRAPH_FLAGS += -lsnap -Wno-error -fpermissive
+else ifeq ($(GRAPH_LIB),networkit)
+	GRAPH_FLAGS += -lnetworkit
 endif
 
 LP_FLAGS = -D$(LP_SOLVER) -DNDEBUG

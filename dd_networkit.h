@@ -5,19 +5,21 @@
 
 #include "./lib/networkit/networkit/cpp/graph/Graph.h"
 
+// TODO(kturowski): implement labels as a pair (NetworKit::Graph, map<NetworKit::node, int>)
+
 inline int get_graph_size(const NetworKit::Graph &G) {
   return G.numberOfNodes();
 }
 
-inline int get_index(const NetworKit::node &v) {
+inline int get_index(const NetworKit::Graph &G, const NetworKit::node &v) {
   throw std::logic_error("Not yet implemented");
 }
 
 inline int get_index(const NetworKit::node &u, const NetworKit::node &v, const int &n) {
-  throw std::logic_error("Not yet implemented");
+  throw v * n + u;
 }
 
-inline void set_index(NetworKit::node &v, const int &value) {
+inline void set_index(NetworKit::Graph &G, NetworKit::node &v, const int &value) {
   throw std::logic_error("Not yet implemented");
 }
 
@@ -38,7 +40,11 @@ inline NetworKit::node add_vertex(NetworKit::Graph &G, const int &value) {
 }
 
 inline void move_vertex(NetworKit::Graph &G, NetworKit::Graph &H, NetworKit::node &v) {
-  throw std::logic_error("Not yet implemented");
+  if (G.isEmpty()) {
+    H.removeNode(v);
+  } else {
+    H.restoreNode(v);
+  }
 }
 
 inline void delete_vertex(NetworKit::Graph &G, NetworKit::node &v) {
