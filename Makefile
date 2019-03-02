@@ -42,7 +42,7 @@ debug: $(EXEC)
 dd_automorphisms: dd_automorphisms.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
-dd_temporal_bound: dd_temporal_bound.cpp
+dd_temporal_%: dd_temporal_%.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) $(LP_FLAGS) -o $@
 
 check:

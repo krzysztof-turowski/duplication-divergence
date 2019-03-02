@@ -3,13 +3,13 @@
 // Run: ./dd_temporal_algorithms synthetic all MODE n n0 PARAMETERS
 //   or ./dd_temporal_algorithms synthetic ALGORITHM MODE n n0 PARAMETERS
 
-#include "./dd_graph.h"
+#include "./dd_temporal.h"
 
 #include <vector>
 
 using namespace std;
 
-typedef pair<double, double> DensityPrecision;
+typedef vector<set<int>> BinningScheme;
 
 const int G_TRIES = 10000;
 
@@ -27,16 +27,9 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
 };
 
-void apply_permutation(Graph &G, const vector<int> &S) {
-  vector<Vertex> V(get_vertices(G));
-  for (auto &v : V) {
-    set_index(G, v, S[get_index(G, v)]);
-  }
-}
-
-vector<set<int>> sort_by_degree(const Graph &G, const int &n0) {
+BinningScheme sort_by_degree(const Graph &G, const int &n0) {
   int n = get_graph_size(G);
-  vector<set<int>> out(n);
+  BinningScheme out(n);
   for (const auto &v : get_vertices(G)) {
     int index = get_index(G, v);
     if (index >= n0) {
@@ -46,7 +39,7 @@ vector<set<int>> sort_by_degree(const Graph &G, const int &n0) {
   return out;
 }
 
-DensityPrecision get_density_precision(const vector<set<int>> &solution) {
+DensityPrecision get_density_precision(const BinningScheme &solution) {
   double total = 0, correct = 0, n = 0;
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
     n += solution[i].size();
