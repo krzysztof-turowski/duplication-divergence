@@ -23,7 +23,7 @@ inline void set_index(NetworKit::Graph &G, NetworKit::node &v, const int &value)
   throw std::logic_error("Not yet implemented");
 }
 
-inline int get_degree(NetworKit::Graph &G, const NetworKit::node &v) {
+inline int get_degree(const NetworKit::Graph &G, const NetworKit::node &v) {
   return G.degree(v);
 }
 
@@ -31,7 +31,8 @@ inline void add_edge(NetworKit::Graph &G, const NetworKit::node &v, const Networ
   G.addEdge(v, u);
 }
 
-inline bool check_edge(NetworKit::Graph &G, const NetworKit::node &v, const NetworKit::node &u) {
+inline bool check_edge(
+    const NetworKit::Graph &G, const NetworKit::node &v, const NetworKit::node &u) {
   return G.hasEdge(v, u);
 }
 

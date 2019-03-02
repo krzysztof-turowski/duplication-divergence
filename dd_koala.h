@@ -25,7 +25,8 @@ inline void set_index(
   v->setInfo(value);
 }
 
-inline int get_degree(Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v) {
+inline int get_degree(
+    const Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v) {
   return G.deg(v);
 }
 
