@@ -9,6 +9,8 @@
 
 using namespace std;
 
+typedef pair<double, double> DensityPrecision;
+
 const int G_TRIES = 10000;
 
 enum TemporalAlgorithm { DEGREE_SORT };
@@ -44,7 +46,7 @@ vector<set<int>> sort_by_degree(const Graph &G, const int &n0) {
   return out;
 }
 
-pair<double, double> score(const vector<set<int>> &solution) {
+DensityPrecision get_density_precision(const vector<set<int>> &solution) {
   double total = 0, correct = 0, n = 0;
   for (int i = 0; i < static_cast<int>(solution.size()); i++) {
     n += solution[i].size();
@@ -62,14 +64,14 @@ pair<double, double> score(const vector<set<int>> &solution) {
   return make_pair(total / (n * (n - 1) / 2), correct / total);
 }
 
-pair<double, double> temporal_algorithm_single(
+DensityPrecision temporal_algorithm_single(
     const Graph &G0, const int &n, const Parameters &params, const TemporalAlgorithm &algorithm) {
   Graph G(G0);
   generate_graph(G, n, params);
 
   switch (algorithm) {
     case DEGREE_SORT: {
-      return score(sort_by_degree(G, G0.getVertNo()));
+      return get_density_precision(sort_by_degree(G, G0.getVertNo()));
     }
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
@@ -77,17 +79,33 @@ pair<double, double> temporal_algorithm_single(
 }
 
 void print(
-    const vector<pair<double, double>> solution, const int &n, const int &n0,
-    const Parameters &params, const TemporalAlgorithm &algorithm, ostream &out_file) {
+    const vector<DensityPrecision> solution, const int &n, const int &n0,
+    const Parameters &params, const TemporalAlgorithm &algorithm, ostream &out_file,
+    bool verbose = false) {
   cout << "Graph - n: " << n << ", n0: " << n0
       << ", parameters: " << params.to_string() << endl;
   cout << "Algorithm: " << LONG_ALGORITHM_NAME.find(algorithm)->second << endl;
-  // TODO(unknown): Add printing mean
-  for (const auto &density_precision : solution) {
-    cout << "density: " << fixed << setw(6) << setprecision(3) << density_precision.first
-        << " precision: " << fixed << setw(6) << setprecision(3) << density_precision.second
-        << endl;
+
+  auto mean_density_precision =
+      accumulate(
+          solution.begin(), solution.end(), DensityPrecision(0.0, 0.0),
+          [] (DensityPrecision &value, const DensityPrecision &density_precision) {
+              value.first += density_precision.first, value.second += density_precision.second;
+              return value;
+          });
+  cout << "Mean density: " << fixed << setw(6) << setprecision(3)
+      << mean_density_precision.first / solution.size()
+      << " mean precision: " << fixed << setw(6) << setprecision(3)
+      << mean_density_precision.second / solution.size()
+      << endl;
+  if (verbose) {
+    for (const auto &density_precision : solution) {
+      cout << "density: " << fixed << setw(6) << setprecision(3) << density_precision.first
+          << " precision: " << fixed << setw(6) << setprecision(3) << density_precision.second
+          << endl;
+    }
   }
+
   out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second << " ";
   for (const auto &density_precision : solution) {
     out_file << density_precision.first << "," << density_precision.second << " ";
@@ -99,13 +117,13 @@ void temporal_algorithm(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm,
     ostream &out_file) {
   Graph G0 = generate_seed(n0, 1.0);
-  vector<pair<double, double>> solution(G_TRIES);
+  vector<DensityPrecision> solution(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     solution[i] = temporal_algorithm_single(G0, n, params, algorithm);
     #pragma omp critical
     {
-      if ((i + 1) % 100 == 0) {
+      if ((i + 1) % 1000 == 0) {
         cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
       }
     }
