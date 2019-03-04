@@ -5,26 +5,32 @@
 
 #include "./dd_temporal.h"
 
-#include <vector>
+#include <deque>
 
 using namespace std;
 
-typedef vector<set<int>> BinningScheme;
+typedef set<int> Bin;
+typedef deque<Bin> BinningScheme;
 
 const int G_TRIES = 10000;
 
-enum TemporalAlgorithm { DEGREE_SORT };
+enum TemporalAlgorithm {
+  DEGREE_SORT, DEGREE_PEEL
+};
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "sort_by_degree" },
+  { TemporalAlgorithm::DEGREE_PEEL, "peel_by_degree" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "Sort vertices by degree" },
+  { TemporalAlgorithm::DEGREE_PEEL, "Peel vertices by degree" },
 };
 
 const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
+  { "peel_by_degree", TemporalAlgorithm::DEGREE_PEEL },
 };
 
 BinningScheme sort_by_degree(const Graph &G, const int &n0) {
@@ -32,8 +38,34 @@ BinningScheme sort_by_degree(const Graph &G, const int &n0) {
   BinningScheme out(n);
   for (const auto &v : get_vertices(G)) {
     int index = get_index(G, v);
-    if (index >= n0) {
-      out[n - 1 - get_degree(G, v)].insert(index);
+    if (index < n0) {
+      continue;
+    }
+    out[n - 1 - get_degree(G, v)].insert(index);
+  }
+  return out;
+}
+
+BinningScheme peel_by_degree(Graph &G, const int &n0) {
+  BinningScheme out;
+  while (get_graph_size(G) > n0) {
+    set<Vertex> best_vertices;
+    int min_degree = numeric_limits<int>::max();
+    for (const auto &v : get_vertices(G)) {
+      if (get_index(G, v) < n0) {
+        continue;
+      }
+      if (get_degree(G, v) < min_degree) {
+        best_vertices.clear(), min_degree = get_degree(G, v);
+      }
+      if (get_degree(G, v) == min_degree) {
+        best_vertices.insert(v);
+      }
+    }
+    out.push_front(Bin());
+    Bin &current_bin = out.front();
+    for (auto v : best_vertices) {
+      current_bin.insert(get_index(G, v)), delete_vertex(G, v);
     }
   }
   return out;
@@ -41,9 +73,9 @@ BinningScheme sort_by_degree(const Graph &G, const int &n0) {
 
 DensityPrecision get_density_precision(const BinningScheme &solution) {
   double total = 0, correct = 0, n = 0;
-  for (int i = 0; i < static_cast<int>(solution.size()); i++) {
+  for (size_t i = 0; i < solution.size(); i++) {
     n += solution[i].size();
-    for (int j = i + 1; j < static_cast<int>(solution.size()); j++) {
+    for (size_t j = i + 1; j < solution.size(); j++) {
       total += solution[i].size() * solution[j].size();
       for (const auto &u : solution[i]) {
         for (const auto &v : solution[j]) {
@@ -63,9 +95,10 @@ DensityPrecision temporal_algorithm_single(
   generate_graph(G, n, params);
 
   switch (algorithm) {
-    case DEGREE_SORT: {
-      return get_density_precision(sort_by_degree(G, G0.getVertNo()));
-    }
+    case DEGREE_SORT:
+      return get_density_precision(sort_by_degree(G, get_graph_size(G0)));
+    case DEGREE_PEEL:
+      return get_density_precision(peel_by_degree(G, get_graph_size(G0)));
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
@@ -131,6 +164,9 @@ int main(int, char *argv[]) {
     Parameters params;
     params.initialize(mode, argv + 6);
     string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"));
+    if (action != "synthetic") {
+      throw invalid_argument("Invalid action: " + action);
+    }
     if (algorithm == "all") {
       ofstream out_file(name, ios_base::app);
       for (const auto &alg : REVERSE_ALGORITHM_NAME) {
