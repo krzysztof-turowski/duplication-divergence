@@ -11,26 +11,30 @@ using namespace std;
 
 typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
+typedef vector<pair<int, int>> PairingScheme;
 
 const int G_TRIES = 10000;
 
 enum TemporalAlgorithm {
-  DEGREE_SORT, DEGREE_PEEL
+  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "sort_by_degree" },
   { TemporalAlgorithm::DEGREE_PEEL, "peel_by_degree" },
+  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort_by_neighborhood" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "Sort vertices by degree" },
   { TemporalAlgorithm::DEGREE_PEEL, "Peel vertices by degree" },
+  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "Sort vertices by neighborhood subset" },
 };
 
 const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
   { "peel_by_degree", TemporalAlgorithm::DEGREE_PEEL },
+  { "sort_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_SORT },
 };
 
 BinningScheme sort_by_degree(const Graph &G, const int &n0) {
@@ -71,10 +75,41 @@ BinningScheme peel_by_degree(Graph &G, const int &n0) {
   return out;
 }
 
-DensityPrecision get_density_precision(const BinningScheme &solution) {
-  double total = 0, correct = 0, n = 0;
+PairingScheme sort_by_neighborhood(Graph &G, const int &n0) {
+  PairingScheme out;
+  auto V(get_vertices(G));
+  for (size_t i = 0; i < V.size(); i++) {
+    auto Nu = get_neighbors(G, V[i]);
+    int u = get_index(G, V[i]);
+    for (size_t j = i + 1; j < V.size(); j++) {
+      auto Nv = get_neighbors(G, V[j]);
+      int v = get_index(G, V[j]);
+      if (u < n0 || v < n0) {
+        continue;
+      }
+      if (Nu.size() <= Nv.size() && includes(Nv.begin(), Nv.end(), Nu.begin(), Nu.end())) {
+        out.push_back(make_pair(v, u));
+      } else if (Nv.size() <= Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
+        out.push_back(make_pair(u, v));
+      }
+    }
+  }
+  return out;
+}
+
+DensityPrecision get_density_precision(const PairingScheme &solution, const int &count) {
+  double total = solution.size(), correct = 0;
+  for (const auto &uv : solution) {
+    if (uv.first < uv.second) {
+      correct++;
+    }
+  }
+  return make_pair(total / (count * (count - 1) / 2), correct / total);
+}
+
+DensityPrecision get_density_precision(const BinningScheme &solution, const int &count) {
+  double total = 0, correct = 0;
   for (size_t i = 0; i < solution.size(); i++) {
-    n += solution[i].size();
     for (size_t j = i + 1; j < solution.size(); j++) {
       total += solution[i].size() * solution[j].size();
       for (const auto &u : solution[i]) {
@@ -86,7 +121,7 @@ DensityPrecision get_density_precision(const BinningScheme &solution) {
       }
     }
   }
-  return make_pair(total / (n * (n - 1) / 2), correct / total);
+  return make_pair(total / (count * (count - 1) / 2), correct / total);
 }
 
 DensityPrecision temporal_algorithm_single(
@@ -94,11 +129,14 @@ DensityPrecision temporal_algorithm_single(
   Graph G(G0);
   generate_graph(G, n, params);
 
+  int n0 = get_graph_size(G0);
   switch (algorithm) {
     case DEGREE_SORT:
-      return get_density_precision(sort_by_degree(G, get_graph_size(G0)));
+      return get_density_precision(sort_by_degree(G, n0), n - n0);
     case DEGREE_PEEL:
-      return get_density_precision(peel_by_degree(G, get_graph_size(G0)));
+      return get_density_precision(peel_by_degree(G, n0), n - n0);
+    case NEIGHBORHOOD_SORT:
+      return get_density_precision(sort_by_neighborhood(G, n0), n - n0);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
