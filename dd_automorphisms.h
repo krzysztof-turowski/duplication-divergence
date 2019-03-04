@@ -96,7 +96,7 @@ double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
 
 std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
   std::vector<int> C(G.size()), sizes;
-  for (int i = 0, count = 0; i < static_cast<int>(G.size()); i++) {
+  for (size_t i = 0, count = 0; i < G.size(); i++) {
     if (C[i] == 0) {
       int vertices = 0;
       std::stack<int> S;
