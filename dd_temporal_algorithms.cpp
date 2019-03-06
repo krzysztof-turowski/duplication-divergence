@@ -16,25 +16,67 @@ typedef vector<pair<int, int>> PairingScheme;
 const int G_TRIES = 10000;
 
 enum TemporalAlgorithm {
-  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT
+  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL, NEIGHBORHOOD_RANK
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "sort_by_degree" },
   { TemporalAlgorithm::DEGREE_PEEL, "peel_by_degree" },
   { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort_by_neighborhood" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL, "peel_by_neighborhood" },
+  { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank_by_neighborhood" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
-  { TemporalAlgorithm::DEGREE_SORT, "Sort vertices by degree" },
-  { TemporalAlgorithm::DEGREE_PEEL, "Peel vertices by degree" },
-  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "Sort vertices by neighborhood subset" },
+  { TemporalAlgorithm::DEGREE_SORT, "Sort vertices by degree descending" },
+  { TemporalAlgorithm::DEGREE_PEEL, "Peel vertices by degree (smallest last)" },
+  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "Sort vertices by neighborhood subset descending" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL,
+      "Peel vertices by neighborhood subset relation (smallest last)" },
+  { TemporalAlgorithm::NEIGHBORHOOD_RANK, "Rank vertices in DAG of neighborhood subset relation" },
 };
 
 const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
   { "peel_by_degree", TemporalAlgorithm::DEGREE_PEEL },
   { "sort_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_SORT },
+  { "peel_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_PEEL },
+  { "rank_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_RANK },
+};
+
+class DAG {
+ private:
+  vector<set<int>> H;
+  vector<int> sources;
+
+ public:
+  DAG(Graph &G) : H(get_graph_size(G)), sources(get_graph_size(G)) { }
+
+  void add_edge(const int &u, const int &v) {
+    H[u].insert(v), ++sources[v];
+  }
+
+  set<int> get_neighbors(const int &v) {
+    return H[v];
+  }
+
+  set<int> get_sources() {
+    set<int> out;
+    for (size_t i = 0; i < sources.size(); i++) {
+      if (is_source(v)) {
+        out.insert(v);
+      }
+    }
+    return out;
+  }
+
+  bool decrement_source(const int &v) {
+    return --source[v];
+  }
+
+  bool is_source(const int &v) {
+    return source[v] == 0;
+  }
 };
 
 BinningScheme sort_by_degree(const Graph &G, const int &n0) {
@@ -79,22 +121,104 @@ PairingScheme sort_by_neighborhood(Graph &G, const int &n0) {
   PairingScheme out;
   auto V(get_vertices(G));
   for (size_t i = 0; i < V.size(); i++) {
-    auto Nu = get_neighbors(G, V[i]);
     int u = get_index(G, V[i]);
+    if (u < n0) {
+      continue;
+    }
+    auto Nu = get_neighbors(G, V[i]);
     for (size_t j = i + 1; j < V.size(); j++) {
-      auto Nv = get_neighbors(G, V[j]);
       int v = get_index(G, V[j]);
-      if (u < n0 || v < n0) {
+      if (v < n0) {
         continue;
       }
-      if (Nu.size() <= Nv.size() && includes(Nv.begin(), Nv.end(), Nu.begin(), Nu.end())) {
+      auto Nv = get_neighbors(G, V[j]);
+      if (Nu.size() < Nv.size() && includes(Nv.begin(), Nv.end(), Nu.begin(), Nu.end())) {
         out.push_back(make_pair(v, u));
-      } else if (Nv.size() <= Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
+      } else if (Nv.size() < Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
         out.push_back(make_pair(u, v));
       }
     }
   }
   return out;
+}
+
+BinningScheme peel_by_neighborhood(Graph &G, const int &n0) {
+  BinningScheme out;
+  while (get_graph_size(G) > n0) {
+    set<Vertex> best_vertices;
+    auto V(get_vertices(G));
+    for (size_t i = 0; i < V.size(); i++) {
+      int u = get_index(G, V[i]);
+      if (u < n0) {
+        continue;
+      }
+      auto Nu = get_neighbors(G, V[i]);
+      for (size_t j = 0; j < V.size(); j++) {
+        int v = get_index(G, V[j]);
+        if (u == v || v < n0) {
+          continue;
+        }
+        auto Nv = get_neighbors(G, V[j]);
+        if (Nv.size() < Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
+          has_descendants = true;
+          break;
+        }
+      }
+      if (!has_descendants) {
+        best_vertices.push_back(V[i]);
+      }
+    }
+    out.push_front(Bin());
+    Bin &current_bin = out.front();
+    for (auto v : best_vertices) {
+      current_bin.insert(get_index(G, v)), delete_vertex(G, v);
+    }
+  }
+  return out;
+}
+
+PairingScheme get_rank_from_DAG(DAG &H) {
+  PairingScheme out;
+  Bin sources = H.get_sources();
+  out.push_front(sources);
+  while (!out.front().empty()) {
+    Bin current_bin;
+    for (const auto &v : out.front()) {
+      for (const auto &u : H.get_neighbors(v)) {
+        H.decrement_source(u);
+        if (H.is_source(u)) {
+          current_bin.insert(u);
+        }
+      }
+    }
+    out.push_front(current_bin);
+  }
+  return out;
+}
+
+PairingScheme rank_by_neighborhood(Graph &G, const int &n0) {
+  DAG H;
+  auto V(get_vertices(G));
+  for (size_t i = 0; i < V.size(); i++) {
+    int u = get_index(G, V[i]);
+    if (u < n0) {
+      continue;
+    }
+    auto Nu = get_neighbors(G, V[i]);
+    for (size_t j = i + 1; j < V.size(); j++) {
+      int v = get_index(G, V[j]);
+      if (v < n0) {
+        continue;
+      }
+      auto Nv = get_neighbors(G, V[j]);
+      if (Nu.size() < Nv.size() && includes(Nv.begin(), Nv.end(), Nu.begin(), Nu.end())) {
+        H.add_edge(u, v);
+      } else if (Nv.size() < Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
+        H.add_edge(v, u);
+      }
+    }
+  }
+  return get_rank_from_DAG(H);
 }
 
 DensityPrecision get_density_precision(const PairingScheme &solution, const int &count) {
