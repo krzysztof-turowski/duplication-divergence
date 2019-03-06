@@ -99,6 +99,6 @@ double LP_solve(
     return solution;
   } else {
     delete LP, delete environment;
-    throw std::domain_error("Invalid LP status: " + status);
+    throw std::domain_error("Invalid LP status: " + std::to_string(status));
   }
 }

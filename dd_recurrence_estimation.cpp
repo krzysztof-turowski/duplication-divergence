@@ -161,13 +161,13 @@ void print(
     ostream &out_file) {
   cout << fixed << setprecision(3) << name << " - G0: " << g0_value  << ", G: " << g_value << endl;
   if (!V.empty()) {
-    for (int i = 0; i < static_cast<int>(V.size()); i++) {
+    for (size_t i = 0; i < V.size(); i++) {
       cout << V[i].to_string(V_low[i], V_high[i]) << endl;
     }
   } else {
     cout << "There are no suitable parameter values" << endl;
   }
-  for (int i = 0; i < static_cast<int>(V.size()); i++) {
+  for (size_t i = 0; i < V.size(); i++) {
     out_file << V_low[i].to_csv() << ";" << V[i].to_csv() << ";" << V_high[i].to_csv() << " ";
   }
   out_file << endl;

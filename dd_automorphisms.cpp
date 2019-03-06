@@ -65,7 +65,7 @@ double log_automorphisms_from_isolated_nodes(const Graph &G) {
 
 double log_automorphisms_from_cherries(const Graph &G) {
   std::vector<int> V(G.size());
-  for (int i = 0; i < static_cast<int>(G.size()); i++) {
+  for (size_t i = 0; i < G.size(); i++) {
     if (G[i].size() == 1) {
       V[*(G[i].begin())] += 1;
     }
@@ -80,12 +80,12 @@ double log_automorphisms_from_cherries(const Graph &G) {
 double log_automorphisms_from_copies(const Graph &G) {
   std::vector<bool> V(G.size(), false);
   double out = 0, count;
-  for (int i = 0; i < static_cast<int>(G.size()); i++) {
+  for (size_t i = 0; i < G.size(); i++) {
     if (V[i]) {
       continue;
     }
     count = 1, V[i] = true;
-    for (int j = i + 1; j < static_cast<int>(G.size()); j++) {
+    for (size_t j = i + 1; j < G.size(); j++) {
       if (G[i] == G[j]) {
         count++, V[j] = true;
       }

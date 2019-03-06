@@ -2,4 +2,5 @@
 *.txt
 *.exe
 *.pdf
+*.png
 lib/nauty/*
