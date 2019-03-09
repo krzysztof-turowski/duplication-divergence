@@ -3,12 +3,7 @@
 // Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed FILE MODE PARAMETERS
 
 #include "./dd_header.h"
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-variable"
 #include "./dd_automorphisms.h"
-#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <chrono>
