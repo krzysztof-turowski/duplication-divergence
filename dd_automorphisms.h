@@ -1,14 +1,14 @@
 #pragma once
 
+extern "C" {
+  #include <nauty.h>
+  #include <nausparse.h>
+  #include <traces.h>
+}
+
 #include <set>
 #include <stack>
 #include <vector>
-
-extern "C" {
-  #include "./lib/nauty/nauty.h"
-  #include "./lib/nauty/nausparse.h"
-  #include "./lib/nauty/traces.h"
-}
 
 double log_automorphisms_dense(const std::vector<std::set<int>> &G) {
   statsblk stats;
