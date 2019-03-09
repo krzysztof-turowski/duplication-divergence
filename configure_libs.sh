@@ -10,13 +10,14 @@ if [ "$#" -gt 0 ]; then
   for lib in "$@"
   do
     if [[ "$lib" == "glpk" ]]; then
-      ld -L `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep glpk | head -1` -lglpk 2>/dev/null || CHECK=`echo $?`
+      DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep glpk | head -1)
+      ld -L ${DIR:-.} -lglpk 2>/dev/null || CHECK=`echo $?`
       if [ ${CHECK:-0} -eq 0 ]; then
         echo "GLPK already present"
       else
         echo "GLPK not present"
         if [[ "$lib" == "glpk" ]]; then
-          GLPK_LIB=$(find -L /usr/lib $HOME -path */glpk/lib/libglpk.a -print0 2>/dev/null | head -1)
+          GLPK_LIB=$(find -L /usr/lib /usr/local/lib $HOME -name libglpk.a -print0 2>/dev/null | head -1)
           GLPK_DIR=$(dirname $(dirname $GLPK_LIB))
           INCLUDE_DIRS="$INCLUDE_DIRS:$GLPK_DIR/include"
           LIBRARY_DIRS="$LIBRARY_DIRS:$GLPK_DIR/lib"
@@ -24,7 +25,8 @@ if [ "$#" -gt 0 ]; then
       fi
     fi
     if [[ "$lib" == "gurobi" ]]; then
-      ld -L `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep gurobi | head -1` -lgurobi_c++ -lgurobi81 2>/dev/null || CHECK=`echo $?`
+      DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep gurobi | head -1)
+      ld -L ${DIR:-.} -lgurobi_c++ -lgurobi81 2>/dev/null || CHECK=`echo $?`
       if [ ${CHECK:-0} -eq 0 ]; then
         echo "Gurobi already present"
       else
@@ -52,7 +54,8 @@ if [ "$#" -gt 0 ]; then
       fi
     fi
     if [[ "$lib" == "nauty" ]]; then
-      ld -L `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep nauty | head -1` -l:nauty.a 2>/dev/null || CHECK=`echo $?`
+      DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep nauty | head -1)
+      ld -L ${DIR:-.} -l:nauty.a 2>/dev/null || CHECK=`echo $?`
       if [ ${CHECK:-0} -eq 0 ]; then
         echo "nauty already present"
       else
@@ -66,7 +69,8 @@ if [ "$#" -gt 0 ]; then
       fi
     fi
     if [[ "$lib" == "networkit" ]]; then
-      ld -L `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep networkit | head -1` -lnetworkit 2>/dev/null || CHECK=`echo $?`
+      DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep networkit | head -1)
+      ld -L ${DIR:-.} -lnetworkit 2>/dev/null || CHECK=`echo $?`
       if [ ${CHECK:-0} -eq 0 ]; then
         echo "NetworKit already present"
       else
@@ -80,7 +84,8 @@ if [ "$#" -gt 0 ]; then
       fi
     fi
     if [[ "$lib" == "snap" ]]; then
-      ld -L `echo $LD_LIBRARY_PATH | tr ':' '\n' | grep snap | head -1` -lsnap 2>/dev/null || CHECK=`echo $?`
+      DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep snap | head -1)
+      ld -L ${DIR:-.} -lsnap 2>/dev/null || CHECK=`echo $?`
       if [ ${CHECK:-0} -eq 0 ]; then
         echo "SNAP already present"
       else
