@@ -24,12 +24,12 @@ void print_density_precision(
   cout << "Graph - n: " << n << ", n0: " << n0
       << ", parameters: " << params.to_string() << endl;
   cerr << "Method: " << name << endl;
-  for (int i = 0; i < static_cast<int>(precision.size()); i++) {
+  for (size_t i = 0; i < precision.size(); i++) {
     cerr << "density: " << fixed << setw(6) << setprecision(3) << density[i]
         << " precision: " << fixed << setw(6) << setprecision(3) << precision[i] << endl;
   }
   out_file << name << " ";
-  for (int i = 0; i < static_cast<int>(precision.size()); i++) {
+  for (size_t i = 0; i < precision.size(); i++) {
     out_file << density[i] << "," << precision[i] << " ";
   }
   out_file << endl;

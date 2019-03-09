@@ -1,9 +1,9 @@
 #pragma once
 
+#include <graph/Graph.h>
+
 #include <set>
 #include <vector>
-
-#include "./lib/networkit/networkit/cpp/graph/Graph.h"
 
 // TODO(kturowski): implement labels as a pair (NetworKit::Graph, map<NetworKit::node, int>)
 
@@ -42,9 +42,9 @@ inline NetworKit::node add_vertex(NetworKit::Graph &G, const int &value) {
 
 inline void move_vertex(NetworKit::Graph &G, NetworKit::Graph &H, NetworKit::node &v) {
   if (G.isEmpty()) {
-    H.removeNode(v);
+    H.removeNode(v), G.addNode();
   } else {
-    H.restoreNode(v);
+    G.restoreNode(v), H.removeNode(H.randomNode());
   }
 }
 

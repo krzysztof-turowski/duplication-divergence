@@ -14,7 +14,7 @@ inline string name(const int &n, const int &n0, const Parameters &params) {
 
 void export_graph(const string &name, const vector<set<int>> &G) {
   ofstream G_out_file(name);
-  for (int i = 0; i < static_cast<int>(G.size()); i++) {
+  for (size_t i = 0; i < G.size(); i++) {
     G_out_file << i << " " << i << endl;
     for (auto j : G[i]) {
       G_out_file << i << " " << j << endl;

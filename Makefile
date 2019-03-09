@@ -1,9 +1,11 @@
 CC = g++
-COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept
-FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread -fopenmp
+COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept -fopenmp
+FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
 GRAPH_LIB = koala
-NAUTY_LIB = lib/nauty/nauty.a -Wno-unused-variable -DTHREADS=1
+NAUTY_LIB = -l:nauty.a -Wno-unused-variable -DTHREADS=1
 LP_SOLVER = glpk
+
+MATH_FLAGS = -lgmp -lgmpxx
 
 GRAPH_FLAGS = -D$(GRAPH_LIB) -DNDEBUG
 ifeq ($(GRAPH_LIB),snap)

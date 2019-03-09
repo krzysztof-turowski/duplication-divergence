@@ -12,7 +12,7 @@ addons:
     sources:
       - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
-      - g++-8
+      - g++-7
       - python-pip
       - cppcheck
       - libgmp3-dev
@@ -20,13 +20,16 @@ addons:
 
 install: 
   # C++17
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-8 90
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
   # Libraries
   - sudo python -m pip install numpy scipy matplotlib
   - sudo python -m pip install cpplint pylint
-  - bash -e ./configure_libs.sh nauty
+  - bash -e ./configure_libs.sh glpk nauty networkit snap
+  - source ~/.bashrc
 
 before_script:
+  - g++ --version
+  - python --version
   - pylint --version
 
 script:
