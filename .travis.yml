@@ -12,12 +12,15 @@ addons:
     sources:
       - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
+      - g++-7
       - python-pip
       - cppcheck
       - libgmp3-dev
       - libglpk-dev
 
 install: 
+  # C++17
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
   # Libraries
   - sudo python -m pip install numpy scipy matplotlib
   - sudo python -m pip install cpplint pylint
