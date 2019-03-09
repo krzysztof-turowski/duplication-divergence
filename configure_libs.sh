@@ -53,7 +53,7 @@ if [ "$#" -gt 0 ]; then
         echo "ERROR: couldn't build Gurobi"
         exit
       fi
-      ln -sf ./libgurobi_c++.a $GUROBI_DIR/lib/libgurobi_c++.a
+      ln -sf $GUROBI_DIR/src/build/libgurobi_c++.a $GUROBI_DIR/lib/libgurobi_c++.a
       echo "export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:$GUROBI_DIR/include" >> $HOME/.bashrc
       ld -lgurobi_c++ -lgurobi81 2>/dev/null
       if [ $? -eq 0 ]; then
