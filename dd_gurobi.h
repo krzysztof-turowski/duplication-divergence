@@ -47,9 +47,10 @@ double LP_solve(
     for (int j = n0; j < n; j++) {
       auto index = LP_get_variable_index(i, j, n, n0);
       if (i != j) {
+        const auto &p_ij = p_uv.find(std::make_pair(i, j));
         vars[index] =
             LP->addVar(
-                0.0, 1.0, static_cast<double>(p_uv.find(std::make_pair(i, j))->second),
+                0.0, 1.0, p_ij != p_uv.end() ? static_cast<double>(p_ij->second : 0.0),
                 GRB_CONTINUOUS, LP_name_variable(i, j));
       } else {
         vars[index] = LP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name_variable(i, j));
