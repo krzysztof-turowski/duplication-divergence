@@ -48,9 +48,11 @@ class DAG {
  private:
   vector<set<int>> H;
   vector<int> sources;
+  int n0;
 
  public:
-  DAG(Graph &G) : H(get_graph_size(G)), sources(get_graph_size(G)) { }
+  DAG(Graph &G, const int &n0_value)
+      : H(get_graph_size(G)), sources(get_graph_size(G)), n0(n0_value) { }
 
   void add_edge(const int &u, const int &v) {
     H[u].insert(v), ++sources[v];
@@ -62,20 +64,20 @@ class DAG {
 
   set<int> get_sources() {
     set<int> out;
-    for (size_t i = 0; i < sources.size(); i++) {
-      if (is_source(v)) {
-        out.insert(v);
+    for (size_t i = n0; i < sources.size(); i++) {
+      if (is_source(i)) {
+        out.insert(i);
       }
     }
     return out;
   }
 
   bool decrement_source(const int &v) {
-    return --source[v];
+    return --sources[v];
   }
 
   bool is_source(const int &v) {
-    return source[v] == 0;
+    return sources[v] == 0;
   }
 };
 
@@ -146,26 +148,24 @@ BinningScheme peel_by_neighborhood(Graph &G, const int &n0) {
   BinningScheme out;
   while (get_graph_size(G) > n0) {
     set<Vertex> best_vertices;
-    auto V(get_vertices(G));
-    for (size_t i = 0; i < V.size(); i++) {
-      int u = get_index(G, V[i]);
-      if (u < n0) {
+    for (const auto &u : get_vertices(G)) {
+      if (get_index(G, u) < n0) {
         continue;
       }
-      auto Nu = get_neighbors(G, V[i]);
-      for (size_t j = 0; j < V.size(); j++) {
-        int v = get_index(G, V[j]);
-        if (u == v || v < n0) {
+      auto Nu = get_neighbors(G, u);
+      bool has_descendants = false;
+      for (const auto &v : get_vertices(G)) {
+        if (u == v || get_index(G, v) < n0) {
           continue;
         }
-        auto Nv = get_neighbors(G, V[j]);
+        auto Nv = get_neighbors(G, v);
         if (Nv.size() < Nu.size() && includes(Nu.begin(), Nu.end(), Nv.begin(), Nv.end())) {
           has_descendants = true;
           break;
         }
       }
       if (!has_descendants) {
-        best_vertices.push_back(V[i]);
+        best_vertices.insert(u);
       }
     }
     out.push_front(Bin());
@@ -177,8 +177,8 @@ BinningScheme peel_by_neighborhood(Graph &G, const int &n0) {
   return out;
 }
 
-PairingScheme get_rank_from_DAG(DAG &H) {
-  PairingScheme out;
+BinningScheme get_rank_from_DAG(DAG &H) {
+  BinningScheme out;
   Bin sources = H.get_sources();
   out.push_front(sources);
   while (!out.front().empty()) {
@@ -196,8 +196,8 @@ PairingScheme get_rank_from_DAG(DAG &H) {
   return out;
 }
 
-PairingScheme rank_by_neighborhood(Graph &G, const int &n0) {
-  DAG H;
+BinningScheme rank_by_neighborhood(Graph &G, const int &n0) {
+  DAG H(G, n0);
   auto V(get_vertices(G));
   for (size_t i = 0; i < V.size(); i++) {
     int u = get_index(G, V[i]);
@@ -261,6 +261,10 @@ DensityPrecision temporal_algorithm_single(
       return get_density_precision(peel_by_degree(G, n0), n - n0);
     case NEIGHBORHOOD_SORT:
       return get_density_precision(sort_by_neighborhood(G, n0), n - n0);
+    case NEIGHBORHOOD_PEEL:
+      return get_density_precision(peel_by_neighborhood(G, n0), n - n0);
+    case NEIGHBORHOOD_RANK:
+      return get_density_precision(rank_by_neighborhood(G, n0), n - n0);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }

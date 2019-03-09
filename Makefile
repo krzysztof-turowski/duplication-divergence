@@ -12,11 +12,13 @@ else ifeq ($(GRAPH_LIB),networkit)
 	GRAPH_FLAGS += -lnetworkit
 endif
 
+MATH_FLAGS = -lgmp -lgmpxx
+
 LP_FLAGS = -D$(LP_SOLVER) -DNDEBUG
 ifeq ($(LP_SOLVER),glpk)
-	LP_FLAGS += -lglpk -lgmp -lgmpxx
+	LP_FLAGS += -lglpk
 else ifeq ($(LP_SOLVER),gurobi)
-	LP_FLAGS += -lgurobi_c++ -lgurobi81 -lgmp -lgmpxx -Wno-error
+	LP_FLAGS += -lgurobi_c++ -lgurobi81 -Wno-error
 else
 endif
 
@@ -43,7 +45,7 @@ dd_automorphisms: dd_automorphisms.cpp
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
 dd_temporal_%: dd_temporal_%.cpp
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) $(LP_FLAGS) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
