@@ -35,11 +35,13 @@
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wcast-qual"
   #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
   #pragma GCC diagnostic ignored "-Wold-style-cast"
   #pragma GCC diagnostic ignored "-Wpedantic"
   #pragma GCC diagnostic ignored "-Wshadow"
   #pragma GCC diagnostic ignored "-Wunused-parameter"
+  #if __GNUC__ >= 6
+    #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+  #endif
   #include "./dd_snap.h"
   #pragma GCC diagnostic pop
 

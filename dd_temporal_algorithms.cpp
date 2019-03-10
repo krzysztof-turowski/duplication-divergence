@@ -6,6 +6,7 @@
 #include "./dd_temporal.h"
 
 #include <deque>
+#include <queue>
 
 using namespace std;
 
@@ -13,10 +14,11 @@ typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
 typedef vector<pair<int, int>> PairingScheme;
 
-const int G_TRIES = 10000;
+const int G_TRIES = 100, SIGMA_TRIES = 10000;
 
 enum TemporalAlgorithm {
-  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL, NEIGHBORHOOD_RANK
+  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL, NEIGHBORHOOD_RANK,
+  PROBABILITY_SORT
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
@@ -25,6 +27,7 @@ const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort_by_neighborhood" },
   { TemporalAlgorithm::NEIGHBORHOOD_PEEL, "peel_by_neighborhood" },
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank_by_neighborhood" },
+  { TemporalAlgorithm::PROBABILITY_SORT, "sort_by_probability" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
@@ -34,6 +37,7 @@ const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
   { TemporalAlgorithm::NEIGHBORHOOD_PEEL,
       "Peel vertices by neighborhood subset relation (smallest last)" },
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "Rank vertices in DAG of neighborhood subset relation" },
+  { TemporalAlgorithm::PROBABILITY_SORT, "Sort vertices if p_uv > threshold" },
 };
 
 const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
@@ -42,6 +46,7 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_SORT },
   { "peel_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_PEEL },
   { "rank_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_RANK },
+  { "sort_by_probability", TemporalAlgorithm::PROBABILITY_SORT },
 };
 
 class DAG {
@@ -221,6 +226,28 @@ BinningScheme rank_by_neighborhood(Graph &G, const int &n0) {
   return get_rank_from_DAG(H);
 }
 
+PairingScheme sort_by_probability(
+    Graph &G, const int &n0, const Parameters &params, const double &threshold) {
+  const auto permutations =
+      get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  int n = get_graph_size(G);
+
+  PairingScheme out;
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      if (i == j) {
+        continue;
+      }
+      const auto &p_ij = p_uv.find(make_pair(i, j));
+      if (p_ij != p_uv.end() && p_ij->second > threshold) {
+        out.push_back(make_pair(i, j));
+      }
+    }
+  }
+  return out;
+}
+
 DensityPrecision get_density_precision(const PairingScheme &solution, const int &count) {
   double total = solution.size(), correct = 0;
   for (const auto &uv : solution) {
@@ -265,6 +292,10 @@ DensityPrecision temporal_algorithm_single(
       return get_density_precision(peel_by_neighborhood(G, n0), n - n0);
     case NEIGHBORHOOD_RANK:
       return get_density_precision(rank_by_neighborhood(G, n0), n - n0);
+    case PROBABILITY_SORT:
+      // TODO(kturowski): parametrize by different values of params than used to generate G
+      // TODO(kturowski): parametrize by different values of threshold than 0.5
+      return get_density_precision(sort_by_probability(G, n0, params, 0.5), n - n0);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
