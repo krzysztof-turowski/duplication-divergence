@@ -12,8 +12,8 @@ using namespace std;
 
 typedef vector<set<int>> Graph;
 
-const double R_STEP = 1.0;
-const double Q_STEP = 0.1;
+const double R_STEP = 0.01, R_EXP = 2.0;
+const double Q_STEP = 0.001, Q_EXP = 2.0;
 const double EPS = 10e-9;
 const double P_DISTANCE = 10e-3;
 const double TI_ALPHA = 0.05;
@@ -232,13 +232,16 @@ Parameters chung_lu_binary_search_q(
 vector<Parameters> chung_lu_get_parameters(
     DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
   vector<Parameters> S;
-  // TODO(krzysztof-turowski): variable step, increased if points too close
-  for (double q = 0.0; q <= 1.0 + EPS; q += Q_STEP) {
+  double q_step = Q_STEP;
+  for (double q = 0.0; q <= 1.0 + EPS; q += q_step) {
     DataObject apx_min(g0_data), apx_max(g0_data);
     chung_lu_estimate_iterative(apx_min, 0.0, q, g0_data.no_vertices, g_data.no_vertices);
     chung_lu_estimate_iterative(apx_max, 1.0, q, g0_data.no_vertices, g_data.no_vertices);
     if (contains(get_value(apx_min), get_value(apx_max), get_value(g_data))) {
       S.push_back(chung_lu_binary_search_p(g0_data, g_data, q, get_value));
+      if (S.size() >= 2 && fabs(S[S.size() - 1].p - S[S.size() - 2].p) < P_DISTANCE) {
+        q_step *= Q_EXP;
+      }
     }
   }
   return S;
@@ -349,9 +352,8 @@ Parameters pastor_satorras_binary_search_r(
 vector<Parameters> pastor_satorras_get_parameters(
     DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
   vector<Parameters> S;
-  // TODO(krzysztof-turowski): variable step, increased if points too close
-  double r_max = g0_data.no_vertices;
-  for (double r = 0.0; r <= r_max + EPS; r += R_STEP) {
+  double r_max = g0_data.no_vertices, r_step = R_STEP;
+  for (double r = 0.0; r <= r_max + EPS; r += r_step) {
     DataObject apx_min(g0_data), apx_max(g0_data);
     pastor_satorras_estimate_iterative(apx_min, 0.0, r, g0_data.no_vertices, g_data.no_vertices);
     pastor_satorras_estimate_iterative(apx_max, 1.0, r, g0_data.no_vertices, g_data.no_vertices);
@@ -360,6 +362,9 @@ vector<Parameters> pastor_satorras_get_parameters(
     }
     if (contains(get_value(apx_min), get_value(apx_max), get_value(g_data))) {
       S.push_back(pastor_satorras_binary_search_p(g0_data, g_data, r, get_value));
+      if (S.size() >= 2 && fabs(S[S.size() - 1].p - S[S.size() - 2].p) < P_DISTANCE) {
+        r_step *= R_EXP;
+      }
     }
   }
   return S;
