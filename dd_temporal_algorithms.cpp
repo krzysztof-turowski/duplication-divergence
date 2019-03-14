@@ -5,6 +5,12 @@
 
 #include "./dd_temporal.h"
 
+#if defined(glpk)
+  #include "./dd_glpk.h"
+#elif defined(gurobi)
+  #include "./dd_gurobi.h"
+#endif
+
 #include <deque>
 #include <queue>
 
@@ -18,7 +24,7 @@ const int G_TRIES = 100, SIGMA_TRIES = 10000;
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL, NEIGHBORHOOD_RANK,
-  PROBABILITY_SORT, PROBABILITY_SUM_SORT
+  PROBABILITY_SORT, PROBABILITY_SUM_SORT, LP_SOLUTION_SORT
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
@@ -29,6 +35,7 @@ const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank_by_neighborhood" },
   { TemporalAlgorithm::PROBABILITY_SORT, "sort_by_probability" },
   { TemporalAlgorithm::PROBABILITY_SUM_SORT, "sort_by_probability_sum" },
+  { TemporalAlgorithm::LP_SOLUTION_SORT, "sort_by_lp_solution" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
@@ -40,6 +47,7 @@ const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "Rank vertices in DAG of neighborhood subset relation" },
   { TemporalAlgorithm::PROBABILITY_SORT, "Sort vertices if p_uv > threshold" },
   { TemporalAlgorithm::PROBABILITY_SUM_SORT, "Sort vertices by sum of p_uv" },
+  { TemporalAlgorithm::LP_SOLUTION_SORT, "Sort vertices if x_uv > threshold" },
 };
 
 const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
@@ -50,6 +58,7 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "rank_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_RANK },
   { "sort_by_probability", TemporalAlgorithm::PROBABILITY_SORT },
   { "sort_by_probability_sum", TemporalAlgorithm::PROBABILITY_SUM_SORT },
+  { "sort_by_lp_solution", TemporalAlgorithm::LP_SOLUTION_SORT },
 };
 
 class DAG {
@@ -280,6 +289,31 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
   return out;
 }
 
+PairingScheme sort_by_lp_solution(
+    Graph &G, const int &n0, const Parameters &params,
+    const double &epsilon, const double &threshold) {
+  const auto permutations =
+      get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  int n = get_graph_size(G);
+  map<pair<int, int>, double> x_uv;
+  tie(ignore, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
+
+  PairingScheme out;
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      if (i == j) {
+        continue;
+      }
+      const auto &x_ij = x_uv.find(make_pair(i, j));
+      if (x_ij != x_uv.end() && x_ij->second > threshold) {
+        out.push_back(make_pair(i, j));
+      }
+    }
+  }
+  return out;
+}
+
 DensityPrecision get_density_precision(const PairingScheme &solution, const int &count) {
   double total = solution.size(), correct = 0;
   for (const auto &uv : solution) {
@@ -331,6 +365,11 @@ DensityPrecision temporal_algorithm_single(
     case PROBABILITY_SUM_SORT:
       // TODO(kturowski): parametrize by different values of params than used to generate G
       return get_density_precision(sort_by_probability_sum(G, n0, params), n - n0);
+    case LP_SOLUTION_SORT:
+      // TODO(kturowski): parametrize by different values of params than used to generate G
+      // TODO(kturowski): parametrize by different values of epsilon than 1.0
+      // TODO(kturowski): parametrize by different values of threshold than 0.5
+      return get_density_precision(sort_by_lp_solution(G, n0, params, 1.0, 0.5), n - n0);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }

@@ -47,7 +47,9 @@ vector<double> LP_bound_exact_single(
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
-    solutions.push_back(LP_solve(p_uv, n, get_graph_size(G0), eps));
+    double solution;
+    tie(solution, ignore) = LP_solve(p_uv, n, get_graph_size(G0), eps);
+    solutions.push_back(solution);
   }
   return solutions;
 }
@@ -67,7 +69,9 @@ vector<double> LP_bound_approximate_single(
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
-    solutions.push_back(LP_solve(p_uv, n, get_graph_size(G0), eps));
+    double solution;
+    tie(solution, ignore) = LP_solve(p_uv, n, get_graph_size(G0), eps);
+    solutions.push_back(solution);
   }
   return solutions;
 }

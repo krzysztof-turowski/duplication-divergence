@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 
 std::string LP_row_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
@@ -31,9 +32,9 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
   return (u - n0) * (n - n0) + (v - n0);
 }
 
-double LP_solve(
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
-    const double &epsilon) {
+    const double &epsilon, const bool get_solution = false) {
   GRBEnv* environment = new GRBEnv();
   GRBModel *LP = new GRBModel(*environment);
   LP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
@@ -95,9 +96,22 @@ double LP_solve(
   LP->optimize();
   int status = LP->get(GRB_IntAttr_Status);
   if (status == GRB_OPTIMAL) {
-    double solution = LP->get(GRB_DoubleAttr_ObjVal);
+    double objective = LP->get(GRB_DoubleAttr_ObjVal);
+    std::map<std::pair<int, int>, double> solution;
+    if (get_solution) {
+      double s = vars[s_index].get(GRB_DoubleAttr_X);
+      for (int i = n0; i < n; i++) {
+        for (int j = n0; j < n; j++) {
+          if (i == j) {
+            continue;
+          }
+          double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
+          solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+        }
+      }
+    }
     delete LP, delete environment;
-    return solution;
+    return std::make_tuple(objective, solution);
   } else {
     delete LP, delete environment;
     throw std::domain_error("Invalid LP status: " + std::to_string(status));

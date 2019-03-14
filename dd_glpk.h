@@ -8,6 +8,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <tuple>
 #include <vector>
 
 std::string LP_row_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
@@ -31,9 +32,9 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
   return (u - n0) * (n - n0) + (v - n0);
 }
 
-double LP_solve(
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
-    const double &epsilon) {
+    const double &epsilon, const bool get_solution = false) {
   glp_prob *LP = glp_create_prob();
   glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
@@ -101,8 +102,21 @@ double LP_solve(
   glp_term_out(0);
   glp_simplex(LP, NULL);
 
-  double solution = glp_get_obj_val(LP);
+  double objective = glp_get_obj_val(LP);
+  std::map<std::pair<int, int>, double> solution;
+  if (get_solution) {
+    double s = glp_get_col_prim(LP, s_index + 1);
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i == j) {
+          continue;
+        }
+        double y_ij = glp_get_col_prim(LP, LP_get_variable_index(i, j, n, n0) + 1);
+        solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+      }
+    }
+  }
   glp_delete_prob(LP);
   glp_free_env();
-  return solution;
+  return std::make_tuple(objective, solution);
 }
