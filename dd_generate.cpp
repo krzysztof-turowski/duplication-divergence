@@ -17,7 +17,9 @@ void export_graph(const string &name, const vector<set<int>> &G) {
   for (size_t i = 0; i < G.size(); i++) {
     G_out_file << i << " " << i << endl;
     for (auto j : G[i]) {
-      G_out_file << i << " " << j << endl;
+      if (i < j) {
+        G_out_file << i << " " << j << endl;
+      }
     }
   }
   G_out_file.close();
