@@ -10,7 +10,9 @@ extern "C" {
 #include <stack>
 #include <vector>
 
-double log_automorphisms_dense(const std::vector<std::set<int>> &G) {
+typedef std::vector<std::set<unsigned>> Graph;
+
+double log_automorphisms_dense(const Graph &G) {
   statsblk stats;
   static DEFAULTOPTIONS_GRAPH(options);
 
@@ -29,7 +31,7 @@ double log_automorphisms_dense(const std::vector<std::set<int>> &G) {
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
-double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
+double log_automorphisms_sparse(const Graph &G) {
   sparsegraph g;
   statsblk stats;
   static DEFAULTOPTIONS_SPARSEGRAPH(options);
@@ -62,7 +64,7 @@ double log_automorphisms_sparse(const std::vector<std::set<int>> &G) {
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
-double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
+double log_automorphisms_traces(const Graph &G) {
   static DEFAULTOPTIONS_TRACES(options);
   TracesStats stats;
 
@@ -94,7 +96,7 @@ double log_automorphisms_traces(const std::vector<std::set<int>> &G) {
   return log(stats.grpsize1) + stats.grpsize2 * log(10);
 }
 
-std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
+std::vector<int> connectivity(const Graph &G) {
   std::vector<int> C(G.size()), sizes;
   for (size_t i = 0, count = 0; i < G.size(); i++) {
     if (C[i] == 0) {
@@ -118,6 +120,7 @@ std::vector<int> connectivity(const std::vector<std::set<int>> &G) {
   return sizes;
 }
 
-int isolated_nodes(const std::vector<std::set<int>> &G) {
-  return std::count_if(G.begin(), G.end(), [](const std::set<int> &v){ return v.size() == 0; });
+int isolated_nodes(const Graph &G) {
+  return std::count_if(
+      G.begin(), G.end(), [](const std::set<unsigned> &v){ return v.size() == 0; });
 }

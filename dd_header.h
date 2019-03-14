@@ -154,8 +154,8 @@ inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
-std::vector<std::set<int>> generate_seed_simple(const int &n0, const double &p0) {
-  std::vector<std::set<int>> G(n0);
+std::vector<std::set<unsigned>> generate_seed_simple(const int &n0, const double &p0) {
+  std::vector<std::set<unsigned>> G(n0);
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -170,8 +170,8 @@ std::vector<std::set<int>> generate_seed_simple(const int &n0, const double &p0)
   return G;
 }
 
-std::vector<std::set<int>> generate_graph_simple(
-    std::vector<std::set<int>> &G, const int &n, const Parameters &params) {
+std::vector<std::set<unsigned>> generate_graph_simple(
+    std::vector<std::set<unsigned>> &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -226,16 +226,16 @@ std::vector<std::set<int>> generate_graph_simple(
   return G;
 }
 
-std::vector<std::set<int>> read_graph_simple(const std::string &graph_name) {
+std::vector<std::set<unsigned>> read_graph_simple(const std::string &graph_name) {
   std::ifstream graph_file(graph_name);
   if (graph_file.fail()) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
-  std::vector<std::set<int>> G;
-  int u, v;
+  std::vector<std::set<unsigned>> G;
+  unsigned u, v;
   while (!graph_file.eof()) {
     graph_file >> u >> v;
-    if (v >= static_cast<int>(G.size())) {
+    if (v >= G.size()) {
       G.resize(v + 1);
     }
     if (u != v) {

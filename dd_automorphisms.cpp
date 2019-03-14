@@ -9,7 +9,6 @@
 #include <chrono>
 #include <string>
 
-typedef std::vector<std::set<int>> Graph;
 typedef std::tuple<double, double, double, double> AutomorphismsInfo;
 typedef std::tuple<double, double, double, double> PValuesInfo;
 
@@ -104,8 +103,7 @@ AutomorphismsInfo log_automorphisms_single(
 }
 
 std::vector<AutomorphismsInfo> log_automorphisms(
-    const std::vector<std::set<int>> &G0, const int &n, const Parameters &params,
-    const int &tries) {
+    const Graph &G0, const int &n, const Parameters &params, const int &tries) {
   std::vector<AutomorphismsInfo> log_aut_H(tries);
   #pragma omp parallel for num_threads(THREADS)
   for (int i = 0; i < tries; i++) {

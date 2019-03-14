@@ -8,11 +8,13 @@
 
 using namespace std;
 
+typedef vector<set<unsigned>> Graph;
+
 inline string name(const int &n, const int &n0, const Parameters &params) {
   return to_string(n) + "-" + to_string(n0) + "-" + params.to_filename();
 }
 
-void export_graph(const string &name, const vector<set<int>> &G) {
+void export_graph(const string &name, const Graph &G) {
   ofstream G_out_file(name);
   for (size_t i = 0; i < G.size(); i++) {
     G_out_file << i << " " << i << endl;
@@ -26,7 +28,7 @@ void export_graph(const string &name, const vector<set<int>> &G) {
 }
 
 void generate_graph(const int &n, const int &n0, const Parameters &params) {
-  vector<set<int>> G = generate_seed_simple(n0, 1.0);
+  Graph G = generate_seed_simple(n0, 1.0);
   export_graph(FILES_FOLDER + "G0-" + name(n, n0, params) + ".txt", G);
   generate_graph_simple(G, n, params);
   export_graph(FILES_FOLDER + "G-" + name(n, n0, params) + ".txt", G);

@@ -10,7 +10,7 @@
 
 using namespace std;
 
-typedef vector<set<int>> Graph;
+typedef vector<set<unsigned>> Graph;
 
 const double R_STEP = 1.0;
 const double Q_STEP = 0.1;
