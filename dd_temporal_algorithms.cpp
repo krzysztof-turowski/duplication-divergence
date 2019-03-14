@@ -1,7 +1,9 @@
 // Algorithms computating the temporal order for various duplication-divergence models.
 // Compile: g++ dd_temporal_algorithms.cpp -O3 -o ./dd_temporal_algorithms
-// Run: ./dd_temporal_algorithms synthetic all MODE n n0 PARAMETERS
-//   or ./dd_temporal_algorithms synthetic ALGORITHM MODE n n0 PARAMETERS
+// Run: ./dd_temporal_algorithms synthetic all MODE_GEN n n0 PARAMETERS_GEN MODE PARAMETERS
+//   or ./dd_temporal_algorithms synthetic ALGORITHM MODE_GEN n n0 PARAMETERS_GEN [MODE PARAMETERS]
+//   or ./dd_temporal_algorithms real_data all FILE MODE PARAMETERS
+//   or ./dd_temporal_algorithms real_data ALGORITHM FILE [MODE PARAMETERS]
 
 #include "./dd_temporal.h"
 
@@ -311,7 +313,7 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
         continue;
       }
       const auto &p_ij = p_uv.find(make_pair(i, j));
-      p_i += p_ij != p_uv.end() ? p_ij->second : 0.0L;
+      p_i += (p_ij != p_uv.end() ? p_ij->second : 0.0L);
     }
     p_v.push(make_pair(p_i, i));
   }
@@ -379,11 +381,8 @@ DensityPrecision get_density_precision(const BinningScheme &solution, const int 
 }
 
 DensityPrecision temporal_algorithm_single(
-    const Graph &G0, const int &n, const Parameters &params, const TemporalAlgorithm &algorithm) {
-  Graph G(G0);
-  generate_graph(G, n, params);
-
-  int n0 = get_graph_size(G0);
+    Graph &G, const int &n0, const TemporalAlgorithm &algorithm, const Parameters &params) {
+  int n = get_graph_size(G);
   switch (algorithm) {
     case DEGREE_SORT:
       return get_density_precision(sort_by_degree(G, n0), n - n0);
@@ -415,11 +414,9 @@ DensityPrecision temporal_algorithm_single(
 }
 
 void print(
-    const vector<DensityPrecision> solution, const int &n, const int &n0,
-    const Parameters &params, const TemporalAlgorithm &algorithm, ostream &out_file,
-    bool verbose = false) {
-  cout << "Graph - n: " << n << ", n0: " << n0
-      << ", parameters: " << params.to_string() << endl;
+    const string &name, const TemporalAlgorithm &algorithm,
+    const vector<DensityPrecision> solution, ostream &out_file, bool verbose = false) {
+  cout << name << endl;
   cout << "Algorithm: " << LONG_ALGORITHM_NAME.find(algorithm)->second << endl;
 
   auto mean_density_precision =
@@ -451,12 +448,13 @@ void print(
 
 void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
-  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"), ios_base::app);
   Graph G0 = generate_seed(n0, 1.0);
-  vector<DensityPrecision> solution(G_TRIES);
+  vector<DensityPrecision> density_precision_values(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    solution[i] = temporal_algorithm_single(G0, n, params, algorithm);
+    Graph G(G0);
+    generate_graph(G, n, params);
+    density_precision_values[i] = temporal_algorithm_single(G, n0, algorithm, params);
     #pragma omp critical
     {
       if ((i + 1) % 1000 == 0) {
@@ -464,26 +462,54 @@ void synthetic_data(
       }
     }
   }
-  print(solution, n, n0, params, algorithm, out_file);
+  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"), ios_base::app);
+  print("Synthetic data: " + params.to_string(), algorithm, density_precision_values, out_file);
+}
+
+void real_world_data(
+    const string &graph_name, const string &seed_name,
+    const TemporalAlgorithm &algorithm, const Parameters &params) {
+  Graph G = read_graph(FILES_FOLDER + graph_name);
+  int n0 = read_graph_size(FILES_FOLDER + seed_name);
+  auto density_precision_value = temporal_algorithm_single(G, n0, algorithm, params);
+  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
+  print(graph_name, algorithm, vector<DensityPrecision>{density_precision_value}, out_file);
 }
 
 int main(int, char *argv[]) {
   try {
-    string action(argv[1]), algorithm(argv[2]), mode(argv[3]);
-    int n = stoi(argv[4]), n0 = stoi(argv[5]);
-    Parameters params;
-    params.initialize(mode, argv + 6);
-    if (action != "synthetic") {
-      throw invalid_argument("Invalid action: " + action);
-    }
-    if (algorithm == "all") {
-      for (const auto &alg : REVERSE_ALGORITHM_NAME) {
-        synthetic_data(n, n0, params, alg.second);
+    string action(argv[1]), algorithm_name(argv[2]);
+    if (action == "synthetic") {
+      string mode_0(argv[3]);
+      int n = stoi(argv[4]), n0 = stoi(argv[5]);
+      Parameters params_0;
+      params_0.initialize(mode_0, argv + 6);
+      if (algorithm_name == "all") {
+        for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
+          synthetic_data(n, n0, params_0, algorithm.second);
+        }
+      } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
+        synthetic_data(n, n0, params_0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second);
+      } else {
+        throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
-    } else if (REVERSE_ALGORITHM_NAME.count(algorithm)) {
-      synthetic_data(n, n0, params, REVERSE_ALGORITHM_NAME.find(algorithm)->second);
+    } else if (action == "real_data") {
+      string graph_name(argv[3]), mode(argv[4]);
+      Parameters params;
+      params.initialize(mode, argv + 5);
+      if (algorithm_name == "all") {
+        for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
+          real_world_data(graph_name, get_seed_name(graph_name), algorithm.second, params);
+        }
+      } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
+        real_world_data(
+            graph_name, get_seed_name(graph_name),
+            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params);
+      } else {
+        throw invalid_argument("Invalid algorithm: " + algorithm_name);
+      }
     } else {
-      throw invalid_argument("Invalid algorithm: " + algorithm);
+      throw invalid_argument("Invalid action: " + action);
     }
   } catch (const exception &e) {
     cerr << "ERROR: " << e.what() << endl;

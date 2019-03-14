@@ -207,6 +207,7 @@ std::map<mpz_class, long double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
   std::map<mpz_class, long double> permutations;
+  #pragma omp parallel for
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability = get_permutation_sample(G, n0, params, algorithm);
     permutations[sigma_with_probability.first] += sigma_with_probability.second;
