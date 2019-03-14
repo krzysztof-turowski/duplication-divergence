@@ -23,15 +23,16 @@ typedef vector<pair<int, int>> PairingScheme;
 const int G_TRIES = 100, SIGMA_TRIES = 10000;
 
 enum TemporalAlgorithm {
-  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL, NEIGHBORHOOD_RANK,
-  PROBABILITY_SORT, PROBABILITY_SUM_SORT, LP_SOLUTION_SORT
+  DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
+  NEIGHBORHOOD_RANK, PROBABILITY_SORT, PROBABILITY_SUM_SORT, LP_SOLUTION_SORT
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "sort_by_degree" },
   { TemporalAlgorithm::DEGREE_PEEL, "peel_by_degree" },
   { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort_by_neighborhood" },
-  { TemporalAlgorithm::NEIGHBORHOOD_PEEL, "peel_by_neighborhood" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL, "peel_by_neighborhood_sl" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF, "peel_by_neighborhood_lf" },
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank_by_neighborhood" },
   { TemporalAlgorithm::PROBABILITY_SORT, "sort_by_probability" },
   { TemporalAlgorithm::PROBABILITY_SUM_SORT, "sort_by_probability_sum" },
@@ -42,8 +43,10 @@ const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
   { TemporalAlgorithm::DEGREE_SORT, "Sort vertices by degree descending" },
   { TemporalAlgorithm::DEGREE_PEEL, "Peel vertices by degree (smallest last)" },
   { TemporalAlgorithm::NEIGHBORHOOD_SORT, "Sort vertices by neighborhood subset descending" },
-  { TemporalAlgorithm::NEIGHBORHOOD_PEEL,
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL,
       "Peel vertices by neighborhood subset relation (smallest last)" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF,
+      "Peel vertices by neighborhood subset relation (largest first)" },
   { TemporalAlgorithm::NEIGHBORHOOD_RANK, "Rank vertices in DAG of neighborhood subset relation" },
   { TemporalAlgorithm::PROBABILITY_SORT, "Sort vertices if p_uv > threshold" },
   { TemporalAlgorithm::PROBABILITY_SUM_SORT, "Sort vertices by sum of p_uv" },
@@ -54,7 +57,8 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
   { "peel_by_degree", TemporalAlgorithm::DEGREE_PEEL },
   { "sort_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_SORT },
-  { "peel_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_PEEL },
+  { "peel_by_neighborhood_sl", TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL },
+  { "peel_by_neighborhood_lf", TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF },
   { "rank_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_RANK },
   { "sort_by_probability", TemporalAlgorithm::PROBABILITY_SORT },
   { "sort_by_probability_sum", TemporalAlgorithm::PROBABILITY_SUM_SORT },
@@ -161,7 +165,7 @@ PairingScheme sort_by_neighborhood(Graph &G, const int &n0) {
   return out;
 }
 
-BinningScheme peel_by_neighborhood(Graph &G, const int &n0) {
+BinningScheme peel_by_neighborhood_sl(Graph &G, const int &n0) {
   BinningScheme out;
   while (get_graph_size(G) > n0) {
     set<Vertex> best_vertices;
@@ -187,6 +191,39 @@ BinningScheme peel_by_neighborhood(Graph &G, const int &n0) {
     }
     out.push_front(Bin());
     Bin &current_bin = out.front();
+    for (auto v : best_vertices) {
+      current_bin.insert(get_index(G, v)), delete_vertex(G, v);
+    }
+  }
+  return out;
+}
+
+BinningScheme peel_by_neighborhood_lf(Graph &G, const int &n0) {
+  BinningScheme out;
+  while (get_graph_size(G) > n0) {
+    set<Vertex> best_vertices;
+    for (const auto &u : get_vertices(G)) {
+      if (get_index(G, u) < n0) {
+        continue;
+      }
+      auto Nu = get_neighbors(G, u);
+      bool has_ancestors = false;
+      for (const auto &v : get_vertices(G)) {
+        if (u == v || get_index(G, v) < n0) {
+          continue;
+        }
+        auto Nv = get_neighbors(G, v);
+        if (Nu.size() < Nv.size() && includes(Nv.begin(), Nv.end(), Nu.begin(), Nu.end())) {
+          has_ancestors = true;
+          break;
+        }
+      }
+      if (!has_ancestors) {
+        best_vertices.insert(u);
+      }
+    }
+    out.push_back(Bin());
+    Bin &current_bin = out.back();
     for (auto v : best_vertices) {
       current_bin.insert(get_index(G, v)), delete_vertex(G, v);
     }
@@ -354,8 +391,10 @@ DensityPrecision temporal_algorithm_single(
       return get_density_precision(peel_by_degree(G, n0), n - n0);
     case NEIGHBORHOOD_SORT:
       return get_density_precision(sort_by_neighborhood(G, n0), n - n0);
-    case NEIGHBORHOOD_PEEL:
-      return get_density_precision(peel_by_neighborhood(G, n0), n - n0);
+    case NEIGHBORHOOD_PEEL_SL:
+      return get_density_precision(peel_by_neighborhood_sl(G, n0), n - n0);
+    case NEIGHBORHOOD_PEEL_LF:
+      return get_density_precision(peel_by_neighborhood_lf(G, n0), n - n0);
     case NEIGHBORHOOD_RANK:
       return get_density_precision(rank_by_neighborhood(G, n0), n - n0);
     case PROBABILITY_SORT:
@@ -410,9 +449,9 @@ void print(
   out_file << endl;
 }
 
-void temporal_algorithm(
-    const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm,
-    ostream &out_file) {
+void synthetic_data(
+    const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
+  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"), ios_base::app);
   Graph G0 = generate_seed(n0, 1.0);
   vector<DensityPrecision> solution(G_TRIES);
   #pragma omp parallel for
@@ -434,19 +473,15 @@ int main(int, char *argv[]) {
     int n = stoi(argv[4]), n0 = stoi(argv[5]);
     Parameters params;
     params.initialize(mode, argv + 6);
-    string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"));
     if (action != "synthetic") {
       throw invalid_argument("Invalid action: " + action);
     }
     if (algorithm == "all") {
-      ofstream out_file(name, ios_base::app);
       for (const auto &alg : REVERSE_ALGORITHM_NAME) {
-        temporal_algorithm(n, n0, params, alg.second, out_file);
+        synthetic_data(n, n0, params, alg.second);
       }
     } else if (REVERSE_ALGORITHM_NAME.count(algorithm)) {
-      ofstream out_file(name, ios_base::app);
-      temporal_algorithm(
-          n, n0, params, REVERSE_ALGORITHM_NAME.find(algorithm)->second, out_file);
+      synthetic_data(n, n0, params, REVERSE_ALGORITHM_NAME.find(algorithm)->second);
     } else {
       throw invalid_argument("Invalid algorithm: " + algorithm);
     }
