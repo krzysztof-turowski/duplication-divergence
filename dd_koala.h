@@ -1,9 +1,9 @@
 #pragma once
 
+#include <graph/graph.h>
+
 #include <set>
 #include <vector>
-
-#include "./lib/koala/graph/graph.h"
 
 inline int get_graph_size(const Koala::Graph<int, int> &G) {
   return G.getVertNo();
