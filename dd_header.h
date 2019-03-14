@@ -233,8 +233,7 @@ std::vector<std::set<unsigned>> read_graph_simple(const std::string &graph_name)
   }
   std::vector<std::set<unsigned>> G;
   unsigned u, v;
-  while (!graph_file.eof()) {
-    graph_file >> u >> v;
+  while (graph_file >> u >> v) {
     if (v >= G.size()) {
       G.resize(v + 1);
     }
@@ -252,8 +251,7 @@ int read_graph_size(const std::string &graph_name) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
   int n = 0, u, v;
-  while (!graph_file.eof()) {
-    graph_file >> u >> v;
+  while (graph_file >> u >> v) {
     n = std::max(n, v + 1);
   }
   graph_file.close();

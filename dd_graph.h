@@ -147,8 +147,7 @@ Graph read_graph(const std::string &graph_name) {
   Graph G;
   std::vector<Vertex> V;
   int u, v;
-  while (!graph_file.eof()) {
-    graph_file >> u >> v;
+  while (graph_file >> u >> v) {
     if (v >= get_graph_size(G)) {
       for (int i = get_graph_size(G); i <= v; i++) {
         V.push_back(add_vertex(G, i));
