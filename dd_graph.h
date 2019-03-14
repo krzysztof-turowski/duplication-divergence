@@ -1,9 +1,5 @@
 #pragma once
 
-#include <string>
-#include <set>
-#include <vector>
-
 #include "./dd_header.h"
 
 #if defined(koala)
@@ -58,6 +54,10 @@
   typedef NetworKit::Graph Graph;
   typedef NetworKit::node Vertex;
 #endif
+
+#include <string>
+#include <set>
+#include <vector>
 
 const double EPS = 10e-9;
 

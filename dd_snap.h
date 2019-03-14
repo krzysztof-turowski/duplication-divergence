@@ -1,9 +1,9 @@
 #pragma once
 
+#include <Snap.h>
+
 #include <set>
 #include <vector>
-
-#include "./lib/snap/snap-core/Snap.h"
 
 inline int get_graph_size(const TNodeNet<TInt> &G) {
   return G.GetNodes();
@@ -30,7 +30,7 @@ inline void add_edge(TNodeNet<TInt> &G, const int &v, const int &u) {
 }
 
 inline bool check_edge(const TNodeNet<TInt> &G, const int &v, const int &u) {
-  return G.IsEdge(v, u);
+  return G.IsEdge(v, u, false);
 }
 
 inline int add_vertex(TNodeNet<TInt> &G, const int &value) {
