@@ -23,6 +23,7 @@ typedef deque<Bin> BinningScheme;
 typedef vector<pair<int, int>> PairingScheme;
 
 const int G_TRIES = 100, SIGMA_TRIES = 10000;
+const int AGE_ZERO = 0;
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -87,7 +88,7 @@ class DAG {
 
   set<int> get_sources() {
     set<int> out;
-    for (size_t i = n0; i < sources.size(); i++) {
+    for (size_t i = 0; i < sources.size(); i++) {
       if (is_source(i)) {
         out.insert(i);
       }
@@ -108,27 +109,42 @@ inline std::string get_age_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "PH");
 }
 
-vector<int> read_age(const string &age_name, Graph &G) {
+vector<int> read_age(const string &age_name) {
   ifstream age_file(age_name);
   if (age_file.fail()) {
     throw invalid_argument("Missing " + age_name + " file");
   }
-  int v, age;
-  vector<int> S(get_graph_size(G));
+  unsigned v;
+  int age;
+  vector<int> S;
   while (!age_file.eof()) {
     age_file >> v >> age;
+    if (v >= S.size()) {
+      S.resize(v + 1);
+    }
     S[v] = age;
   }
   age_file.close();
-  apply_permutation(G, S);
   return S;
 }
 
-int get_total_pairs(const vector<int> &S, const int &n0) {
+void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
+  int first = 0, second = n0;
+  vector<Vertex> V(get_vertices(G));
+  for (size_t i = 0; i < V.size(); i++) {
+    if (node_age[get_index(G, V[i])] == AGE_ZERO) {
+      set_index(G, V[i], first), first++;
+    } else {
+      set_index(G, V[i], second), second++;
+    }
+  }
+}
+
+int get_total_pairs(const vector<int> &node_age) {
   int total = 0;
-  for (const auto &u : S) {
-    for (const auto &v : S) {
-      if (u >= n0 && v >= n0 && u < v) {
+  for (const auto &u : node_age) {
+    for (const auto &v : node_age) {
+      if (u > AGE_ZERO && v > AGE_ZERO && u < v) {
         total++;
       }
     }
@@ -385,27 +401,38 @@ PairingScheme sort_by_lp_solution(
   return out;
 }
 
-DensityPrecision get_density_precision(const PairingScheme &solution, const int &count) {
-  double total = 0, correct = 0;
+DensityPrecision get_density_precision(
+    const PairingScheme &solution, const vector<int> &node_age) {
+  double count = get_total_pairs(node_age), total = 0, correct = 0;
   for (const auto &uv : solution) {
-    if (uv.first < uv.second) {
+    if (node_age[uv.first] <= AGE_ZERO || node_age[uv.second] <= AGE_ZERO) {
+      continue;
+    }
+    if (node_age[uv.first] < node_age[uv.second]) {
       correct++, total++;
-    } else if (uv.first < uv.second) {
+    } else if (node_age[uv.first] < node_age[uv.second]) {
       total++;
     }
   }
   return make_pair(total / count, correct / total);
 }
 
-DensityPrecision get_density_precision(const BinningScheme &solution, const int &count) {
-  double total = 0, correct = 0;
+DensityPrecision get_density_precision(
+    const BinningScheme &solution, const vector<int> &node_age) {
+  double count = get_total_pairs(node_age), total = 0, correct = 0;
   for (size_t i = 0; i < solution.size(); i++) {
     for (size_t j = i + 1; j < solution.size(); j++) {
       for (const auto &u : solution[i]) {
+        if (node_age[u] <= AGE_ZERO) {
+          continue;
+        }
         for (const auto &v : solution[j]) {
-          if (u < v) {
+          if (node_age[v] <= AGE_ZERO) {
+            continue;
+          }
+          if (node_age[u] < node_age[v]) {
             correct++, total++;
-          } else if (u > v) {
+          } else if (node_age[u] > node_age[v]) {
             total++;
           }
         }
@@ -416,33 +443,33 @@ DensityPrecision get_density_precision(const BinningScheme &solution, const int 
 }
 
 DensityPrecision temporal_algorithm_single(
-    Graph &G, const int &n0, const int &total_pairs,
+    Graph &G, const int &n0, const vector<int> &node_age,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
   switch (algorithm) {
     case DEGREE_SORT:
-      return get_density_precision(sort_by_degree(G, n0), total_pairs);
+      return get_density_precision(sort_by_degree(G, n0), node_age);
     case DEGREE_PEEL:
-      return get_density_precision(peel_by_degree(G, n0), total_pairs);
+      return get_density_precision(peel_by_degree(G, n0), node_age);
     case NEIGHBORHOOD_SORT:
-      return get_density_precision(sort_by_neighborhood(G, n0), total_pairs);
+      return get_density_precision(sort_by_neighborhood(G, n0), node_age);
     case NEIGHBORHOOD_PEEL_SL:
-      return get_density_precision(peel_by_neighborhood_sl(G, n0), total_pairs);
+      return get_density_precision(peel_by_neighborhood_sl(G, n0), node_age);
     case NEIGHBORHOOD_PEEL_LF:
-      return get_density_precision(peel_by_neighborhood_lf(G, n0), total_pairs);
+      return get_density_precision(peel_by_neighborhood_lf(G, n0), node_age);
     case NEIGHBORHOOD_RANK:
-      return get_density_precision(rank_by_neighborhood(G, n0), total_pairs);
+      return get_density_precision(rank_by_neighborhood(G, n0), node_age);
     case PROBABILITY_SORT:
       // TODO(kturowski): parametrize by different values of params than used to generate G
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_density_precision(sort_by_probability(G, n0, params, 0.5), total_pairs);
+      return get_density_precision(sort_by_probability(G, n0, params, 0.5), node_age);
     case PROBABILITY_SUM_SORT:
       // TODO(kturowski): parametrize by different values of params than used to generate G
-      return get_density_precision(sort_by_probability_sum(G, n0, params), total_pairs);
+      return get_density_precision(sort_by_probability_sum(G, n0, params), node_age);
     case LP_SOLUTION_SORT:
       // TODO(kturowski): parametrize by different values of params than used to generate G
       // TODO(kturowski): parametrize by different values of epsilon than 1.0
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_density_precision(sort_by_lp_solution(G, n0, params, 1.0, 0.5), total_pairs);
+      return get_density_precision(sort_by_lp_solution(G, n0, params, 1.0, 0.5), node_age);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
@@ -485,12 +512,15 @@ void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
   Graph G0(generate_seed(n0, 1.0));
   vector<DensityPrecision> density_precision_values(G_TRIES);
-  int total_pairs = n0 * (n0 - 1) / 2;
+  vector<int> node_age(n);
+  for (int i = n0; i < n; i++) {
+    node_age[i] = i;
+  }
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph(G, n, params);
-    density_precision_values[i] = temporal_algorithm_single(G, n0, total_pairs, algorithm, params);
+    density_precision_values[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params);
     #pragma omp critical
     {
       if ((i + 1) % 1000 == 0) {
@@ -503,13 +533,14 @@ void synthetic_data(
 }
 
 void real_world_data(
-    const string &graph_name, const string &age_name,
+    const string &graph_name, const string &seed_name, const string &age_name,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
   Graph G(read_graph(FILES_FOLDER + graph_name));
-  int n0_age = 0;
-  int total_pairs = get_total_pairs(read_age(FILES_FOLDER + age_name, G), n0_age + 1);
+  int n0 = read_graph_size(FILES_FOLDER + seed_name);
+  vector<int> node_age = read_age(FILES_FOLDER + age_name);
+  relabel_g0_first(G, n0, node_age);
   auto density_precision_value =
-      temporal_algorithm_single(G, n0_age + 1, total_pairs, algorithm, params);
+      temporal_algorithm_single(G, n0, node_age, algorithm, params);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
   print(graph_name, algorithm, vector<DensityPrecision>{density_precision_value}, out_file);
 }
@@ -537,11 +568,13 @@ int main(int, char *argv[]) {
       params.initialize(mode, argv + 5);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
-          real_world_data(graph_name, get_age_name(graph_name), algorithm.second, params);
+          real_world_data(
+              graph_name, get_seed_name(graph_name), get_age_name(graph_name),
+              algorithm.second, params);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         real_world_data(
-            graph_name, get_age_name(graph_name),
+            graph_name, get_seed_name(graph_name), get_age_name(graph_name),
             REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
