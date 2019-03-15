@@ -22,7 +22,7 @@ typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
 typedef vector<pair<int, int>> PairingScheme;
 
-const int G_TRIES = 100, SIGMA_TRIES = 10000;
+const int G_TRIES = 20, SIGMA_TRIES = 100000;
 const int AGE_ZERO = 0;
 
 enum TemporalAlgorithm {
@@ -410,7 +410,7 @@ DensityPrecision get_density_precision(
     }
     if (node_age[uv.first] < node_age[uv.second]) {
       correct++, total++;
-    } else if (node_age[uv.first] < node_age[uv.second]) {
+    } else if (node_age[uv.first] > node_age[uv.second]) {
       total++;
     }
   }
@@ -459,14 +459,11 @@ DensityPrecision temporal_algorithm_single(
     case NEIGHBORHOOD_RANK:
       return get_density_precision(rank_by_neighborhood(G, n0), node_age);
     case PROBABILITY_SORT:
-      // TODO(kturowski): parametrize by different values of params than used to generate G
       // TODO(kturowski): parametrize by different values of threshold than 0.5
       return get_density_precision(sort_by_probability(G, n0, params, 0.5), node_age);
     case PROBABILITY_SUM_SORT:
-      // TODO(kturowski): parametrize by different values of params than used to generate G
       return get_density_precision(sort_by_probability_sum(G, n0, params), node_age);
     case LP_SOLUTION_SORT:
-      // TODO(kturowski): parametrize by different values of params than used to generate G
       // TODO(kturowski): parametrize by different values of epsilon than 1.0
       // TODO(kturowski): parametrize by different values of threshold than 0.5
       return get_density_precision(sort_by_lp_solution(G, n0, params, 1.0, 0.5), node_age);
@@ -512,7 +509,7 @@ void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
   Graph G0(generate_seed(n0, 1.0));
   vector<DensityPrecision> density_precision_values(G_TRIES);
-  vector<int> node_age(n);
+  vector<int> node_age(n, 0);
   for (int i = n0; i < n; i++) {
     node_age[i] = i;
   }
@@ -520,6 +517,7 @@ void synthetic_data(
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
     generate_graph(G, n, params);
+    // TODO(kturowski): parametrize by different values of params than used to generate G
     density_precision_values[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params);
     #pragma omp critical
     {
