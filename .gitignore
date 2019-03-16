@@ -9,6 +9,7 @@ dd_ml_estimation
 dd_recurrence_estimation
 dd_temporal_bound
 
+*.dot
 *.sublime*
 *.exe
 *.pdf
