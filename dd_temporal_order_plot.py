@@ -1,6 +1,6 @@
 """
 Tool for plotting the results from dd_temporal_order.
-Run: python -B ./dd_temporal_order.py FILE [--export {pdf}]
+Run: python -B ./dd_temporal_order_plot.py FILE [--export {pdf|png}]
 Note: FILE is here *without* "-TC.txt" or "-TA.txt" suffix
 """
 
@@ -18,23 +18,25 @@ COLORS = ['r', 'b', 'm', 'k', 'g', 'orange', 'crimson', 'lime', 'gray', 'lightgr
           'olive', 'khaki', 'saddlebrown', 'deepskyblue']
 POINTS = 30
 
-def plot_algorithms(filename):
+def plot_algorithms(filename, detailed):
     if not os.path.isfile(filename):
         print('Reconstruction algorithms file missing')
         return
     with open(filename) as data_file:
         data = data_file.readlines()
-    for line, color in zip(data, COLORS[-1::-1]):
+    for line, color in zip(data, COLORS):
         values = line.strip().split(' ')
         density, precision = zip(*[[float(parameter) for parameter in value.split(',')]
                                    for value in values[1:]])
         pyplot.plot(
             [numpy.mean(density)], [numpy.mean(precision)], color = color, marker = 'o',
             linestyle = 'None', label = values[0], alpha = 0.7)
-        pyplot.plot(
-            [numpy.mean(density[offset::POINTS]) for offset in range(POINTS)],
-            [numpy.mean(precision[offset::POINTS]) for offset in range(POINTS)],
-            color = color, marker = 'o', linestyle = 'None', label = None, alpha = 0.3)
+        if detailed:
+            points = min(POINTS, len(density))
+            pyplot.plot(
+                [numpy.mean(density[offset::points]) for offset in range(points)],
+                [numpy.mean(precision[offset::points]) for offset in range(points)],
+                color = color, marker = 'o', linestyle = 'None', label = None, alpha = 0.3)
 
 def plot_theoterical_curves(filename):
     if not os.path.isfile(filename):
@@ -63,7 +65,7 @@ def plot_labels():
 def plot_data(filename, export):
     dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
     plot_theoterical_curves('temp/' + filename + '-TC.txt')
-    plot_algorithms('temp/' + filename + '-TA.txt')
+    plot_algorithms('temp/' + filename + '-TA.txt', detailed = False)
     plot_labels()
     dd_plot.plot(filename, export)
 

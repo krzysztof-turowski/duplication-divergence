@@ -1,6 +1,6 @@
 """
 Tool for plotting the results from dd_recurrence_estimation.
-Run: python -B ./dd_recurrence_estimation_plot.py FILE [--export {pdf}]
+Run: python -B ./dd_recurrence_estimation_plot.py FILE [--export {pdf|png}]
 """
 
 import os
