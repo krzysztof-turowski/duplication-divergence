@@ -128,6 +128,10 @@ vector<int> read_age(const string &age_name) {
   return S;
 }
 
+int count_age(const vector<int> &node_age, const int &age) {
+  return count_if(node_age.begin(), node_age.end(), [](const int &v){ return v == age; });
+}
+
 void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
   int first = 0, second = n0;
   vector<Vertex> V(get_vertices(G));
@@ -544,11 +548,11 @@ void synthetic_data(
 }
 
 void real_world_data(
-    const string &graph_name, const string &seed_name, const string &age_name,
+    const string &graph_name, const string &age_name,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
   Graph G(read_graph(FILES_FOLDER + graph_name));
-  int n0 = read_graph_size(FILES_FOLDER + seed_name);
   vector<int> node_age = read_age(FILES_FOLDER + age_name);
+  int n0 = count_age(node_age, AGE_ZERO);
   relabel_g0_first(G, n0, node_age);
   auto density_precision_value =
       temporal_algorithm_single(G, n0, node_age, algorithm, params);
@@ -580,12 +584,11 @@ int main(int, char *argv[]) {
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           real_world_data(
-              graph_name, get_seed_name(graph_name), get_age_name(graph_name),
-              algorithm.second, params);
+              graph_name, get_age_name(graph_name), algorithm.second, params);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         real_world_data(
-            graph_name, get_seed_name(graph_name), get_age_name(graph_name),
+            graph_name, get_age_name(graph_name),
             REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
