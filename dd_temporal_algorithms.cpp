@@ -140,6 +140,15 @@ void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
   }
 }
 
+vector<int> get_reverse_permutation(Graph &G) {
+  vector<int> S(get_graph_size(G), 0);
+  vector<Vertex> V(get_vertices(G));
+  for (size_t i = 0; i < V.size(); i++) {
+    S[get_index(G, V[i])] = i;
+  }
+  return S;
+}
+
 int get_total_pairs(const vector<int> &node_age) {
   int total = 0;
   for (const auto &u : node_age) {
@@ -333,6 +342,7 @@ PairingScheme sort_by_probability(
   int n = get_graph_size(G);
 
   PairingScheme out;
+  vector<int> S = get_reverse_permutation(G);
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       if (i == j) {
@@ -340,7 +350,7 @@ PairingScheme sort_by_probability(
       }
       const auto &p_ij = p_uv.find(make_pair(i, j));
       if (p_ij != p_uv.end() && p_ij->second > threshold) {
-        out.push_back(make_pair(i, j));
+        out.push_back(make_pair(S[i], S[j]));
       }
     }
   }
@@ -354,6 +364,7 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
   int n = get_graph_size(G);
 
   priority_queue<pair<long double, int>> p_v;
+  vector<int> S = get_reverse_permutation(G);
   for (int i = n0; i < n; i++) {
     long double p_i = 0;
     for (int j = n0; j < n; j++) {
@@ -363,7 +374,7 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
       const auto &p_ij = p_uv.find(make_pair(i, j));
       p_i += (p_ij != p_uv.end() ? p_ij->second : 0.0L);
     }
-    p_v.push(make_pair(p_i, i));
+    p_v.push(make_pair(p_i, S[i]));
   }
 
   BinningScheme out;
@@ -384,9 +395,11 @@ PairingScheme sort_by_lp_solution(
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
   int n = get_graph_size(G);
   map<pair<int, int>, double> x_uv;
-  tie(ignore, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
+  double solution;
+  tie(solution, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
 
   PairingScheme out;
+  vector<int> S = get_reverse_permutation(G);
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       if (i == j) {
@@ -394,7 +407,7 @@ PairingScheme sort_by_lp_solution(
       }
       const auto &x_ij = x_uv.find(make_pair(i, j));
       if (x_ij != x_uv.end() && x_ij->second > threshold) {
-        out.push_back(make_pair(i, j));
+        out.push_back(make_pair(S[i], S[j]));
       }
     }
   }
