@@ -110,7 +110,7 @@ std::map<mpz_class, long double> get_permutation_probabilities(
       move_vertex(H, G, v);
       assert(aux.verify(G));
 
-      auto permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma * p_v);
+      auto permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma + log2l(p_v));
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       move_vertex(G, H, v), aux.restore_vertex(neighbors_v), S[get_graph_size(G) - 1] = -1;
@@ -131,7 +131,7 @@ std::map<mpz_class, long double> get_permutation_probabilities(
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 1.0L);
+  auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 0.0L);
   long double total_probability = accumulate(
       permutations.begin(), permutations.end(), 0.0,
       [] (long double value, const std::map<mpz_class, long double>::value_type &permutation) {
@@ -180,12 +180,12 @@ std::pair<mpz_class, long double> get_permutation_sample(
   for (int i = 0; i < n0; i++) {
     S[i] = i;
   }
-  long double p_sigma = 1.0L, pv;
+  long double p_sigma = 0.0L, pv;
   while (get_graph_size(H) > n0) {
     std::vector<Vertex> V;
     std::vector<long double> omega;
     for (const auto &v : get_vertices(H)) {
-      if (get_index(G, v) < n0) {
+      if (get_index(H, v) < n0) {
         continue;
       }
       V.push_back(v);
@@ -195,12 +195,16 @@ std::pair<mpz_class, long double> get_permutation_sample(
     }
     Vertex v;
     std::tie(v, pv) = sample_vertex(V, omega, algorithm, generator);
-    S[get_graph_size(H) - 1] = get_index(G, v), p_sigma *= pv;
+    S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += log2l(pv);
     assert(aux.verify(H));
     aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
   }
   return std::make_pair(encode_permutation(S), p_sigma);
+}
+
+inline long double add_exp_log(const long double &x, const long double &y) {
+  return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
 }
 
 std::map<mpz_class, long double> get_permutation_probabilities_sampling(
@@ -210,7 +214,12 @@ std::map<mpz_class, long double> get_permutation_probabilities_sampling(
   #pragma omp parallel for
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability = get_permutation_sample(G, n0, params, algorithm);
-    permutations[sigma_with_probability.first] += sigma_with_probability.second;
+    auto permutation = permutations.find(sigma_with_probability.first);
+    if (permutation != permutations.end()) {
+      permutation->second = add_exp_log(permutation->second, sigma_with_probability.second);
+    } else {
+      permutations.insert(sigma_with_probability);
+    }
     if ((i + 1) % 10000 == 0) {
       #pragma omp critical
       {
@@ -218,7 +227,16 @@ std::map<mpz_class, long double> get_permutation_probabilities_sampling(
       }
     }
   }
-  auto total_probability = accumulate(
+  auto max_log_value = std::max_element(
+      permutations.begin(), permutations.end(),
+      [] (const std::map<mpz_class, long double>::value_type &first,
+          const std::map<mpz_class, long double>::value_type &second) {
+          return first.second < second.second;
+      })->second;
+  for (auto &permutation : permutations) {
+    permutation.second = exp2l(permutation.second - max_log_value);
+  }
+  auto total_probability = std::accumulate(
       permutations.begin(), permutations.end(), 0.0L,
       [] (long double &value, const std::map<mpz_class, long double>::value_type &permutation) {
           return value + permutation.second;
