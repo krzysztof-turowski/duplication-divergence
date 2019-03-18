@@ -129,7 +129,7 @@ vector<int> read_age(const string &age_name) {
 }
 
 int count_age(const vector<int> &node_age, const int &age) {
-  return count_if(node_age.begin(), node_age.end(), [](const int &v){ return v == age; });
+  return count_if(node_age.begin(), node_age.end(), [&](const int &v){ return v == age; });
 }
 
 void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
@@ -551,7 +551,7 @@ void real_world_data(
     const string &graph_name, const string &age_name,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
   Graph G(read_graph(FILES_FOLDER + graph_name));
-  vector<int> node_age = read_age(FILES_FOLDER + age_name);
+  vector<int> node_age(read_age(FILES_FOLDER + age_name));
   int n0 = count_age(node_age, AGE_ZERO);
   relabel_g0_first(G, n0, node_age);
   auto density_precision_value =
