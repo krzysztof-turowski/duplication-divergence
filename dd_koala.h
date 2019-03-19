@@ -37,7 +37,7 @@ inline void add_edge(
 }
 
 inline bool check_edge(
-    Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v,
+    const Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v,
     const Koala::Graph<int, int>::PVertex &u) {
   return G.getEdge(v, u) != NULL;
 }
