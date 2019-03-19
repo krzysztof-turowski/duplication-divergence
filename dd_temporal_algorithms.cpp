@@ -522,6 +522,27 @@ double get_goodman_gamma(const BinningScheme &solution, const vector<int> &node_
       / (sqrt(all_pairs - solution_ties) * sqrt(all_pairs - original_ties));
 }
 
+double get_pearson_correlation(const BinningScheme &solution, const vector<int> &node_age) {
+  double total_node_age = accumulate(node_age.begin(), node_age.end(), 0.0);
+
+  vector<int> estimated_age(node_age.size());
+  double total_estimated_age = 0;
+  for (size_t i = 0; i < solution.size(); i++) {
+    for (const auto &v : solution[i]) {
+      estimated_age[v] = i, total_estimated_age += i;
+    }
+  }
+  total_node_age /= node_age.size(), total_estimated_age /= estimated_age.size();
+  double rho_num = 0, rho_den = 0, rho_den_estimated = 0;
+  for (size_t i = 0; i < solution.size(); i++) {
+    double diff = node_age[i] - total_node_age;
+    double estimated_diff = estimated_age[i] - total_estimated_age;
+    rho_num += diff * estimated_diff;
+    rho_den += diff * diff, rho_den_estimated += estimated_diff * estimated_diff;
+  }
+  return rho_num / sqrt(rho_den * rho_den_estimated);
+}
+
 DensityPrecision temporal_algorithm_single(
     Graph &G, const int &n0, const vector<int> &node_age,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
