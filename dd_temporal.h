@@ -127,7 +127,7 @@ std::map<mpz_class, long double> get_permutation_probabilities(
 std::map<mpz_class, long double> get_permutation_probabilities(
     const Graph &G, const int &n0, const Parameters &params) {
   Graph H(G);
-  NeighborhoodStructure aux(H);
+  CompleteNeighborhoodStructure aux(H);
   std::vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
     S[i] = i;
@@ -183,12 +183,12 @@ std::tuple<Vertex, double> sample_vertex(
 }
 
 std::pair<mpz_class, long double> get_permutation_sample(
-    const Graph &G, const int &n0, const Parameters &params, const NeighborhoodStructure &aux_G,
-    const SamplingMethod &algorithm) {
+    const Graph &G, const int &n0, const Parameters &params,
+    const CompleteNeighborhoodStructure &aux_G, const SamplingMethod &algorithm) {
   std::random_device device;
   std::mt19937 generator(device());
   Graph H(G);
-  NeighborhoodStructure aux(aux_G);
+  CompleteNeighborhoodStructure aux(aux_G);
 
   std::vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
@@ -214,7 +214,7 @@ std::map<mpz_class, long double> get_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     const int &tries) {
   std::map<mpz_class, long double> permutations;
-  NeighborhoodStructure aux(G);
+  CompleteNeighborhoodStructure aux(G);
   #pragma omp parallel for
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability = get_permutation_sample(G, n0, params, aux, algorithm);

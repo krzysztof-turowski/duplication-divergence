@@ -162,10 +162,7 @@ Graph read_graph(const std::string &graph_name) {
 }
 
 class NeighborhoodStructure {
- private:
-  int n;
-  std::vector<int> V;
-
+ protected:
   template <typename T>
   struct counting_iterator {
     size_t count;
@@ -178,7 +175,40 @@ class NeighborhoodStructure {
   };
 
  public:
-  explicit NeighborhoodStructure(
+  virtual int common_neighbors(const Vertex &v, const Vertex &u) const = 0;
+  virtual void remove_vertex(const std::set<Vertex> &neighbors) = 0;
+  virtual void restore_vertex(const std::set<Vertex> &neighbors) = 0;
+  virtual bool verify(const Graph &G) const = 0;
+};
+
+class NoNeighborhoodStructure : public NeighborhoodStructure {
+ private:
+  const Graph &G;
+
+ public:
+  explicit NoNeighborhoodStructure(const Graph &H) : G(H) { }
+
+  int common_neighbors(const Vertex &v, const Vertex &u) const {
+    auto N_v(get_neighbors(G, v));
+    auto N_u(get_neighbors(G, u));
+    return set_intersection(
+        N_v.begin(), N_v.end(), N_u.begin(), N_u.end(), counting_iterator<Vertex>()).count;
+  }
+
+  void remove_vertex(const std::set<Vertex>&) { }
+
+  void restore_vertex(const std::set<Vertex>&) { }
+
+  bool verify(const Graph &H) const { return &G == &H; }
+};
+
+class CompleteNeighborhoodStructure : public NeighborhoodStructure {
+ private:
+  int n;
+  std::vector<int> V;
+
+ public:
+  explicit CompleteNeighborhoodStructure(
       const Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
     auto vertices = get_vertices(G);
     #pragma omp parallel for
@@ -194,7 +224,8 @@ class NeighborhoodStructure {
     }
   }
 
-  explicit NeighborhoodStructure(const NeighborhoodStructure &other) : n(other.n), V(other.V) { }
+  explicit CompleteNeighborhoodStructure(
+      const CompleteNeighborhoodStructure &other) : n(other.n), V(other.V) { }
 
   int common_neighbors(const Vertex &v, const Vertex &u) const {
     return V[get_index(v, u, n)];

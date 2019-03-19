@@ -23,7 +23,7 @@ long double likelihood_value(
   random_device device;
   mt19937 generator(device());
   Graph H(G);
-  NeighborhoodStructure aux(H);
+  CompleteNeighborhoodStructure aux(H);
 
   long double ML_value = 0;
   while (get_graph_size(H) > n0) {
