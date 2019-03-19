@@ -491,6 +491,37 @@ DensityPrecision get_density_precision(
   return make_pair(total / count, correct / total);
 }
 
+double get_goodman_gamma(const BinningScheme &solution, const vector<int> &node_age) {
+  double data_size = 0, concordant_pairs = 0, discordant_pairs = 0, solution_ties = 0;
+  map<int, int> values;
+  for (size_t i = 0; i < solution.size(); i++) {
+    data_size += solution[i].size();
+    solution_ties += solution[i].size() * (solution[i].size() - 1) / 2;
+    for (const auto &u : solution[i]) {
+      if (u > AGE_ZERO) {
+        values[u]++;
+      }
+    }
+    for (size_t j = i + 1; j < solution.size(); j++) {
+      for (const auto &u : solution[i]) {
+        for (const auto &v : solution[j]) {
+          if (node_age[u] < node_age[v]) {
+            concordant_pairs++;
+          } else if (node_age[u] > node_age[v]) {
+            discordant_pairs++;
+          }
+        }
+      }
+    }
+  }
+  double original_ties = 0, all_pairs = data_size * (data_size - 1) / 2;
+  for (const auto &u : values) {
+    original_ties += u.second * (u.second - 1) / 2;
+  }
+  return (concordant_pairs - discordant_pairs)
+      / (sqrt(all_pairs - solution_ties) * sqrt(all_pairs - original_ties));
+}
+
 DensityPrecision temporal_algorithm_single(
     Graph &G, const int &n0, const vector<int> &node_age,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
