@@ -115,53 +115,60 @@ vector<int> read_age(const string &age_name) {
     throw invalid_argument("Missing " + age_name + " file");
   }
   unsigned v;
-  int age;
-  vector<int> S;
+  int age_v;
+  vector<int> age;
   while (!age_file.eof()) {
-    age_file >> v >> age;
-    if (v >= S.size()) {
-      S.resize(v + 1);
+    age_file >> v >> age_v;
+    if (v >= age.size()) {
+      age.resize(v + 1);
     }
-    S[v] = age;
+    age[v] = age_v;
   }
   age_file.close();
-  return S;
+  return age;
 }
 
-int count_age(const vector<int> &node_age, const int &age) {
-  return count_if(node_age.begin(), node_age.end(), [&](const int &v){ return v == age; });
+int count_age(const vector<int> &age, const int &age_value) {
+  return count_if(age.begin(), age.end(), [&](const int &v){ return v == age_value; });
 }
 
-Graph read_graph_with_age(
-    const std::string &graph_name, const std::vector<int> &node_age,
+std::tuple<Graph, std::vector<int>, int> read_graph_with_age(
+    const std::string &graph_name, const std::string &age_name,
     const int &min_age, const int &max_age) {
   std::ifstream graph_file(graph_name);
   if (graph_file.fail()) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
+  vector<int> all_nodes_age(read_age(age_name));
+  int n0 = count_age(all_nodes_age, AGE_ZERO);
+
   Graph G;
+  std::vector<int> age(all_nodes_age.size());
   std::map<int, Vertex> V;
-  int u, v, count = 0;
+  int u, v, first = 0, second = n0;
   while (graph_file >> u >> v) {
-    if (node_age[u] >= min_age && node_age[u] <= max_age && !V.count(u)) {
-      V.insert(make_pair(u, add_vertex(G, count))), count++;
+    if (all_nodes_age[u] >= min_age && all_nodes_age[u] <= max_age && !V.count(u)) {
+      int &index = all_nodes_age[u] == AGE_ZERO ? first : second;
+      V.insert(make_pair(u, add_vertex(G, index))), age[index] = all_nodes_age[u], ++index;
     }
-    if (node_age[v] >= min_age && node_age[v] <= max_age && !V.count(v)) {
-      V.insert(make_pair(v, add_vertex(G, count))), count++;
+    if (all_nodes_age[v] >= min_age && all_nodes_age[v] <= max_age && !V.count(v)) {
+      int &index = all_nodes_age[v] == AGE_ZERO ? first : second;
+      V.insert(make_pair(v, add_vertex(G, index))), age[index] = all_nodes_age[v], ++index;
     }
     if (u != v && V.count(u) && V.count(v)) {
       add_edge(G, V[u], V[v]);
     }
   }
   graph_file.close();
-  return G;
+  age.resize(second);
+  return make_tuple(G, age, n0);
 }
 
-void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
+void relabel_g0_first(Graph &G, const int &n0, const vector<int> &age) {
   int first = 0, second = n0;
   vector<Vertex> V(get_vertices(G));
   for (size_t i = 0; i < V.size(); i++) {
-    if (node_age[get_index(G, V[i])] == AGE_ZERO) {
+    if (age[get_index(G, V[i])] == AGE_ZERO) {
       set_index(G, V[i], first), first++;
     } else {
       set_index(G, V[i], second), second++;
@@ -178,10 +185,10 @@ vector<int> get_reverse_permutation(Graph &G) {
   return S;
 }
 
-int get_total_pairs(const vector<int> &node_age) {
+int get_total_pairs(const vector<int> &age) {
   int total = 0;
-  for (const auto &u : node_age) {
-    for (const auto &v : node_age) {
+  for (const auto &u : age) {
+    for (const auto &v : age) {
       if (u > AGE_ZERO && v > AGE_ZERO && u < v) {
         total++;
       }
@@ -575,12 +582,12 @@ void synthetic_data(
 void real_world_data(
     const string &graph_name, const string &age_name,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
-  vector<int> node_age(read_age(FILES_FOLDER + age_name));
-  int n0 = count_age(node_age, AGE_ZERO);
-  Graph G(read_graph_with_age(FILES_FOLDER + graph_name, node_age, AGE_ZERO, AGE_MAX));
-  relabel_g0_first(G, n0, node_age);
-  auto density_precision_value =
-      temporal_algorithm_single(G, n0, node_age, algorithm, params);
+  Graph G;
+  vector<int> age;
+  int n0;
+  tie(G, age, n0) =
+      read_graph_with_age(FILES_FOLDER + graph_name, FILES_FOLDER + age_name, AGE_ZERO, AGE_MAX);
+  auto density_precision_value = temporal_algorithm_single(G, n0, age, algorithm, params);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
   print(graph_name, algorithm, vector<DensityPrecision>{density_precision_value}, out_file);
 }
