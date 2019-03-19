@@ -23,7 +23,7 @@ typedef deque<Bin> BinningScheme;
 typedef vector<pair<int, int>> PairingScheme;
 
 const int G_TRIES = 20, SIGMA_TRIES = 100000;
-const int AGE_ZERO = 0;
+const int AGE_ZERO = 0, AGE_TWO = 2, AGE_MAX = numeric_limits<int>::max();
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -130,6 +130,31 @@ vector<int> read_age(const string &age_name) {
 
 int count_age(const vector<int> &node_age, const int &age) {
   return count_if(node_age.begin(), node_age.end(), [&](const int &v){ return v == age; });
+}
+
+Graph read_graph_with_age(
+    const std::string &graph_name, const std::vector<int> &node_age,
+    const int &min_age, const int &max_age) {
+  std::ifstream graph_file(graph_name);
+  if (graph_file.fail()) {
+    throw std::invalid_argument("Missing " + graph_name + " file");
+  }
+  Graph G;
+  std::map<int, Vertex> V;
+  int u, v, count = 0;
+  while (graph_file >> u >> v) {
+    if (node_age[u] >= min_age && node_age[u] <= max_age && !V.count(u)) {
+      V.insert(make_pair(u, add_vertex(G, count))), count++;
+    }
+    if (node_age[v] >= min_age && node_age[v] <= max_age && !V.count(v)) {
+      V.insert(make_pair(v, add_vertex(G, count))), count++;
+    }
+    if (u != v && V.count(u) && V.count(v)) {
+      add_edge(G, V[u], V[v]);
+    }
+  }
+  graph_file.close();
+  return G;
 }
 
 void relabel_g0_first(Graph &G, const int &n0, const vector<int> &node_age) {
@@ -550,9 +575,9 @@ void synthetic_data(
 void real_world_data(
     const string &graph_name, const string &age_name,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
-  Graph G(read_graph(FILES_FOLDER + graph_name));
   vector<int> node_age(read_age(FILES_FOLDER + age_name));
   int n0 = count_age(node_age, AGE_ZERO);
+  Graph G(read_graph_with_age(FILES_FOLDER + graph_name, node_age, AGE_ZERO, AGE_MAX));
   relabel_g0_first(G, n0, node_age);
   auto density_precision_value =
       temporal_algorithm_single(G, n0, node_age, algorithm, params);

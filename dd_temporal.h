@@ -110,7 +110,8 @@ std::map<mpz_class, long double> get_permutation_probabilities(
       move_vertex(H, G, v);
       assert(aux.verify(G));
 
-      auto permutations_v = get_permutation_probabilities(G, n0, params, aux, S, p_sigma + log2l(p_v));
+      auto permutations_v =
+          get_permutation_probabilities(G, n0, params, aux, S, p_sigma + log2l(p_v));
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       move_vertex(G, H, v), aux.restore_vertex(neighbors_v), S[get_graph_size(G) - 1] = -1;
@@ -144,24 +145,36 @@ std::map<mpz_class, long double> get_permutation_probabilities(
 }
 
 std::tuple<Vertex, double> sample_vertex(
-    const std::vector<Vertex> &V, const std::vector<long double> &P,
+    const Graph &G, const int &n0, const Parameters &params, const NeighborhoodStructure &aux,
     const SamplingMethod &algorithm, std::mt19937 &generator) {
+  std::vector<Vertex> V;
+  std::vector<long double> omega;
+  for (const auto &v : get_vertices(G)) {
+    if (get_index(G, v) < n0) {
+      continue;
+    }
+    V.push_back(v);
+  }
   switch (algorithm) {
     case WIUF: {
-      long double P_sum = accumulate(P.begin(), P.end(), 0.0);
-      std::discrete_distribution<int> choose_vertex(P.begin(), P.end());
+      for (const auto &v : V) {
+        omega.push_back(get_transition_probability(G, params, v, aux));
+      }
+      long double omega_sum = accumulate(omega.begin(), omega.end(), 0.0);
+      std::discrete_distribution<int> choose_vertex(omega.begin(), omega.end());
       int index = choose_vertex(generator);
-      return std::make_tuple(V[index], P_sum);
+      return std::make_tuple(V[index], omega_sum);
     }
     case UNIFORM: {
-      std::vector<int> C(P.size());
+      std::vector<int> C(V.size());
       std::transform(
-          P.begin(), P.end(), C.begin(),
-          [](const long double &value) -> int { return value != 0.0; });
+          V.begin(), V.end(), C.begin(),
+          [&](const Vertex &v) -> int { return is_feasible(G, params, v, aux); });
       int C_sum = accumulate(C.begin(), C.end(), 0.0);
       std::discrete_distribution<int> choose_vertex(C.begin(), C.end());
       int index = choose_vertex(generator);
-      return std::make_tuple(V[index], C_sum * P[index]);
+      return std::make_tuple(
+          V[index], C_sum * get_transition_probability(G, params, V[index], aux));
     }
     default:
       throw std::invalid_argument(
@@ -182,19 +195,8 @@ std::pair<mpz_class, long double> get_permutation_sample(
   }
   long double p_sigma = 0.0L, pv;
   while (get_graph_size(H) > n0) {
-    std::vector<Vertex> V;
-    std::vector<long double> omega;
-    for (const auto &v : get_vertices(H)) {
-      if (get_index(H, v) < n0) {
-        continue;
-      }
-      V.push_back(v);
-    }
-    for (const auto &v : V) {
-      omega.push_back(get_transition_probability(H, params, v, aux));
-    }
     Vertex v;
-    std::tie(v, pv) = sample_vertex(V, omega, algorithm, generator);
+    std::tie(v, pv) = sample_vertex(H, n0, params, aux, algorithm, generator);
     S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += log2l(pv);
     assert(aux.verify(H));
     aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);

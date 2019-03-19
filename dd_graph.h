@@ -179,7 +179,7 @@ class NeighborhoodStructure {
 
  public:
   explicit NeighborhoodStructure(
-      Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
+      const Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
     auto vertices = get_vertices(G);
     for (const auto &v : vertices) {
       auto N_v(get_neighbors(G, v));
@@ -234,8 +234,7 @@ class NeighborhoodStructure {
 };
 
 long double get_transition_probability(
-    Graph &G, const Parameters &params,
-    const Vertex &v, const Vertex &u,
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
     const NeighborhoodStructure &aux) {
   bool uv = check_edge(G, u, v);
   int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
@@ -244,7 +243,7 @@ long double get_transition_probability(
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (only_v > 0 || (fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)) {
+      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)) {
         return 0.0;
       }
       return pow(p, both) * pow(1 - p, only_u) / (get_graph_size(G) - 1);
@@ -262,7 +261,7 @@ long double get_transition_probability(
 }
 
 long double get_transition_probability(
-    Graph &G, const Parameters &params,
+    const Graph &G, const Parameters &params,
     const Vertex &v, const NeighborhoodStructure &aux) {
   long double p_v = 0;
   std::vector<Vertex> V(get_vertices(G));
@@ -275,11 +274,35 @@ long double get_transition_probability(
 }
 
 std::vector<long double> get_transition_probability(
-    Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
+    const Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
   std::vector<long double> out;
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &v : V) {
     out.push_back(get_transition_probability(G, params, v, aux));
   }
   return out;
+}
+
+bool is_feasible(
+    const Graph &G, const Parameters &params, const Vertex &v,
+    const NeighborhoodStructure &aux) {
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION: {
+      std::vector<Vertex> V(get_vertices(G));
+      for (const auto &u : V) {
+        if (u != v) {
+          bool uv = check_edge(G, u, v);
+          int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv;
+          if (!uv && only_v == 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    case Mode::PASTOR_SATORRAS:
+      return true;
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
 }
