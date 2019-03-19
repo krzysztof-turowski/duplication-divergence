@@ -181,17 +181,20 @@ class NeighborhoodStructure {
   explicit NeighborhoodStructure(
       const Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
     auto vertices = get_vertices(G);
-    for (const auto &v : vertices) {
-      auto N_v(get_neighbors(G, v));
-      for (const auto &u : vertices) {
-        auto N_u(get_neighbors(G, u));
-        V[get_index(v, u, n)] =
+    #pragma omp parallel for
+    for (std::size_t v_i = 0; v_i < vertices.size(); v_i++) {
+      auto N_v(get_neighbors(G, vertices[v_i]));
+      for (std::size_t u_i = 0; u_i < vertices.size(); u_i++) {
+        auto N_u(get_neighbors(G, vertices[u_i]));
+        V[get_index(vertices[v_i], vertices[u_i], n)] =
             set_intersection(
                 N_v.begin(), N_v.end(), N_u.begin(), N_u.end(),
                 counting_iterator<Vertex>()).count;
       }
     }
   }
+
+  explicit NeighborhoodStructure(const NeighborhoodStructure &other) : n(other.n), V(other.V) { }
 
   int common_neighbors(const Vertex &v, const Vertex &u) const {
     return V[get_index(v, u, n)];
@@ -243,7 +246,8 @@ long double get_transition_probability(
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)) {
+      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0)
+          || (fabsl(p - 1.0) < EPS && only_u > 0)) {
         return 0.0;
       }
       return pow(p, both) * pow(1 - p, only_u) / (get_graph_size(G) - 1);
