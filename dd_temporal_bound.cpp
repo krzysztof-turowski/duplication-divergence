@@ -14,7 +14,7 @@
 
 using namespace std;
 
-const int G_TRIES = 20, SIGMA_TRIES = 200000;
+const int G_TRIES = 20, SIGMA_TRIES = 100000;
 const double EPS_MIN = 0.05, EPS_STEP = 0.05;
 const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 
@@ -107,7 +107,7 @@ void LP_bound_exact(
 void LP_bound_approximate(
     const int &n, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     ostream &out_file) {
-  Graph G0 = generate_seed(n0, 1.0);
+  Graph G0 = generate_seed(n0, 0.6);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);

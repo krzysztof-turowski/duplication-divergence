@@ -556,7 +556,7 @@ void print(
 
 void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
-  Graph G0(generate_seed(n0, 1.0));
+  Graph G0(generate_seed(n0, 0.6));
   vector<DensityPrecision> density_precision_values(G_TRIES);
   vector<int> node_age(n, 0);
   for (int i = n0; i < n; i++) {
