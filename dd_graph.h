@@ -55,6 +55,7 @@
   typedef NetworKit::node Vertex;
 #endif
 
+#include <limits>
 #include <string>
 #include <set>
 #include <vector>
@@ -267,58 +268,13 @@ class CompleteNeighborhoodStructure : public NeighborhoodStructure {
   }
 };
 
-long double get_transition_probability(
-    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
-    const NeighborhoodStructure &aux) {
-  bool uv = check_edge(G, u, v);
-  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
-      only_u = get_degree(G, u) - both - uv,
-      none = (get_graph_size(G) - 2) - both - only_u - only_v;
-  long double p(params.p), r(params.r);
-  switch (params.mode) {
-    case Mode::PURE_DUPLICATION:
-      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0)
-          || (fabsl(p - 1.0) < EPS && only_u > 0)) {
-        return 0.0;
-      }
-      return pow(p, both) * pow(1 - p, only_u) / (get_graph_size(G) - 1);
-    case Mode::PASTOR_SATORRAS:
-      if ((fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)
-          || (fabsl(r) < EPS && only_v > 0)
-          || (fabsl(r - (get_graph_size(G) - 1)) < EPS && none > 0)) {
-        return 0.0;
-      }
-      return pow(p, both) * pow(r / (get_graph_size(G) - 1), only_v) * pow(1 - p, only_u)
-          * pow(1 - (r / (get_graph_size(G) - 1)), none) / (get_graph_size(G) - 1);
-    default:
-      throw std::invalid_argument("Invalid mode: " + params.to_string());
-  }
-}
-
-long double get_transition_probability(
-    const Graph &G, const Parameters &params,
-    const Vertex &v, const NeighborhoodStructure &aux) {
-  long double p_v = 0;
-  std::vector<Vertex> V(get_vertices(G));
-  for (const auto &u : V) {
-    if (u != v) {
-      p_v += get_transition_probability(G, params, v, u, aux);
-    }
-  }
-  return p_v;
-}
-
-std::vector<long double> get_transition_probability(
-    const Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
-  std::vector<long double> out;
-  std::vector<Vertex> V(get_vertices(G));
-  for (const auto &v : V) {
-    out.push_back(get_transition_probability(G, params, v, aux));
-  }
-  return out;
-}
-
 inline long double add_exp_log(const long double &x, const long double &y) {
+  if (x == -std::numeric_limits<long double>::infinity()) {
+    return y;
+  }
+  if (y == -std::numeric_limits<long double>::infinity()) {
+    return x;
+  }
   return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
 }
 
@@ -354,15 +310,24 @@ long double get_log_transition_probability(
 long double get_log_transition_probability(
     const Graph &G, const Parameters &params,
     const Vertex &v, const NeighborhoodStructure &aux) {
-  long double p_v = std::nanl("");
+  long double p_v = -std::numeric_limits<long double>::infinity();
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &u : V) {
     if (u != v) {
-      auto p_uv = get_log_transition_probability(G, params, v, u, aux);
-      p_v = std::isnan(p_v) ? p_uv : add_exp_log(p_v, p_uv);
+      p_v = add_exp_log(p_v, get_log_transition_probability(G, params, v, u, aux));
     }
   }
   return p_v;
+}
+
+std::vector<long double> get_transition_probability(
+    const Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
+  std::vector<long double> out;
+  std::vector<Vertex> V(get_vertices(G));
+  for (const auto &v : V) {
+    out.push_back(exp2l(get_log_transition_probability(G, params, v, aux)));
+  }
+  return out;
 }
 
 bool is_feasible(

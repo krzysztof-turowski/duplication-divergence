@@ -103,15 +103,15 @@ std::map<mpz_class, long double> get_permutation_probabilities(
     if (get_index(G, v) < n0) {
       continue;
     }
-    long double p_v = get_transition_probability(G, params, v, aux);
-    if (p_v > 0.0) {
+    long double p_v = get_log_transition_probability(G, params, v, aux);
+    if (std::isfinite(p_v)) {
       std::set<Vertex> neighbors_v(get_neighbors(G, v));
       aux.remove_vertex(neighbors_v), S[get_graph_size(G) - 1] = get_index(G, v);
       move_vertex(H, G, v);
       assert(aux.verify(G));
 
       auto permutations_v =
-          get_permutation_probabilities(G, n0, params, aux, S, p_sigma + log2l(p_v));
+          get_permutation_probabilities(G, n0, params, aux, S, p_sigma + p_v);
       permutations.insert(permutations_v.begin(), permutations_v.end());
 
       move_vertex(G, H, v), aux.restore_vertex(neighbors_v), S[get_graph_size(G) - 1] = -1;
@@ -134,12 +134,12 @@ std::map<mpz_class, long double> get_permutation_probabilities(
   }
   auto permutations = get_permutation_probabilities(H, n0, params, aux, S, 0.0L);
   long double total_probability = accumulate(
-      permutations.begin(), permutations.end(), 0.0,
+      permutations.begin(), permutations.end(), 0.0L,
       [] (long double value, const std::map<mpz_class, long double>::value_type &permutation) {
-          return value + permutation.second;
+          return value + exp2l(permutation.second);
       });
   for (auto &permutation : permutations) {
-    permutation.second /= total_probability;
+    permutation.second = exp2l(permutation.second) / total_probability;
   }
   return permutations;
 }
@@ -158,7 +158,7 @@ std::tuple<Vertex, double> sample_vertex(
   switch (algorithm) {
     case WIUF: {
       for (const auto &v : V) {
-        omega.push_back(get_transition_probability(G, params, v, aux));
+        omega.push_back(exp2l(get_log_transition_probability(G, params, v, aux)));
       }
       long double omega_sum = accumulate(omega.begin(), omega.end(), 0.0);
       std::discrete_distribution<int> choose_vertex(omega.begin(), omega.end());
