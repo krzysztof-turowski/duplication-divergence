@@ -28,6 +28,10 @@ const std::map<std::string, SamplingMethod> SAMPLING_METHOD_REVERSE_NAME = {
   { "uniform", SamplingMethod::UNIFORM },
 };
 
+inline bool validate_problem_size(const int &n, const int &n0) {
+  return exp(lgamma(n) - lgamma(n0)) <= 10e8;
+}
+
 std::vector<int> generate_permutation(const int &n, const int &n0) {
   std::random_device device;
   std::mt19937 generator(device());
