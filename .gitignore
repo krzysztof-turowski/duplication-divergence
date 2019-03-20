@@ -1,16 +1,8 @@
-DS_Store
+*
+!/**/
+!*.*
 
 *.txt
-!files/*
-
-dd_automorphisms
-dd_generate
-dd_ml_estimation
-dd_recurrence_estimation
-dd_temporal_bound
-
-*.dot
-*.sublime*
 *.exe
 *.pdf
 *.png
