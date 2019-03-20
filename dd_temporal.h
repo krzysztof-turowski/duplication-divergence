@@ -163,7 +163,7 @@ std::tuple<Vertex, double> sample_vertex(
       long double omega_sum = accumulate(omega.begin(), omega.end(), 0.0);
       std::discrete_distribution<int> choose_vertex(omega.begin(), omega.end());
       int index = choose_vertex(generator);
-      return std::make_tuple(V[index], omega_sum);
+      return std::make_tuple(V[index], log2l(omega_sum));
     }
     case UNIFORM: {
       std::vector<int> C(V.size());
@@ -174,7 +174,7 @@ std::tuple<Vertex, double> sample_vertex(
       std::discrete_distribution<int> choose_vertex(C.begin(), C.end());
       int index = choose_vertex(generator);
       return std::make_tuple(
-          V[index], C_sum * get_transition_probability(G, params, V[index], aux));
+          V[index], log2l(C_sum) + get_log_transition_probability(G, params, V[index], aux));
     }
     default:
       throw std::invalid_argument(
@@ -198,16 +198,12 @@ std::pair<mpz_class, long double> get_permutation_sample(
   while (get_graph_size(H) > n0) {
     Vertex v;
     std::tie(v, pv) = sample_vertex(H, n0, params, aux, algorithm, generator);
-    S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += log2l(pv);
+    S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += pv;
     assert(aux.verify(H));
     aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
   }
   return std::make_pair(encode_permutation(S), p_sigma);
-}
-
-inline long double add_exp_log(const long double &x, const long double &y) {
-  return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
 }
 
 std::map<mpz_class, long double> get_permutation_probabilities_sampling(

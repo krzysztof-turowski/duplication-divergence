@@ -288,7 +288,7 @@ long double get_transition_probability(
           || (fabsl(r - (get_graph_size(G) - 1)) < EPS && none > 0)) {
         return 0.0;
       }
-      return pow(p, both) * pow(params.r / (get_graph_size(G) - 1), only_v) * pow(1 - p, only_u)
+      return pow(p, both) * pow(r / (get_graph_size(G) - 1), only_v) * pow(1 - p, only_u)
           * pow(1 - (r / (get_graph_size(G) - 1)), none) / (get_graph_size(G) - 1);
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
@@ -316,6 +316,53 @@ std::vector<long double> get_transition_probability(
     out.push_back(get_transition_probability(G, params, v, aux));
   }
   return out;
+}
+
+inline long double add_exp_log(const long double &x, const long double &y) {
+  return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
+}
+
+long double get_log_transition_probability(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const NeighborhoodStructure &aux) {
+  bool uv = check_edge(G, u, v);
+  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
+      only_u = get_degree(G, u) - both - uv,
+      none = (get_graph_size(G) - 2) - both - only_u - only_v;
+  long double p(params.p), r(params.r);
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION:
+      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0)
+          || (fabsl(p - 1) < EPS && only_u > 0)) {
+        return -std::numeric_limits<long double>::infinity();
+      }
+      return both * log2l(p) + only_u * log2l(1 - p) - log2l(get_graph_size(G) - 1);
+    case Mode::PASTOR_SATORRAS:
+      if ((fabsl(p) < EPS && both > 0) || (fabsl(p - 1) < EPS && only_u > 0)
+          || (fabsl(r) < EPS && only_v > 0)
+          || (fabsl(r - (get_graph_size(G) - 1)) < EPS && none > 0)) {
+        return -std::numeric_limits<long double>::infinity();
+      }
+      return both * log2l(p) + only_u * log2l(1 - p) + only_v * log2l(r)
+          + none * log2l(get_graph_size(G) - 1 - r)
+          - (only_v + none + 1) * log2l(get_graph_size(G) - 1);
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+long double get_log_transition_probability(
+    const Graph &G, const Parameters &params,
+    const Vertex &v, const NeighborhoodStructure &aux) {
+  long double p_v = std::nanl("");
+  std::vector<Vertex> V(get_vertices(G));
+  for (const auto &u : V) {
+    if (u != v) {
+      auto p_uv = get_log_transition_probability(G, params, v, u, aux);
+      p_v = std::isnan(p_v) ? p_uv : add_exp_log(p_v, p_uv);
+    }
+  }
+  return p_v;
 }
 
 bool is_feasible(
