@@ -5,6 +5,7 @@
 #include <gurobi_c++.h>
 
 #include <map>
+#include <random>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -33,12 +34,16 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
 
 double LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
-    const double &epsilon) {
+    const double &epsilon, const double &discard = 0.0) {
   GRBEnv* environment = new GRBEnv();
   GRBModel *LP = new GRBModel(*environment);
   LP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
   LP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
   double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> discard_distribution(0.0, 1.0);
 
   // Objective function
   std::vector<GRBVar> vars((n - n0) * (n - n0) + 1);
@@ -72,10 +77,12 @@ double LP_solve(
     for (int j = n0; j < n; j++) {
       for (int k = n0; k < n; k++) {
         if (i != j && j != k && i != k) {
-          GRBLinExpr row =
-              vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, k, n, n0)]
-                  - vars[LP_get_variable_index(i, k, n, n0)];
-          LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("T", { i, j, k }));
+          if (discard_distribution(generator) > discard) {
+            GRBLinExpr row =
+                vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, k, n, n0)]
+                    - vars[LP_get_variable_index(i, k, n, n0)];
+            LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_row_name("T", { i, j, k }));
+          }
         }
       }
     }

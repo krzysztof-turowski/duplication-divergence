@@ -5,6 +5,7 @@
 #include <glpk.h>
 
 #include <map>
+#include <random>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -33,11 +34,15 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
 
 double LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
-    const double &epsilon) {
+    const double &epsilon, const double &discard = 0.0) {
   glp_prob *LP = glp_create_prob();
   glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
   double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> discard_distribution(0.0, 1.0);
 
   // Objective function
   glp_add_cols(LP, (n - n0) * (n - n0) + 1);
@@ -60,7 +65,7 @@ double LP_solve(
   std::vector<int> X, Y;
   std::vector<double> A;
   int row = 1;
-  glp_add_rows(LP, (n - n0) * (n - n0 - 1) * (n - n0 - 2) + (n - n0) * (n - n0 - 1) / 2 + 1);
+  glp_add_rows(LP, (n - n0) * (n - n0 - 1) / 2);
   // Antisymmetry
   for (int i = n0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
@@ -76,17 +81,21 @@ double LP_solve(
     for (int j = n0; j < n; j++) {
       for (int k = n0; k < n; k++) {
         if (i != j && j != k && i != k) {
-          glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
-          X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
-          X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1), A.push_back(1);
-          X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1), A.push_back(-1);
-          X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-          glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+          if (discard_distribution(generator) > discard) {
+            glp_add_rows(LP, 1);
+            glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
+            X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
+            X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1), A.push_back(1);
+            X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1), A.push_back(-1);
+            X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+            glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+          }
         }
       }
     }
   }
   // Density
+  glp_add_rows(LP, 1);
   glp_set_row_name(LP, row, LP_row_name("D", {}).c_str());
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
