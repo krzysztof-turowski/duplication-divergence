@@ -55,6 +55,7 @@
   typedef NetworKit::node Vertex;
 #endif
 
+#include <cassert>
 #include <limits>
 #include <string>
 #include <set>
@@ -278,9 +279,53 @@ inline long double add_exp_log(const long double &x, const long double &y) {
   return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
 }
 
+bool is_feasible(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const NeighborhoodStructure &aux) {
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION: {
+      bool uv = check_edge(G, u, v);
+      int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv;
+      if (!uv && only_v == 0) {
+        return true;
+      }
+      return false;
+    }
+    case Mode::PASTOR_SATORRAS:
+      return true;
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+bool is_feasible(
+    const Graph &G, const Parameters &params, const Vertex &v,
+    const NeighborhoodStructure &aux) {
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION: {
+      std::vector<Vertex> V(get_vertices(G));
+      for (const auto &u : V) {
+        if (u != v) {
+          if (is_feasible(G, params, v, u, aux)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    case Mode::PASTOR_SATORRAS:
+      return true;
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
 long double get_log_transition_probability(
     const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
     const NeighborhoodStructure &aux) {
+  if (!is_feasible(G, params, v, u, aux)) {
+    return -std::numeric_limits<long double>::infinity();
+  }
   bool uv = check_edge(G, u, v);
   int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
       only_u = get_degree(G, u) - both - uv,
@@ -288,17 +333,12 @@ long double get_log_transition_probability(
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      if (uv || only_v > 0 || (fabsl(p) < EPS && both > 0)
-          || (fabsl(p - 1) < EPS && only_u > 0)) {
-        return -std::numeric_limits<long double>::infinity();
-      }
+      assert(!(fabsl(p) < EPS && both > 0) && !(fabsl(1 - p) < EPS && only_u > 0));
       return both * log2l(p) + only_u * log2l(1 - p) - log2l(get_graph_size(G) - 1);
     case Mode::PASTOR_SATORRAS:
-      if ((fabsl(p) < EPS && both > 0) || (fabsl(p - 1) < EPS && only_u > 0)
-          || (fabsl(r) < EPS && only_v > 0)
-          || (fabsl(r - (get_graph_size(G) - 1)) < EPS && none > 0)) {
-        return -std::numeric_limits<long double>::infinity();
-      }
+      assert(!(fabsl(p) < EPS && both > 0) && !(fabsl(1 - p) < EPS && only_u > 0)
+          && !(fabsl(r) < EPS && only_v > 0)
+          && !(fabsl((get_graph_size(G) - 1) - r) < EPS && none > 0));
       return both * log2l(p) + only_u * log2l(1 - p) + only_v * log2l(r)
           + none * log2l(get_graph_size(G) - 1 - r)
           - (only_v + none + 1) * log2l(get_graph_size(G) - 1);
@@ -328,30 +368,6 @@ std::vector<long double> get_transition_probability(
     out.push_back(exp2l(get_log_transition_probability(G, params, v, aux)));
   }
   return out;
-}
-
-bool is_feasible(
-    const Graph &G, const Parameters &params, const Vertex &v,
-    const NeighborhoodStructure &aux) {
-  switch (params.mode) {
-    case Mode::PURE_DUPLICATION: {
-      std::vector<Vertex> V(get_vertices(G));
-      for (const auto &u : V) {
-        if (u != v) {
-          bool uv = check_edge(G, u, v);
-          int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv;
-          if (!uv && only_v == 0) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-    case Mode::PASTOR_SATORRAS:
-      return true;
-    default:
-      throw std::invalid_argument("Invalid mode: " + params.to_string());
-  }
 }
 
 long double get_discard_score(
