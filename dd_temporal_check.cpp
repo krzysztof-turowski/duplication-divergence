@@ -2,9 +2,11 @@
 
 #include "./dd_temporal.h"
 
+#include <queue>
+
 using namespace std;
 
-const int G_TRIES = 20, SIGMA_TRIES = 100000;
+const int G_TRIES = 1, SIGMA_TRIES = 100000, LIMIT = 10;
 const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 
 class ErrorStruct {
@@ -109,6 +111,25 @@ void print_errors(
   print_errors(sigma_tries, errors, p_uv_lambda);
 }
 
+void print_best_permutations(
+    const map<mpz_class, long double> &permutations, const int &n,
+    const string &algorithm_name, const int &limit) {
+  priority_queue<pair<long double, mpz_class>> Q;
+  for (auto &permutation : permutations) {
+    Q.push(make_pair(permutation.second, permutation.first));
+  }
+  cout << "Best " << limit << " permutations for " << algorithm_name << " method:" << endl;
+  for (int i = 0; i < limit; i++) {
+    const auto &permutation = Q.top();
+    const auto V = decode_permutation(permutation.second, n);
+    for (const auto &v : V) {
+      cout << v << " ";
+    }
+    cout << " " << permutation.first << endl;
+    Q.pop();
+  }
+}
+
 void check_convergence(const int &n, const int &n0, const Parameters &params) {
   bool exact_mode = validate_problem_size(n, n0);
 
@@ -162,6 +183,31 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
   print_errors(sigma_tries, errors);
 }
 
+void check_permutations(const int &n, const int &n0, const Parameters &params) {
+  Graph G0 = generate_seed(n0, 1.0);
+  bool exact_mode = validate_problem_size(n, n0);
+  #pragma omp parallel for
+  for (int i = 0; i < G_TRIES; i++) {
+    Graph G(G0);
+    generate_graph(G, n, params);
+
+    vector<int> S = generate_permutation(n, get_graph_size(G0));
+    apply_permutation(G, S);
+
+    if (exact_mode) {
+      auto permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
+      print_best_permutations(permutations_opt, n, "exact", LIMIT);
+    } else {
+      for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+        auto permutations_apx =
+            get_permutation_probabilities_sampling(
+                G, get_graph_size(G0), params, algorithm.first, SIGMA_TRIES);
+        print_best_permutations(permutations_apx, n, algorithm.second, LIMIT);
+      }
+    }
+  }
+}
+
 int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
@@ -170,6 +216,8 @@ int main(int, char *argv[]) {
     params.initialize(mode, argv + 5);
     if (action == "convergence") {
       check_convergence(n, n0, params);
+    } else if (action == "permutations") {
+      check_permutations(n, n0, params);
     } else {
       throw invalid_argument("Invalid action: " + action);
     }
