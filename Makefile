@@ -40,13 +40,13 @@ clang++: $(EXEC)
 debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
 debug: $(EXEC)
 
-%: %.cpp
+%: %.cpp $(CPP_HDRS)
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) -o $@
 
-dd_automorphisms: dd_automorphisms.cpp
+dd_automorphisms: dd_automorphisms.cpp $(CPP_HDRS)
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
 
-dd_temporal_%: dd_temporal_%.cpp
+dd_temporal_%: dd_temporal_%.cpp $(CPP_HDRS)
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $@
 
 check:
