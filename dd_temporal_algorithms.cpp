@@ -22,7 +22,7 @@ typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
 typedef vector<pair<int, int>> PairingScheme;
 
-const int G_TRIES = 20, SIGMA_TRIES = 100000;
+const int G_TRIES = 1000, SIGMA_TRIES = 100000;
 const int AGE_ZERO = 0, AGE_TWO = 2, AGE_MAX = numeric_limits<int>::max();
 
 enum TemporalAlgorithm {

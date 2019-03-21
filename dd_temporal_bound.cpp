@@ -14,7 +14,7 @@
 
 using namespace std;
 
-const int G_TRIES = 20, SIGMA_TRIES = 100000;
+const int G_TRIES = 1000, SIGMA_TRIES = 100000;
 const double EPS_MIN = 0.05, EPS_STEP = 0.05;
 
 void print_density_precision(
