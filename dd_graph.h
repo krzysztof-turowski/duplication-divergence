@@ -353,3 +353,31 @@ bool is_feasible(
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }
 }
+
+long double get_discard_score(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const NeighborhoodStructure &aux) {
+  bool uv = check_edge(G, u, v);
+  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
+      only_u = get_degree(G, u) - both - uv;
+  long double p(params.p), r(params.r);
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION:
+      return pow(1 - p, only_u);
+    case Mode::PASTOR_SATORRAS:
+      return pow(1 - p, only_u) * pow(r, only_v);
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+long double get_discard_score(
+    const Graph &G, const Parameters &params, const Vertex &v,
+    const NeighborhoodStructure &aux) {
+  long double out = 0.0L;
+  std::vector<Vertex> V(get_vertices(G));
+  for (const auto &u : V) {
+    out += get_discard_score(G, params, v, u, aux);
+  }
+  return out;
+}

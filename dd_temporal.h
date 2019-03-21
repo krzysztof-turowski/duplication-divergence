@@ -16,16 +16,18 @@
 typedef std::pair<double, double> DensityPrecision;
 typedef std::pair<int, int> VertexPair;
 
-enum SamplingMethod { WIUF, UNIFORM };
+enum SamplingMethod { WIUF, UNIFORM, MIN_DISCARD };
 
 const std::map<SamplingMethod, std::string> SAMPLING_METHOD_NAME = {
   { SamplingMethod::WIUF, "wiuf" },
   { SamplingMethod::UNIFORM, "uniform" },
+  { SamplingMethod::MIN_DISCARD, "min_discard" },
 };
 
 const std::map<std::string, SamplingMethod> SAMPLING_METHOD_REVERSE_NAME = {
   { "wiuf", SamplingMethod::WIUF },
   { "uniform", SamplingMethod::UNIFORM },
+  { "min_discard", SamplingMethod::MIN_DISCARD },
 };
 
 inline bool validate_problem_size(const int &n, const int &n0) {
@@ -164,7 +166,7 @@ std::tuple<Vertex, double> sample_vertex(
       for (const auto &v : V) {
         omega.push_back(exp2l(get_log_transition_probability(G, params, v, aux)));
       }
-      long double omega_sum = accumulate(omega.begin(), omega.end(), 0.0);
+      long double omega_sum = accumulate(omega.begin(), omega.end(), 0.0L);
       std::discrete_distribution<int> choose_vertex(omega.begin(), omega.end());
       int index = choose_vertex(generator);
       return std::make_tuple(V[index], log2l(omega_sum));
@@ -174,7 +176,18 @@ std::tuple<Vertex, double> sample_vertex(
       std::transform(
           V.begin(), V.end(), C.begin(),
           [&](const Vertex &v) -> int { return is_feasible(G, params, v, aux); });
-      int C_sum = accumulate(C.begin(), C.end(), 0.0);
+      int C_sum = accumulate(C.begin(), C.end(), 0);
+      std::discrete_distribution<int> choose_vertex(C.begin(), C.end());
+      int index = choose_vertex(generator);
+      return std::make_tuple(
+          V[index], log2l(C_sum) + get_log_transition_probability(G, params, V[index], aux));
+    }
+    case MIN_DISCARD: {
+      std::vector<long double> C(V.size());
+      std::transform(
+          V.begin(), V.end(), C.begin(),
+          [&](const Vertex &v) -> long double { return get_discard_score(G, params, v, aux); });
+      long double C_sum = accumulate(C.begin(), C.end(), 0.0L);
       std::discrete_distribution<int> choose_vertex(C.begin(), C.end());
       int index = choose_vertex(generator);
       return std::make_tuple(
