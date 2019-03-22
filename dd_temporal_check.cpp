@@ -6,7 +6,7 @@
 
 using namespace std;
 
-const int G_TRIES = 1, SIGMA_TRIES = 10;
+const int G_TRIES = 1, SIGMA_TRIES = 10000;
 const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
 const int PERMUTATION_SIZE_LIMIT = 10, PERMUTATION_COUNT_LIMIT = 10;
 
@@ -156,20 +156,23 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
 
     map<VertexPair, long double> p_uv_opt;
     if (exact_mode) {
-      auto permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
+      auto permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
+      normalize_log_probabilities(permutations_opt);
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
-            get_permutation_probabilities_sampling(
+            get_log_permutation_probabilities_sampling(
                 G, get_graph_size(G0), params, algorithm.first, tries);
+        normalize_log_probabilities(permutations_apx);
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
 
         if (!exact_mode) {
           auto permutations_opt =
-                get_permutation_probabilities_sampling(
+                get_log_permutation_probabilities_sampling(
                     G, get_graph_size(G0), params, algorithm.first, tries);
+          normalize_log_probabilities(permutations_opt);
           p_uv_opt =
               get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
         }
@@ -200,12 +203,12 @@ void check_permutations(const int &n, const int &n0, const Parameters &params) {
     apply_permutation(G, S);
 
     if (exact_mode) {
-      auto permutations_opt = get_permutation_probabilities(G, get_graph_size(G0), params);
+      auto permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
       print_best_permutations(permutations_opt, n, "exact", PERMUTATION_COUNT_LIMIT);
     } else {
       for (const auto &algorithm : SAMPLING_METHOD_NAME) {
         auto permutations_apx =
-            get_permutation_probabilities_sampling(
+            get_log_permutation_probabilities_sampling(
                 G, get_graph_size(G0), params, algorithm.first, SIGMA_TRIES);
         print_best_permutations(permutations_apx, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
       }

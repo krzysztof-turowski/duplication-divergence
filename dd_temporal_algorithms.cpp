@@ -389,8 +389,10 @@ BinningScheme rank_by_neighborhood(Graph &G, const int &n0) {
 
 PairingScheme sort_by_probability(
     Graph &G, const int &n0, const Parameters &params, const double &threshold) {
-  const auto permutations =
-      get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  auto permutations =
+      get_log_permutation_probabilities_sampling(
+          G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
   int n = get_graph_size(G);
 
@@ -411,8 +413,10 @@ PairingScheme sort_by_probability(
 }
 
 BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters &params) {
-  const auto permutations =
-      get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  auto permutations =
+      get_log_permutation_probabilities_sampling(
+          G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
   int n = get_graph_size(G);
 
@@ -443,8 +447,10 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
 PairingScheme sort_by_lp_solution(
     Graph &G, const int &n0, const Parameters &params,
     const double &epsilon, const double &threshold) {
-  const auto permutations =
-      get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  auto permutations =
+      get_log_permutation_probabilities_sampling(
+          G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+  normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
   int n = get_graph_size(G);
   double discard = max(0.0, 1.0 - MAX_CONSTRAINTS / pow(n - n0, 3.0));

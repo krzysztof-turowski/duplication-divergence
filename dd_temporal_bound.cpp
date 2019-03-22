@@ -42,7 +42,8 @@ vector<double> LP_bound_exact_single(
   vector<int> S = generate_permutation(n, get_graph_size(G0));
   apply_permutation(G, S);
 
-  auto permutations = get_permutation_probabilities(G, get_graph_size(G0), params);
+  auto permutations = get_log_permutation_probabilities(G, get_graph_size(G0), params);
+  normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
@@ -63,8 +64,9 @@ vector<double> LP_bound_approximate_single(
   apply_permutation(G, S);
 
   auto permutations =
-      get_permutation_probabilities_sampling(
+      get_log_permutation_probabilities_sampling(
           G, get_graph_size(G0), params, algorithm, SIGMA_TRIES);
+  normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   vector<double> solutions;
   for (const double &eps : epsilon) {
