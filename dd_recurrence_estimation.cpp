@@ -12,10 +12,10 @@ using namespace std;
 
 typedef vector<set<int>> Graph;
 
-const double R_STEP = 0.01, R_EXP = 2.0;
-const double Q_STEP = 0.001, Q_EXP = 2.0;
+const double R_STEP = 0.01, R_EXP = 1.5;
+const double Q_STEP = 0.001, Q_EXP = 1.5;
 const double EPS = 10e-9;
-const double P_DISTANCE = 10e-3;
+const double P_DISTANCE = 10e-2;
 const double TI_ALPHA = 0.05;
 const int TI_TRIES = 100;
 const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
