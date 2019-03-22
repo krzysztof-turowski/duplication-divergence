@@ -69,6 +69,22 @@ const map<string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_lp_solution", TemporalAlgorithm::LP_SOLUTION_SORT },
 };
 
+class PartialOrderScore {
+ public:
+  double density = 0.0, precision = 0.0, correlation = 0.0, gamma = 0.0;
+};
+
+PartialOrderScore get_average(const vector<PartialOrderScore> &scores) {
+  PartialOrderScore average;
+  for (const auto &score : scores) {
+    average.density += score.density, average.precision += score.precision;
+    average.correlation += score.correlation, average.gamma += score.gamma;
+  }
+  average.density /= scores.size(), average.precision /= scores.size();
+  average.correlation /= scores.size(), average.gamma /= scores.size();
+  return average;
+}
+
 class DAG {
  private:
   vector<set<int>> H;
@@ -452,8 +468,9 @@ PairingScheme sort_by_lp_solution(
   return out;
 }
 
-DensityPrecision get_density_precision(
-    const PairingScheme &solution, const vector<int> &node_age) {
+void get_density_precision(
+    const PairingScheme &solution, const vector<int> &node_age,
+    PartialOrderScore &score) {
   double count = get_total_pairs(node_age), total = 0, correct = 0;
   for (const auto &uv : solution) {
     if (node_age[uv.first] <= AGE_ZERO || node_age[uv.second] <= AGE_ZERO) {
@@ -465,11 +482,13 @@ DensityPrecision get_density_precision(
       total++;
     }
   }
-  return make_pair(total / count, correct / total);
+  PartialOrderScore out;
+  score.precision = correct / total, score.density = total / count;
 }
 
-DensityPrecision get_density_precision(
-    const BinningScheme &solution, const vector<int> &node_age) {
+void get_density_precision(
+    const BinningScheme &solution, const vector<int> &node_age,
+    PartialOrderScore &score) {
   double count = get_total_pairs(node_age), total = 0, correct = 0;
   for (size_t i = 0; i < solution.size(); i++) {
     for (size_t j = i + 1; j < solution.size(); j++) {
@@ -490,7 +509,7 @@ DensityPrecision get_density_precision(
       }
     }
   }
-  return make_pair(total / count, correct / total);
+  score.precision = correct / total, score.density = total / count;
 }
 
 double get_goodman_gamma(const BinningScheme &solution, const vector<int> &node_age) {
@@ -545,31 +564,46 @@ double get_pearson_correlation(const BinningScheme &solution, const vector<int> 
   return rho_num / sqrt(rho_den * rho_den_estimated);
 }
 
-DensityPrecision temporal_algorithm_single(
+PartialOrderScore get_score(const PairingScheme &solution, const vector<int> &node_age) {
+  PartialOrderScore score;
+  get_density_precision(solution, node_age, score);
+  score.correlation = nan(""), score.gamma = nan("");
+  return score;
+}
+
+PartialOrderScore get_score(const BinningScheme &solution, const vector<int> &node_age) {
+  PartialOrderScore score;
+  score.correlation = get_pearson_correlation(solution, node_age);
+  score.gamma = get_goodman_gamma(solution, node_age);
+  get_density_precision(solution, node_age, score);
+  return score;
+}
+
+PartialOrderScore temporal_algorithm_single(
     Graph &G, const int &n0, const vector<int> &node_age,
     const TemporalAlgorithm &algorithm, const Parameters &params) {
   switch (algorithm) {
     case DEGREE_SORT:
-      return get_density_precision(sort_by_degree(G, n0), node_age);
+      return get_score(sort_by_degree(G, n0), node_age);
     case DEGREE_PEEL:
-      return get_density_precision(peel_by_degree(G, n0), node_age);
+      return get_score(peel_by_degree(G, n0), node_age);
     case NEIGHBORHOOD_SORT:
-      return get_density_precision(sort_by_neighborhood(G, n0), node_age);
+      return get_score(sort_by_neighborhood(G, n0), node_age);
     case NEIGHBORHOOD_PEEL_SL:
-      return get_density_precision(peel_by_neighborhood_sl(G, n0), node_age);
+      return get_score(peel_by_neighborhood_sl(G, n0), node_age);
     case NEIGHBORHOOD_PEEL_LF:
-      return get_density_precision(peel_by_neighborhood_lf(G, n0), node_age);
+      return get_score(peel_by_neighborhood_lf(G, n0), node_age);
     case NEIGHBORHOOD_RANK:
-      return get_density_precision(rank_by_neighborhood(G, n0), node_age);
+      return get_score(rank_by_neighborhood(G, n0), node_age);
     case PROBABILITY_SORT:
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_density_precision(sort_by_probability(G, n0, params, 0.5), node_age);
+      return get_score(sort_by_probability(G, n0, params, 0.5), node_age);
     case PROBABILITY_SUM_SORT:
-      return get_density_precision(sort_by_probability_sum(G, n0, params), node_age);
+      return get_score(sort_by_probability_sum(G, n0, params), node_age);
     case LP_SOLUTION_SORT:
       // TODO(kturowski): parametrize by different values of epsilon than 1.0
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_density_precision(sort_by_lp_solution(G, n0, params, 1.0, 0.5), node_age);
+      return get_score(sort_by_lp_solution(G, n0, params, 1.0, 0.5), node_age);
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
@@ -577,33 +611,35 @@ DensityPrecision temporal_algorithm_single(
 
 void print(
     const string &name, const TemporalAlgorithm &algorithm,
-    const vector<DensityPrecision> solution, ostream &out_file, bool verbose = false) {
+    const vector<PartialOrderScore> &scores, ostream &out_file, bool verbose = false) {
   cout << name << endl;
   cout << "Algorithm: " << LONG_ALGORITHM_NAME.find(algorithm)->second << endl;
 
-  auto mean_density_precision =
-      accumulate(
-          solution.begin(), solution.end(), DensityPrecision(0.0, 0.0),
-          [] (DensityPrecision &value, const DensityPrecision &density_precision) {
-              value.first += density_precision.first, value.second += density_precision.second;
-              return value;
-          });
+  auto mean_score = get_average(scores);
   cout << "Mean density: " << fixed << setw(6) << setprecision(3)
-      << mean_density_precision.first / solution.size()
+      << mean_score.density
       << " mean precision: " << fixed << setw(6) << setprecision(3)
-      << mean_density_precision.second / solution.size()
+      << mean_score.precision
       << endl;
+  if (!isnan(mean_score.correlation)) {
+    cout << "Mean Pearson correlation: " << fixed << setw(6) << setprecision(3)
+        << mean_score.gamma << endl;
+  }
+  if (!isnan(mean_score.gamma)) {
+    cout << "Mean Goodman gamma: " << fixed << setw(6) << setprecision(3)
+        << mean_score.gamma << endl;
+  }
   if (verbose) {
-    for (const auto &density_precision : solution) {
-      cout << "density: " << fixed << setw(6) << setprecision(3) << density_precision.first
-          << " precision: " << fixed << setw(6) << setprecision(3) << density_precision.second
+    for (const auto &score : scores) {
+      cout << "density: " << fixed << setw(6) << setprecision(3) << score.density
+          << " precision: " << fixed << setw(6) << setprecision(3) << score.precision
           << endl;
     }
   }
 
   out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second << " ";
-  for (const auto &density_precision : solution) {
-    out_file << density_precision.first << "," << density_precision.second << " ";
+  for (const auto &score : scores) {
+    out_file << score.density << "," << score.precision << " ";
   }
   out_file << endl;
 }
@@ -611,7 +647,7 @@ void print(
 void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
   Graph G0(generate_seed(n0, 0.6));
-  vector<DensityPrecision> density_precision_values(G_TRIES);
+  vector<PartialOrderScore> scores(G_TRIES);
   vector<int> node_age(n, 0);
   for (int i = n0; i < n; i++) {
     node_age[i] = i;
@@ -621,7 +657,7 @@ void synthetic_data(
     Graph G(G0);
     generate_graph(G, n, params);
     // TODO(kturowski): parametrize by different values of params than used to generate G
-    density_precision_values[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params);
+    scores[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params);
     #pragma omp critical
     {
       if ((i + 1) % 1000 == 0) {
@@ -630,7 +666,7 @@ void synthetic_data(
     }
   }
   ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"), ios_base::app);
-  print("Synthetic data: " + params.to_string(), algorithm, density_precision_values, out_file);
+  print("Synthetic data: " + params.to_string(), algorithm, scores, out_file);
 }
 
 void real_world_data(
@@ -641,9 +677,9 @@ void real_world_data(
   int n0;
   tie(G, age, n0) =
       read_graph_with_age(FILES_FOLDER + graph_name, FILES_FOLDER + age_name, AGE_ZERO, AGE_MAX);
-  auto density_precision_value = temporal_algorithm_single(G, n0, age, algorithm, params);
+  auto score = temporal_algorithm_single(G, n0, age, algorithm, params);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
-  print(graph_name, algorithm, vector<DensityPrecision>{density_precision_value}, out_file);
+  print(graph_name, algorithm, vector<PartialOrderScore>{score}, out_file);
 }
 
 int main(int, char *argv[]) {
