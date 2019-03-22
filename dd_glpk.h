@@ -37,7 +37,9 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false, const double &discard = 0.0) {
   glp_prob *LP = glp_create_prob();
-  glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
+  glp_set_prob_name(
+      LP,
+      ("Solve " + std::to_string(epsilon) + "  with discard " + std::to_string(discard)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
   double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
@@ -68,28 +70,37 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
   int row = 1;
   glp_add_rows(LP, (n - n0) * (n - n0 - 1) / 2);
   // Antisymmetry
+  #pragma omp parallel for
   for (int i = n0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
-      glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
-      X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
-      X.push_back(row), Y.push_back(LP_get_variable_index(j, i, n, n0) + 1), A.push_back(1);
-      X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-      glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+      #pragma omp critical
+      {
+        glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
+        X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
+        X.push_back(row), Y.push_back(LP_get_variable_index(j, i, n, n0) + 1), A.push_back(1);
+        X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+        glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+      }
     }
   }
   // Transitivity
+  #pragma omp parallel for
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       for (int k = n0; k < n; k++) {
         if (i != j && j != k && i != k) {
           if (discard_distribution(generator) > discard) {
-            glp_add_rows(LP, 1);
-            glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
-            X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
-            X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1), A.push_back(1);
-            X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1), A.push_back(-1);
-            X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-            glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+            #pragma omp critical
+            {
+              glp_add_rows(LP, 1);
+              glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
+              X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1);
+              X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1);
+              X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1);
+              A.push_back(1), A.push_back(1), A.push_back(-1);
+              X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+              glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+            }
           }
         }
       }

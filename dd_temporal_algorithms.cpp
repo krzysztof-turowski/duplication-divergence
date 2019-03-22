@@ -24,6 +24,7 @@ typedef vector<pair<int, int>> PairingScheme;
 
 const int G_TRIES = 1000, SIGMA_TRIES = 100000;
 const int AGE_ZERO = 0, AGE_TWO = 2, AGE_MAX = numeric_limits<int>::max();
+const long long MAX_CONSTRAINTS = 5000000000L;
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -430,9 +431,10 @@ PairingScheme sort_by_lp_solution(
       get_permutation_probabilities_sampling(G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
   int n = get_graph_size(G);
+  double discard = max(0.0, 1.0 - MAX_CONSTRAINTS / pow(n - n0, 3.0));
   map<pair<int, int>, double> x_uv;
   double solution;
-  tie(solution, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
+  tie(solution, x_uv) = LP_solve(p_uv, n, n0, epsilon, true, discard);
 
   PairingScheme out;
   vector<int> S = get_reverse_permutation(G);
