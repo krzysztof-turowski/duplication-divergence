@@ -12,6 +12,8 @@
 #include <tuple>
 #include <vector>
 
+const long long MAX_CONSTRAINTS = 5000000000L;
+
 std::string LP_row_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
   std::ostringstream out;
   out << prefix;
@@ -33,19 +35,29 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
   return (u - n0) * (n - n0) + (v - n0);
 }
 
+inline void add_transitivity_constraint(
+    glp_prob *LP, std::vector<int> &X, std::vector<int> &Y, std::vector<double> &A, int &row,
+    const int &n, const int &n0, const int &s_index, const int &i, const int &j, const int &k) {
+  #pragma omp critical
+  {
+    glp_add_rows(LP, 1);
+    glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
+    X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1);
+    X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1);
+    X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1);
+    A.push_back(1), A.push_back(1), A.push_back(-1);
+    X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+    glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
+  }
+}
+
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
-    const double &epsilon, const bool get_solution = false, const double &discard = 0.0) {
+    const double &epsilon, const bool get_solution = false) {
   glp_prob *LP = glp_create_prob();
-  glp_set_prob_name(
-      LP,
-      ("Solve " + std::to_string(epsilon) + "  with discard " + std::to_string(discard)).c_str());
+  glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
   glp_set_obj_dir(LP, GLP_MAX);
   double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
-
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> discard_distribution(0.0, 1.0);
 
   // Objective function
   glp_add_cols(LP, (n - n0) * (n - n0) + 1);
@@ -84,26 +96,29 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     }
   }
   // Transitivity
-  #pragma omp parallel for
-  for (int i = n0; i < n; i++) {
-    for (int j = n0; j < n; j++) {
-      for (int k = n0; k < n; k++) {
-        if (i != j && j != k && i != k) {
-          if (discard_distribution(generator) > discard) {
-            #pragma omp critical
-            {
-              glp_add_rows(LP, 1);
-              glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
-              X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1);
-              X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1);
-              X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1);
-              A.push_back(1), A.push_back(1), A.push_back(-1);
-              X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
-              glp_set_row_bnds(LP, row, GLP_UP, 0.0, 0.0), row++;
-            }
+  if (MAX_CONSTRAINTS >= pow(n - n0, 3.0)) {
+    #pragma omp parallel for
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        for (int k = n0; k < n; k++) {
+          if (i != j && j != k && i != k) {
+            add_transitivity_constraint(LP, X, Y, A, row, s_index, n, n0, i, j, k);
           }
         }
       }
+    }
+  } else {
+    std::random_device device;
+    std::mt19937 generator(device());
+    std::uniform_int_distribution<int> index_distribution(n0, n - 1);
+    #pragma omp parallel for
+    for (long long constraint = 0; constraint < MAX_CONSTRAINTS; constraint++) {
+      int i = index_distribution(generator), j = index_distribution(generator),
+          k = index_distribution(generator);
+      if (i == j || j == k || i == k) {
+        continue;
+      }
+      add_transitivity_constraint(LP, X, Y, A, row, n, n0, s_index, i, j, k);
     }
   }
   // Density
