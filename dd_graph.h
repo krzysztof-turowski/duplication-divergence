@@ -376,12 +376,11 @@ long double get_discard_score(
   bool uv = check_edge(G, u, v);
   int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
       only_u = get_degree(G, u) - both - uv;
-  long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      return pow(1 - p, only_u);
+      return expl(-4 * only_u);
     case Mode::PASTOR_SATORRAS:
-      return pow(1 - p, only_u) * pow(r, only_v);
+      return expl(-4 * only_u - 8 * only_v);
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }
