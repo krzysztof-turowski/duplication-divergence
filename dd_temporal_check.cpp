@@ -7,17 +7,16 @@
 using namespace std;
 
 const int G_TRIES = 1, SIGMA_TRIES = 10000;
-const int MIN_TRIES_TEST = 10, MAX_TRIES_TEST = 20000;
+const int MIN_TRIES_TEST = 1000, MAX_TRIES_TEST = 1000;
 const int PERMUTATION_SIZE_LIMIT = 10, PERMUTATION_COUNT_LIMIT = 10;
 
 class ErrorStruct {
  private:
   int p_uv_counter = 0;
-  map<int, long double> p_uv_mse, p_uv_lambda;
+  map<int, long double> p_uv_mse, p_uv_mae, p_uv_mre;
 
-  template <typename T>
   long double mean_square_error(
-      const map<T, long double> &opt, const map<T, long double> &apx,
+      const map<VertexPair, long double> &opt, const map<VertexPair, long double> &apx,
       const int &n0, const int &n) {
     long double mse = 0;
     for (int i = n0; i < n; i++) {
@@ -34,9 +33,26 @@ class ErrorStruct {
     return mse / opt.size();
   }
 
-  template <typename T>
+  long double max_absolute_error(
+      const map<VertexPair, long double> &opt, const map<VertexPair, long double> &apx,
+      const int &n0, const int &n) {
+    long double mae = 0;
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i == j) {
+          continue;
+        }
+        auto uv(make_pair(i, j));
+        long double opt_uv = opt.count(uv) ? opt.find(uv)->second : 0.0L;
+        long double apx_uv = apx.count(uv) ? apx.find(uv)->second : 0.0L;
+        mae = max(mae, fabsl(apx_uv - opt_uv));
+      }
+    }
+    return mae;
+  }
+
   long double max_relative_error(
-      const map<T, long double> &opt, const map<T, long double> &apx,
+      const map<VertexPair, long double> &opt, const map<VertexPair, long double> &apx,
       const int &n0, const int &n) {
     long double mre = 0;
     for (int i = n0; i < n; i++) {
@@ -62,7 +78,8 @@ class ErrorStruct {
       const map<VertexPair, long double> &p_uv_apx,
       const int &n0, const int &n) {
     this->p_uv_mse[tries] += mean_square_error(p_uv_opt, p_uv_apx, n0, n);
-    this->p_uv_lambda[tries] += max_relative_error(p_uv_opt, p_uv_apx, n0, n);
+    this->p_uv_mae[tries] += max_absolute_error(p_uv_opt, p_uv_apx, n0, n);
+    this->p_uv_mre[tries] += max_relative_error(p_uv_opt, p_uv_apx, n0, n);
     this->p_uv_counter++;
   }
 
@@ -70,8 +87,12 @@ class ErrorStruct {
     return this->p_uv_mse.find(tries)->second / p_uv_counter;
   }
 
-  long double get_p_uv_lambda(const int &tries) const {
-    return this->p_uv_lambda.find(tries)->second / p_uv_counter;
+  long double get_p_uv_mae(const int &tries) const {
+    return this->p_uv_mae.find(tries)->second / p_uv_counter;
+  }
+
+  long double get_p_uv_mre(const int &tries) const {
+    return this->p_uv_mre.find(tries)->second / p_uv_counter;
   }
 };
 
@@ -103,13 +124,21 @@ void print_errors(
   cout << "Mean square errors for p_uv: " << endl;
   print_errors(sigma_tries, errors, p_uv_mse);
 
-  auto p_uv_lambda = [](
+  auto p_uv_mae = [](
       const map<SamplingMethod, ErrorStruct> &e,
       const SamplingMethod &method, const int &tries) -> long double {
-        return e.find(method)->second.get_p_uv_lambda(tries);
+        return e.find(method)->second.get_p_uv_mae(tries);
+      };
+  cout << "Max absolute errors for p_uv: " << endl;
+  print_errors(sigma_tries, errors, p_uv_mae);
+
+  auto p_uv_mre = [](
+      const map<SamplingMethod, ErrorStruct> &e,
+      const SamplingMethod &method, const int &tries) -> long double {
+        return e.find(method)->second.get_p_uv_mre(tries);
       };
   cout << "Max relative errors for p_uv: " << endl;
-  print_errors(sigma_tries, errors, p_uv_lambda);
+  print_errors(sigma_tries, errors, p_uv_mre);
 }
 
 void print_best_permutations(
@@ -135,6 +164,19 @@ void print_best_permutations(
   }
 }
 
+void print_compare(
+    const map<VertexPair, long double> &opt, const map<VertexPair, long double> &apx,
+    const int &n0, const int &n) {
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      auto uv(make_pair(i, j));
+      cout << setw(4) << i << setw(4) << j
+          << setw(20) << setprecision(9) << (opt.count(uv) ? opt.find(uv)->second : 0.0L) << " "
+          << setw(20) << setprecision(9) << (apx.count(uv) ? apx.find(uv)->second : 0.0L) << endl;
+    }
+  }
+}
+
 void check_convergence(const int &n, const int &n0, const Parameters &params) {
   bool exact_mode = validate_problem_size(n, n0);
 
@@ -154,9 +196,10 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
     vector<int> S = generate_permutation(n, get_graph_size(G0));
     apply_permutation(G, S);
 
+    map<mpz_class, long double> permutations_opt;
     map<VertexPair, long double> p_uv_opt;
     if (exact_mode) {
-      auto permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
+      permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
       normalize_log_probabilities(permutations_opt);
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
@@ -165,21 +208,27 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
         auto permutations_apx =
             get_log_permutation_probabilities_sampling(
                 G, get_graph_size(G0), params, algorithm.first, tries);
-        normalize_log_probabilities(permutations_apx);
-        auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
-
         if (!exact_mode) {
-          auto permutations_opt =
+          permutations_opt =
                 get_log_permutation_probabilities_sampling(
                     G, get_graph_size(G0), params, algorithm.first, tries);
+          #pragma omp critical
+          {
+            print_best_permutations(permutations_opt, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
+            print_best_permutations(permutations_apx, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
+          }
           normalize_log_probabilities(permutations_opt);
           p_uv_opt =
               get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
         }
+        
+        normalize_log_probabilities(permutations_apx);
+        auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
         #pragma omp critical
         {
           ErrorStruct &error = errors[algorithm.first];
           error.add_p_uv(tries, p_uv_opt, p_uv_apx, n0, n);
+          // print_compare(p_uv_opt, p_uv_apx, n0, n);
         }
       }
     }
