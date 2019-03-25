@@ -292,3 +292,11 @@ std::map<VertexPair, long double> get_p_uv_from_permutations(
   }
   return p_uv;
 }
+
+void set_perfect_pairs(
+    std::map<VertexPair, long double> p_uv, const std::set<VertexPair> &perfect_pairs) {
+  for (const auto &uv : perfect_pairs) {
+    const auto vu(std::make_pair(uv.second, uv.first));
+    p_uv.insert(std::make_pair(uv, 1.0L)), p_uv.insert(std::make_pair(vu, 0.0L));
+  }
+}

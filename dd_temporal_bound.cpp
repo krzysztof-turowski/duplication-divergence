@@ -38,7 +38,8 @@ void print_density_precision(
 }
 
 vector<double> LP_bound_exact_single(
-    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon,
+    const set<VertexPair> &perfect_pairs) {
   Graph G(G0);
   generate_graph(G, n, params);
 
@@ -48,6 +49,7 @@ vector<double> LP_bound_exact_single(
   auto permutations = get_log_permutation_probabilities(G, get_graph_size(G0), params);
   normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
+  set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
@@ -58,7 +60,8 @@ vector<double> LP_bound_exact_single(
 }
 
 vector<double> LP_bound_random_walk_single(
-    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon,
+    const set<VertexPair> &perfect_pairs) {
   Graph G(G0);
   generate_graph(G, n, params);
 
@@ -102,6 +105,7 @@ vector<double> LP_bound_random_walk_single(
   }
   normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
+  set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
@@ -113,7 +117,7 @@ vector<double> LP_bound_random_walk_single(
 
 vector<double> LP_bound_approximate_single(
     const Graph &G0, const int &n, const Parameters &params, const SamplingMethod &algorithm,
-    const vector<double> &epsilon) {
+    const vector<double> &epsilon, const set<VertexPair> &perfect_pairs) {
   Graph G(G0);
   generate_graph(G, n, params);
 
@@ -125,6 +129,7 @@ vector<double> LP_bound_approximate_single(
           G, get_graph_size(G0), params, algorithm, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
+  set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
@@ -145,7 +150,7 @@ void LP_bound_exact(
   vector<vector<double>> solutions(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    solutions[i] = LP_bound_exact_single(G0, n, params, epsilon);
+    solutions[i] = LP_bound_exact_single(G0, n, params, epsilon, set<VertexPair>());
     #pragma omp critical
     {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
@@ -173,7 +178,7 @@ void LP_bound_random_walk(
   vector<vector<double>> solutions(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    solutions[i] = LP_bound_random_walk_single(G0, n, params, epsilon);
+    solutions[i] = LP_bound_random_walk_single(G0, n, params, epsilon, set<VertexPair>());
     #pragma omp critical
     {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
@@ -204,7 +209,8 @@ void LP_bound_approximate(
   vector<vector<double>> solutions(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    solutions[i] = LP_bound_approximate_single(G0, n, params, algorithm, epsilon);
+    solutions[i] =
+        LP_bound_approximate_single(G0, n, params, algorithm, epsilon, set<VertexPair>());
     #pragma omp critical
     {
       cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;

@@ -202,7 +202,8 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
     map<mpz_class, long double> permutations_opt;
     map<VertexPair, long double> p_uv_opt;
     if (exact_mode) {
-      permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
+      permutations_opt =
+          get_log_permutation_probabilities(G, get_graph_size(G0), params);
       normalize_log_probabilities(permutations_opt);
       p_uv_opt = get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
     }
