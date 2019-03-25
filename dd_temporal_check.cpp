@@ -142,24 +142,27 @@ void print_errors(
 }
 
 void print_best_permutations(
-    const map<mpz_class, long double> &permutations, const int &n,
-    const string &algorithm_name, const int &limit) {
+    const map<mpz_class, long double> &permutations, const Graph &G,
+    const Parameters &params, const int &n0, const string &algorithm_name, const int &limit) {
   priority_queue<pair<long double, mpz_class>> Q;
+  int n = get_graph_size(G);
   for (auto &permutation : permutations) {
     Q.push(make_pair(permutation.second, permutation.first));
   }
-  cout << "Best " << limit << " permutations for " << algorithm_name << " method:" << endl;
-  for (int i = 0; i < limit; i++) {
+  cout << "Best " << min(limit, static_cast<int>(Q.size())) << " permutations for "
+      << algorithm_name << " method:" << endl;
+  for (int i = 0; i < limit && !Q.empty(); i++) {
     const auto &permutation = Q.top();
+    const auto V(decode_permutation(permutation.second, n));
     if (n <= PERMUTATION_SIZE_LIMIT) {
-      const auto V = decode_permutation(permutation.second, n);
       for (const auto &v : V) {
         cout << v << " ";
       }
     } else {
-      cout << "Permutation " << i;
+      cout << "Permutation " << i << " ";
     }
-    cout << " " << permutation.first << endl;
+    cout << permutation.first << " "
+        << get_log_permutation_probability(G, n0, params, reverse_permutation(V)) << endl;
     Q.pop();
   }
 }
@@ -214,8 +217,10 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
                     G, get_graph_size(G0), params, algorithm.first, tries);
           #pragma omp critical
           {
-            print_best_permutations(permutations_opt, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
-            print_best_permutations(permutations_apx, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
+            print_best_permutations(
+                permutations_opt, G, params, n0, algorithm.second, PERMUTATION_COUNT_LIMIT);
+            print_best_permutations(
+                permutations_apx, G, params, n0, algorithm.second, PERMUTATION_COUNT_LIMIT);
           }
           normalize_log_probabilities(permutations_opt);
           p_uv_opt =
@@ -253,14 +258,14 @@ void check_permutations(const int &n, const int &n0, const Parameters &params) {
 
     if (exact_mode) {
       auto permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
-      print_best_permutations(permutations_opt, n, "exact", PERMUTATION_COUNT_LIMIT);
-    } else {
-      for (const auto &algorithm : SAMPLING_METHOD_NAME) {
-        auto permutations_apx =
-            get_log_permutation_probabilities_sampling(
-                G, get_graph_size(G0), params, algorithm.first, SIGMA_TRIES);
-        print_best_permutations(permutations_apx, n, algorithm.second, PERMUTATION_COUNT_LIMIT);
-      }
+      print_best_permutations(permutations_opt, G, params, n0, "exact", PERMUTATION_COUNT_LIMIT);
+    }
+    for (const auto &algorithm : SAMPLING_METHOD_NAME) {
+      auto permutations_apx =
+          get_log_permutation_probabilities_sampling(
+              G, get_graph_size(G0), params, algorithm.first, SIGMA_TRIES);
+      print_best_permutations(
+          permutations_apx, G, params, n0, algorithm.second, PERMUTATION_COUNT_LIMIT);
     }
   }
 }

@@ -12,10 +12,13 @@
   #include "./dd_gurobi.h"
 #endif
 
+#include <queue>
+
 using namespace std;
 
 const int G_TRIES = 1000, SIGMA_TRIES = 100000;
 const double EPS_MIN = 0.05, EPS_STEP = 0.05;
+const long double RANDOM_WALK_THRESHOLD = 1.0;
 
 void print_density_precision(
     const string &name, const vector<double> &density, const vector<double> &precision,
@@ -45,6 +48,60 @@ vector<double> LP_bound_exact_single(
   auto permutations = get_log_permutation_probabilities(G, get_graph_size(G0), params);
   normalize_log_probabilities(permutations);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
+  vector<double> solutions;
+  for (const double &eps : epsilon) {
+    double solution;
+    tie(solution, ignore) = LP_solve(p_uv, n, get_graph_size(G0), eps);
+    solutions.push_back(solution);
+  }
+  return solutions;
+}
+
+vector<double> LP_bound_random_walk_single(
+    const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon) {
+  Graph G(G0);
+  generate_graph(G, n, params);
+
+  int n0 = get_graph_size(G0);
+  vector<int> S = generate_permutation(n, n0);
+  apply_permutation(G, S);
+
+  priority_queue<pair<long double, mpz_class>> Q;
+  map<mpz_class, long double> permutations;
+  auto sigma = encode_permutation(S);
+  long double score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
+  Q.push(make_pair(score, sigma));
+  permutations.insert(make_pair(sigma, score));
+
+  long double best_score = score;
+  while (!Q.empty() && permutations.size() < SIGMA_TRIES) {
+    const auto permutation_with_score = Q.top();
+    Q.pop();
+
+    S = decode_permutation(permutation_with_score.second, n);
+    for (int j = n0; j < n - 1; j++) {
+      swap(S[j], S[j + 1]);
+      sigma = encode_permutation(S);
+      if (permutations.count(sigma)) {
+        continue;
+      }
+      score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
+      if (score >= best_score - RANDOM_WALK_THRESHOLD) {
+        Q.push(make_pair(score, sigma));
+        permutations.insert(make_pair(sigma, score));
+        best_score = max(best_score, score);
+        #pragma omp critical
+        {
+          if (Q.size() % 1000 == 0) {
+            cerr << "Finished run " << Q.size() << "/" << SIGMA_TRIES << endl;
+          }
+        }
+      }
+      swap(S[j], S[j + 1]);
+    }
+  }
+  normalize_log_probabilities(permutations);
+  auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
   vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
@@ -105,6 +162,36 @@ void LP_bound_exact(
   print_density_precision("exact", epsilon, solution, n, n0, params, out_file);
 }
 
+void LP_bound_random_walk(
+    const int &n, const int &n0, const Parameters &params, ostream &out_file) {
+  Graph G0 = generate_seed(n0, 0.6);
+  vector<double> epsilon;
+  for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
+    epsilon.push_back(eps);
+  }
+  vector<double> solution(epsilon.size(), 0.0);
+  vector<vector<double>> solutions(G_TRIES);
+  #pragma omp parallel for
+  for (int i = 0; i < G_TRIES; i++) {
+    solutions[i] = LP_bound_random_walk_single(G0, n, params, epsilon);
+    #pragma omp critical
+    {
+      cerr << "Finished run " << i + 1 << "/" << G_TRIES << endl;
+    }
+  }
+  for (int i = 0; i < G_TRIES; i++) {
+    transform(
+        solution.begin(), solution.end(), solutions[i].begin(), solution.begin(),
+        std::plus<double>());
+  }
+  for (auto &sol : solution) {
+    sol /= G_TRIES;
+  }
+  print_density_precision(
+      "random_walk-" + to_string(G_TRIES) + "-" + to_string(SIGMA_TRIES),
+      epsilon, solution, n, n0, params, out_file);
+}
+
 void LP_bound_approximate(
     const int &n, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
     ostream &out_file) {
@@ -151,6 +238,9 @@ int main(int, char *argv[]) {
       }
       ofstream out_file(name, ios_base::app);
       LP_bound_exact(n, n0, params, out_file);
+    } else if (action == "random_walk") {
+      ofstream out_file(name, ios_base::app);
+      LP_bound_random_walk(n, n0, params, out_file);
     } else if (SAMPLING_METHOD_REVERSE_NAME.count(action)) {
       ofstream out_file(name, ios_base::app);
       LP_bound_approximate(

@@ -93,6 +93,14 @@ void apply_permutation(Graph &G, const std::vector<int> &S) {
   }
 }
 
+std::vector<int> reverse_permutation(const std::vector<int> &S) {
+  std::vector<int> V(S.size());
+  for (size_t i = 0; i < S.size(); i++) {
+    V[S[i]] = i;
+  }
+  return V;
+}
+
 void normalize_log_probabilities(std::map<mpz_class, long double> &permutations) {
   long double max_log_value = -std::numeric_limits<long double>::infinity();
   for (const auto &permutation : permutations) {
@@ -154,6 +162,24 @@ std::map<mpz_class, long double> get_log_permutation_probabilities(
     S[i] = i;
   }
   return get_log_permutation_probabilities(H, n0, params, aux, S, 0.0L);
+}
+
+long double get_log_permutation_probability(
+    const Graph &G, const int &n0, const Parameters &params, const std::vector<int> &rev_S) {
+  Graph H(G);
+  CompleteNeighborhoodStructure aux(H);
+  long double p_sigma = 0.0L;
+  std::map<int, Vertex> V;
+  for (const auto &v : get_vertices(H)) {
+    V.insert(std::make_pair(rev_S[get_index(H, v)], v));
+  }
+  for (int i = V.size() - 1; i >= n0; i--) {
+    long double p_v = get_log_transition_probability(H, params, V[i], aux);
+    aux.remove_vertex(get_neighbors(H, V[i])), delete_vertex(H, V[i]);
+    assert(aux.verify(H));
+    p_sigma += p_v;
+  }
+  return p_sigma;
 }
 
 std::tuple<Vertex, double> sample_vertex(
