@@ -227,7 +227,7 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
           p_uv_opt =
               get_p_uv_from_permutations(permutations_opt, n, get_graph_size(G0));
         }
-        
+
         normalize_log_probabilities(permutations_apx);
         auto p_uv_apx = get_p_uv_from_permutations(permutations_apx, n, get_graph_size(G0));
         #pragma omp critical

@@ -20,10 +20,10 @@ using namespace std;
 
 typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
-typedef vector<pair<int, int>> PairingScheme;
+typedef vector<VertexPair> PairingScheme;
 
 const int G_TRIES = 1000, SIGMA_TRIES = 100000;
-const int AGE_ZERO = 0, AGE_TWO = 2, AGE_MAX = numeric_limits<int>::max();
+const int AGE_TWO = 2, AGE_MAX = std::numeric_limits<int>::max();
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -387,12 +387,14 @@ BinningScheme rank_by_neighborhood(Graph &G, const int &n0) {
 }
 
 PairingScheme sort_by_probability(
-    Graph &G, const int &n0, const Parameters &params, const double &threshold) {
+    Graph &G, const int &n0, const Parameters &params, const double &p_uv_threshold,
+    const std::set<VertexPair> &perfect_pairs) {
   auto permutations =
       get_log_permutation_probabilities_sampling(
           G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  set_perfect_pairs(p_uv, perfect_pairs);
   int n = get_graph_size(G);
 
   PairingScheme out;
@@ -403,7 +405,7 @@ PairingScheme sort_by_probability(
         continue;
       }
       const auto &p_ij = p_uv.find(make_pair(i, j));
-      if (p_ij != p_uv.end() && p_ij->second > threshold) {
+      if (p_ij != p_uv.end() && p_ij->second > p_uv_threshold) {
         out.push_back(make_pair(S[i], S[j]));
       }
     }
@@ -411,12 +413,14 @@ PairingScheme sort_by_probability(
   return out;
 }
 
-BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters &params) {
+BinningScheme sort_by_probability_sum(
+    Graph &G, const int &n0, const Parameters &params, const std::set<VertexPair> &perfect_pairs) {
   auto permutations =
       get_log_permutation_probabilities_sampling(
           G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  set_perfect_pairs(p_uv, perfect_pairs);
   int n = get_graph_size(G);
 
   priority_queue<pair<long double, int>> p_v;
@@ -444,13 +448,15 @@ BinningScheme sort_by_probability_sum(Graph &G, const int &n0, const Parameters 
 }
 
 PairingScheme sort_by_lp_solution(
-    Graph &G, const int &n0, const Parameters &params,
-    const double &epsilon, const double &threshold) {
+    Graph &G, const int &n0, const Parameters &params, const double &epsilon,
+    const double &x_uv_threshold, const std::set<VertexPair> &perfect_pairs) {
   auto permutations =
       get_log_permutation_probabilities_sampling(
           G, n0, params, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  set_perfect_pairs(p_uv, perfect_pairs);
+
   int n = get_graph_size(G);
   map<pair<int, int>, double> x_uv;
   double solution;
@@ -464,7 +470,7 @@ PairingScheme sort_by_lp_solution(
         continue;
       }
       const auto &x_ij = x_uv.find(make_pair(i, j));
-      if (x_ij != x_uv.end() && x_ij->second > threshold) {
+      if (x_ij != x_uv.end() && x_ij->second > x_uv_threshold) {
         out.push_back(make_pair(S[i], S[j]));
       }
     }
@@ -474,9 +480,12 @@ PairingScheme sort_by_lp_solution(
 
 void get_density_precision(
     const PairingScheme &solution, const vector<int> &node_age,
-    PartialOrderScore &score) {
-  double count = get_total_pairs(node_age), total = 0, correct = 0;
+    const set<VertexPair> &perfect_pairs, PartialOrderScore &score) {
+  double count = get_total_pairs(node_age) - perfect_pairs.size(), total = 0, correct = 0;
   for (const auto &uv : solution) {
+    if (perfect_pairs.count(uv) || perfect_pairs.count(make_pair(uv.second, uv.first))) {
+      continue;
+    }
     if (node_age[uv.first] <= AGE_ZERO || node_age[uv.second] <= AGE_ZERO) {
       continue;
     }
@@ -492,8 +501,8 @@ void get_density_precision(
 
 void get_density_precision(
     const BinningScheme &solution, const vector<int> &node_age,
-    PartialOrderScore &score) {
-  double count = get_total_pairs(node_age), total = 0, correct = 0;
+    const set<VertexPair> &perfect_pairs, PartialOrderScore &score) {
+  double count = get_total_pairs(node_age) - perfect_pairs.size(), total = 0, correct = 0;
   for (size_t i = 0; i < solution.size(); i++) {
     for (size_t j = i + 1; j < solution.size(); j++) {
       for (const auto &u : solution[i]) {
@@ -502,6 +511,9 @@ void get_density_precision(
         }
         for (const auto &v : solution[j]) {
           if (node_age[v] <= AGE_ZERO) {
+            continue;
+          }
+          if (perfect_pairs.count(make_pair(u, v)) || perfect_pairs.count(make_pair(v, u))) {
             continue;
           }
           if (node_age[u] < node_age[v]) {
@@ -516,20 +528,31 @@ void get_density_precision(
   score.precision = correct / total, score.density = total / count;
 }
 
-double get_goodman_gamma(const BinningScheme &solution, const vector<int> &node_age) {
+double get_goodman_gamma(
+    const BinningScheme &solution, const vector<int> &node_age,
+    const set<VertexPair> &perfect_pairs) {
   double data_size = 0, concordant_pairs = 0, discordant_pairs = 0, solution_ties = 0;
   map<int, int> values;
   for (size_t i = 0; i < solution.size(); i++) {
-    data_size += solution[i].size();
-    solution_ties += solution[i].size() * (solution[i].size() - 1) / 2;
+    int nodes = 0;
     for (const auto &u : solution[i]) {
       if (u > AGE_ZERO) {
-        values[u]++;
+        values[u]++, nodes++;
       }
     }
+    data_size += nodes, solution_ties += nodes * (nodes - 1) / 2;
     for (size_t j = i + 1; j < solution.size(); j++) {
       for (const auto &u : solution[i]) {
+        if (node_age[u] <= AGE_ZERO) {
+          continue;
+        }
         for (const auto &v : solution[j]) {
+          if (node_age[v] <= AGE_ZERO) {
+            continue;
+          }
+          if (perfect_pairs.count(make_pair(u, v)) || perfect_pairs.count(make_pair(v, u))) {
+            continue;
+          }
           if (node_age[u] < node_age[v]) {
             concordant_pairs++;
           } else if (node_age[u] > node_age[v]) {
@@ -551,15 +574,21 @@ double get_pearson_correlation(const BinningScheme &solution, const vector<int> 
   double total_node_age = accumulate(node_age.begin(), node_age.end(), 0.0);
 
   vector<int> estimated_age(node_age.size());
-  double total_estimated_age = 0;
+  double total_estimated_age = 0, data_size = 0;
   for (size_t i = 0; i < solution.size(); i++) {
     for (const auto &v : solution[i]) {
-      estimated_age[v] = i, total_estimated_age += i;
+      if (node_age[v] <= AGE_ZERO) {
+        continue;
+      }
+      estimated_age[v] = i, total_estimated_age += i, data_size++;
     }
   }
-  total_node_age /= node_age.size(), total_estimated_age /= estimated_age.size();
+  total_node_age /= data_size, total_estimated_age /= data_size;
   double rho_num = 0, rho_den = 0, rho_den_estimated = 0;
-  for (size_t i = 0; i < solution.size(); i++) {
+  for (size_t i = 0; i < node_age.size(); i++) {
+    if (node_age[i] <= AGE_ZERO) {
+      continue;
+    }
     double diff = node_age[i] - total_node_age;
     double estimated_diff = estimated_age[i] - total_estimated_age;
     rho_num += diff * estimated_diff;
@@ -568,18 +597,22 @@ double get_pearson_correlation(const BinningScheme &solution, const vector<int> 
   return rho_num / sqrt(rho_den * rho_den_estimated);
 }
 
-PartialOrderScore get_score(const PairingScheme &solution, const vector<int> &node_age) {
+PartialOrderScore get_score(
+    const PairingScheme &solution, const vector<int> &node_age,
+    const set<VertexPair> &perfect_pairs = set<VertexPair>()) {
   PartialOrderScore score;
-  get_density_precision(solution, node_age, score);
+  get_density_precision(solution, node_age, perfect_pairs, score);
   score.correlation = nan(""), score.gamma = nan("");
   return score;
 }
 
-PartialOrderScore get_score(const BinningScheme &solution, const vector<int> &node_age) {
+PartialOrderScore get_score(
+    const BinningScheme &solution, const vector<int> &node_age,
+    const set<VertexPair> &perfect_pairs = set<VertexPair>()) {
   PartialOrderScore score;
   score.correlation = get_pearson_correlation(solution, node_age);
-  score.gamma = get_goodman_gamma(solution, node_age);
-  get_density_precision(solution, node_age, score);
+  score.gamma = get_goodman_gamma(solution, node_age, perfect_pairs);
+  get_density_precision(solution, node_age, perfect_pairs, score);
   return score;
 }
 
@@ -599,15 +632,27 @@ PartialOrderScore temporal_algorithm_single(
       return get_score(peel_by_neighborhood_lf(G, n0), node_age);
     case NEIGHBORHOOD_RANK:
       return get_score(rank_by_neighborhood(G, n0), node_age);
-    case PROBABILITY_SORT:
+    case PROBABILITY_SORT: {
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_score(sort_by_probability(G, n0, params, 0.5), node_age);
-    case PROBABILITY_SUM_SORT:
-      return get_score(sort_by_probability_sum(G, n0, params), node_age);
-    case LP_SOLUTION_SORT:
+      // TODO(kturowski): parametrize by different fraction of perfect pairs than 0.0
+      auto perfect_pairs = get_perfect_pairs(node_age, 0.0);
+      return get_score(
+          sort_by_probability(G, n0, params, 0.5, perfect_pairs), node_age, perfect_pairs);
+    }
+    case PROBABILITY_SUM_SORT: {
+      // TODO(kturowski): parametrize by different fraction of perfect pairs than 0.0
+      auto perfect_pairs = get_perfect_pairs(node_age, 0.0);
+      return get_score(
+          sort_by_probability_sum(G, n0, params, perfect_pairs), node_age, perfect_pairs);
+    }
+    case LP_SOLUTION_SORT: {
       // TODO(kturowski): parametrize by different values of epsilon than 1.0
+      // TODO(kturowski): parametrize by different fraction of perfect pairs than 0.0
       // TODO(kturowski): parametrize by different values of threshold than 0.5
-      return get_score(sort_by_lp_solution(G, n0, params, 1.0, 0.5), node_age);
+      auto perfect_pairs = get_perfect_pairs(node_age, 0.0);
+      return get_score(
+          sort_by_lp_solution(G, n0, params, 1.0, 0.5, perfect_pairs), node_age, perfect_pairs);
+    }
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
   }
