@@ -327,9 +327,9 @@ long double get_log_transition_probability(
     return -std::numeric_limits<long double>::infinity();
   }
   bool uv = check_edge(G, u, v);
-  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
+  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both,
       only_u = get_degree(G, u) - both - uv,
-      none = (get_graph_size(G) - 2) - both - only_u - only_v;
+      none = (get_graph_size(G) - 1) + both - only_u - only_v;
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
@@ -378,7 +378,7 @@ long double get_discard_score(
       only_u = get_degree(G, u) - both - uv;
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      return expl(-4 * only_u);
+      return !uv && only_v == 0 ? expl(-4 * only_u) : 0.0L;
     case Mode::PASTOR_SATORRAS:
       return expl(-4 * only_u - 8 * only_v);
     default:
