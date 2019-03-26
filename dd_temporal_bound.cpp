@@ -95,8 +95,8 @@ vector<double> LP_bound_random_walk_single(
         best_score = max(best_score, score);
         #pragma omp critical
         {
-          if (Q.size() % 1000 == 0) {
-            cerr << "Finished run " << Q.size() << "/" << SIGMA_TRIES << endl;
+          if (permutations.size() % 1000 == 0) {
+            cerr << "Finished run " << permutations.size() << "/" << SIGMA_TRIES << endl;
           }
         }
       }
