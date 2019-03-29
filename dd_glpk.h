@@ -102,7 +102,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
       for (int j = n0; j < n; j++) {
         for (int k = n0; k < n; k++) {
           if (i != j && j != k && i != k) {
-            add_transitivity_constraint(LP, X, Y, A, row, s_index, n, n0, i, j, k);
+            add_transitivity_constraint(LP, X, Y, A, row, n, n0, s_index, i, j, k);
           }
         }
       }
