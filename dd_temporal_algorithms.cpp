@@ -5,6 +5,7 @@
 //   or ./dd_temporal_algorithms real_data all FILE MODE PARAMETERS
 //   or ./dd_temporal_algorithms real_data ALGORITHM FILE [MODE PARAMETERS]
 
+#include "./dd_input.h"
 #include "./dd_temporal.h"
 
 #if defined(glpk)
@@ -22,7 +23,7 @@ typedef set<int> Bin;
 typedef deque<Bin> BinningScheme;
 typedef vector<VertexPair> PairingScheme;
 
-const int G_TRIES = 1000, SIGMA_TRIES = 100000;
+int G_TRIES, SIGMA_TRIES;
 const int AGE_TWO = 2, AGE_MAX = std::numeric_limits<int>::max();
 
 enum TemporalAlgorithm {
@@ -694,8 +695,9 @@ void print(
 }
 
 void synthetic_data(
-    const int &n, const int &n0, const Parameters &params, const TemporalAlgorithm &algorithm) {
-  Graph G0(generate_seed(n0, 0.6));
+    const int &n, const int &n0, const Parameters &params, const double &p0,
+    const TemporalAlgorithm &algorithm) {
+  Graph G0(generate_seed(n0, p0));
   vector<PartialOrderScore> scores(G_TRIES);
   vector<int> node_age(n, 0);
   for (int i = n0; i < n; i++) {
@@ -731,27 +733,31 @@ void real_world_data(
   print(graph_name, algorithm, vector<PartialOrderScore>{score}, out_file);
 }
 
-int main(int, char *argv[]) {
+int main(int argc, char **argv) {
   try {
-    string action(argv[1]), algorithm_name(argv[2]);
+    TEnv environment = prepare_environment(argc, argv);
+    G_TRIES = read_int(environment, "-gt:", 100, "G_TRIES");
+    SIGMA_TRIES = read_int(environment, "-st:", 100000, "SIGMA_TRIES");
+
+    string action = read_action(environment);
+    string algorithm_name = read_string(
+        environment, "-algorithm:", "all", "Temporal algorithm to run");
     if (action == "synthetic") {
-      string mode_0(argv[3]);
-      int n = stoi(argv[4]), n0 = stoi(argv[5]);
-      Parameters params_0;
-      params_0.initialize(mode_0, argv + 6);
+      const int n = read_n(environment), n0 = read_n0(environment);
+      const double p0 = read_p0(environment);
+      Parameters params_0 = read_parameters(environment);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
-          synthetic_data(n, n0, params_0, algorithm.second);
+          synthetic_data(n, n0, params_0, p0, algorithm.second);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
-        synthetic_data(n, n0, params_0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second);
+        synthetic_data(n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
     } else if (action == "real_data") {
-      string graph_name(argv[3]), mode(argv[4]);
-      Parameters params;
-      params.initialize(mode, argv + 5);
+      string graph_name = read_graph_name(environment), mode = read_mode(environment);
+      Parameters params = read_parameters(environment);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           real_world_data(

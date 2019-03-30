@@ -5,7 +5,7 @@ GRAPH_LIB = koala
 NAUTY_LIB = -l:nauty.a -Wno-unused-variable -DTHREADS=1
 LP_SOLVER = glpk
 
-MATH_FLAGS = -lgmp -lgmpxx
+INPUT_FLAGS = -lsnap -Wno-error -fpermissive
 
 GRAPH_FLAGS = -D$(GRAPH_LIB) -DNDEBUG
 ifeq ($(GRAPH_LIB),snap)
@@ -41,13 +41,13 @@ debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
 debug: $(EXEC)
 
 %: %.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $@
 
 dd_automorphisms: dd_automorphisms.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(NAUTY_LIB) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(NAUTY_LIB) -o $@
 
 dd_temporal_%: dd_temporal_%.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $@
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
