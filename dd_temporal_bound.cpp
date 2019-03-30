@@ -76,7 +76,8 @@ vector<double> LP_bound_random_walk_single(
   std::uniform_real_distribution<double> pick_distribution(0.0, 1.0);
   std::map<mpz_class, long double> permutations;
   auto sample_permutations = get_log_permutation_probabilities_sampling(
-      G, get_graph_size(G0), params, SamplingMethod::UNIFORM, SIGMA_TRIES);
+      G, get_graph_size(G0), params, get_DAG_from_perfect_pairs(perfect_pairs, n),
+      SamplingMethod::UNIFORM, SIGMA_TRIES);
   std::priority_queue<std::pair<long double, mpz_class>> Q;
   for (const auto &permutation : sample_permutations) {
     Q.push(std::make_pair(permutation.second, permutation.first));
@@ -126,7 +127,8 @@ vector<double> LP_bound_approximate_single(
 
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, get_graph_size(G0), params, algorithm, SIGMA_TRIES);
+          G, get_graph_size(G0), params, get_DAG_from_perfect_pairs(perfect_pairs, n),
+          algorithm, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   print_best_permutations(
       permutations, G, params, get_graph_size(G0),

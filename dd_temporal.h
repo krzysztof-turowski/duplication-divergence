@@ -1,5 +1,6 @@
 #pragma once
 
+#include "./dd_dag.h"
 #include "./dd_graph.h"
 
 #include <gmpxx.h>
@@ -189,12 +190,15 @@ long double get_log_permutation_probability(
 }
 
 std::tuple<Vertex, double> sample_vertex(
-    const Graph &G, const int &n0, const Parameters &params, const NeighborhoodStructure &aux,
-    const SamplingMethod &algorithm, std::mt19937 &generator) {
+    const Graph &G, const int &n0, const Parameters &params, const DAG &perfect_pairs,
+    const NeighborhoodStructure &aux, const SamplingMethod &algorithm, std::mt19937 &generator) {
   std::vector<Vertex> V;
   std::vector<long double> omega;
   for (const auto &v : get_vertices(G)) {
     if (get_index(G, v) < n0) {
+      continue;
+    }
+    if (!perfect_pairs.is_source(get_index(G, v))) {
       continue;
     }
     V.push_back(v);
@@ -238,12 +242,13 @@ std::tuple<Vertex, double> sample_vertex(
 }
 
 std::pair<mpz_class, long double> get_log_permutation_sample(
-    const Graph &G, const int &n0, const Parameters &params,
+    const Graph &G, const int &n0, const Parameters &params, const DAG &perfect_pairs_G,
     const CompleteNeighborhoodStructure &aux_G, const SamplingMethod &algorithm) {
   std::random_device device;
   std::mt19937 generator(device());
   Graph H(G);
   CompleteNeighborhoodStructure aux(aux_G);
+  DAG perfect_pairs(perfect_pairs_G);
 
   std::vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
@@ -252,23 +257,26 @@ std::pair<mpz_class, long double> get_log_permutation_sample(
   long double p_sigma = 0.0L, pv;
   while (get_graph_size(H) > n0) {
     Vertex v;
-    std::tie(v, pv) = sample_vertex(H, n0, params, aux, algorithm, generator);
+    std::tie(v, pv) =
+        sample_vertex(H, n0, params, perfect_pairs, aux, algorithm, generator);
     S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += pv;
     assert(aux.verify(H));
     aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
+    perfect_pairs.remove_vertex(get_index(H, v));
     assert(aux.verify(H));
   }
   return std::make_pair(encode_permutation(S), p_sigma);
 }
 
 std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
-    const Graph &G, const int &n0, const Parameters &params, const SamplingMethod &algorithm,
-    const int &tries) {
+    const Graph &G, const int &n0, const Parameters &params, const DAG &perfect_pairs,
+    const SamplingMethod &algorithm, const int &tries) {
   std::map<mpz_class, long double> permutations;
   CompleteNeighborhoodStructure aux(G);
   #pragma omp parallel for
   for (int i = 0; i < tries; i++) {
-    auto sigma_with_probability = get_log_permutation_sample(G, n0, params, aux, algorithm);
+    auto sigma_with_probability =
+        get_log_permutation_sample(G, n0, params, perfect_pairs, aux, algorithm);
     auto permutation = permutations.find(sigma_with_probability.first);
     if (permutation != permutations.end()) {
       permutation->second = add_exp_log(permutation->second, sigma_with_probability.second);
@@ -327,6 +335,14 @@ std::set<VertexPair> get_perfect_pairs(
     perfect_pairs.insert(count_age[i]);
   }
   return perfect_pairs;
+}
+
+DAG get_DAG_from_perfect_pairs(const std::set<VertexPair> &perfect_pairs, const int &n) {
+  DAG G(n);
+  for (const auto &uv : perfect_pairs) {
+    G.add_edge(uv.second, uv.first);
+  }
+  return G;
 }
 
 void set_perfect_pairs(

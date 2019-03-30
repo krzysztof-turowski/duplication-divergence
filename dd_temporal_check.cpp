@@ -164,7 +164,6 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
   }
 
   map<SamplingMethod, ErrorStruct> errors;
-
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     Graph G(G0);
@@ -172,6 +171,8 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
 
     vector<int> S = generate_permutation(n, get_graph_size(G0));
     apply_permutation(G, S);
+
+    DAG perfect_pairs(get_graph_size(G));
 
     map<mpz_class, long double> permutations_opt;
     map<VertexPair, long double> p_uv_opt;
@@ -185,11 +186,11 @@ void check_convergence(const int &n, const int &n0, const Parameters &params) {
       for (const int &tries : sigma_tries) {
         auto permutations_apx =
             get_log_permutation_probabilities_sampling(
-                G, get_graph_size(G0), params, algorithm.first, tries);
+                G, get_graph_size(G0), params, perfect_pairs, algorithm.first, tries);
         if (!exact_mode) {
           permutations_opt =
                 get_log_permutation_probabilities_sampling(
-                    G, get_graph_size(G0), params, algorithm.first, tries);
+                    G, get_graph_size(G0), params, perfect_pairs, algorithm.first, tries);
           #pragma omp critical
           {
             print_best_permutations(
@@ -231,6 +232,8 @@ void check_permutations(const int &n, const int &n0, const Parameters &params) {
     vector<int> S = generate_permutation(n, get_graph_size(G0));
     apply_permutation(G, S);
 
+    DAG perfect_pairs(get_graph_size(G));
+
     if (exact_mode) {
       auto permutations_opt = get_log_permutation_probabilities(G, get_graph_size(G0), params);
       print_best_permutations(permutations_opt, G, params, n0, "exact", PERMUTATION_COUNT_LIMIT);
@@ -238,7 +241,7 @@ void check_permutations(const int &n, const int &n0, const Parameters &params) {
     for (const auto &algorithm : SAMPLING_METHOD_NAME) {
       auto permutations_apx =
           get_log_permutation_probabilities_sampling(
-              G, get_graph_size(G0), params, algorithm.first, SIGMA_TRIES);
+              G, get_graph_size(G0), params, perfect_pairs, algorithm.first, SIGMA_TRIES);
       print_best_permutations(
           permutations_apx, G, params, n0, algorithm.second, PERMUTATION_COUNT_LIMIT);
     }
