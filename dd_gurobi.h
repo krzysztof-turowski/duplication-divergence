@@ -12,7 +12,7 @@
 #include <tuple>
 #include <vector>
 
-const long long MAX_CONSTRAINTS = 5000000000L;
+const int64_t MAX_CONSTRAINTS = 5000000000L;
 
 std::string LP_row_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
   std::ostringstream out;
@@ -106,7 +106,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
       std::mt19937 generator(device());
       std::uniform_int_distribution<int> index_distribution(n0, n - 1);
       #pragma omp parallel for
-      for (long long constraint = 0; constraint < MAX_CONSTRAINTS; constraint++) {
+      for (int64_t constraint = 0; constraint < MAX_CONSTRAINTS; constraint++) {
         int i = index_distribution(generator), j = index_distribution(generator),
             k = index_distribution(generator);
         if (i == j || j == k || i == k) {
