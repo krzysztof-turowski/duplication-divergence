@@ -8,6 +8,7 @@
 #include <cassert>
 #include <limits>
 #include <map>
+#include <queue>
 #include <random>
 #include <set>
 #include <string>
@@ -19,6 +20,7 @@ typedef std::pair<double, double> DensityPrecision;
 typedef std::pair<int, int> VertexPair;
 
 const int AGE_ZERO = 0;
+const int PERMUTATION_SIZE_LIMIT = 100, PERMUTATION_COUNT_LIMIT = 10;
 
 enum SamplingMethod { WIUF, UNIFORM, MIN_DISCARD };
 
@@ -332,5 +334,32 @@ void set_perfect_pairs(
   for (const auto &uv : perfect_pairs) {
     const auto vu(std::make_pair(uv.second, uv.first));
     p_uv.insert(std::make_pair(uv, 1.0L)), p_uv.insert(std::make_pair(vu, 0.0L));
+  }
+}
+
+void print_best_permutations(
+    const std::map<mpz_class, long double> &permutations, const Graph &G,
+    const Parameters &params, const int &n0, const std::string &algorithm_name, const int &limit) {
+  std::priority_queue<std::pair<long double, mpz_class>> Q;
+  int n = get_graph_size(G);
+  for (auto &permutation : permutations) {
+    Q.push(std::make_pair(permutation.second, permutation.first));
+  }
+  std::cout << "Best " << std::min(limit, static_cast<int>(Q.size())) << "/" << permutations.size()
+      << " permutations for " << algorithm_name << " method:" << std::endl;
+  for (int i = 0; i < limit && !Q.empty(); i++) {
+    const auto &permutation = Q.top();
+    const auto V(decode_permutation(permutation.second, n));
+    if (n <= PERMUTATION_SIZE_LIMIT) {
+      for (const auto &v : V) {
+        std::cout << v << " ";
+      }
+    } else {
+      std::cout << "Permutation " << i << " ";
+    }
+    std::cout << std::setw(20) << std::setprecision(9) << permutation.first << " "
+        << std::setw(20) << std::setprecision(9)
+        << get_log_permutation_probability(G, n0, params, reverse_permutation(V)) << std::endl;
+    Q.pop();
   }
 }

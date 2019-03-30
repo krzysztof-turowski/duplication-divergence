@@ -16,7 +16,7 @@
 
 using namespace std;
 
-const int G_TRIES = 1000, SIGMA_TRIES = 100000;
+const int G_TRIES = 1, SIGMA_TRIES = 10000;
 const double EPS_MIN = 0.05, EPS_STEP = 0.05;
 const long double RANDOM_WALK_THRESHOLD = 1.0;
 
@@ -48,6 +48,8 @@ vector<double> LP_bound_exact_single(
 
   auto permutations = get_log_permutation_probabilities(G, get_graph_size(G0), params);
   normalize_log_probabilities(permutations);
+  print_best_permutations(
+      permutations, G, params, get_graph_size(G0), "exact", PERMUTATION_COUNT_LIMIT);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
@@ -62,48 +64,45 @@ vector<double> LP_bound_exact_single(
 vector<double> LP_bound_random_walk_single(
     const Graph &G0, const int &n, const Parameters &params, const vector<double> &epsilon,
     const set<VertexPair> &perfect_pairs) {
+  const int SIGMA_RANDOM_WALK_LENGTH = 10000, SIGMA_BEST = 100;
   Graph G(G0);
   generate_graph(G, n, params);
 
   int n0 = get_graph_size(G0);
-  vector<int> S = generate_permutation(n, n0);
-  apply_permutation(G, S);
 
-  priority_queue<pair<long double, mpz_class>> Q;
-  map<mpz_class, long double> permutations;
-  auto sigma = encode_permutation(S);
-  long double score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
-  Q.push(make_pair(score, sigma));
-  permutations.insert(make_pair(sigma, score));
-
-  long double best_score = score;
-  while (!Q.empty() && permutations.size() < SIGMA_TRIES) {
-    const auto permutation_with_score = Q.top();
-    Q.pop();
-
-    S = decode_permutation(permutation_with_score.second, n);
-    for (int j = n0; j < n - 1; j++) {
-      swap(S[j], S[j + 1]);
-      sigma = encode_permutation(S);
-      if (permutations.count(sigma)) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> pick_distribution(0.0, 1.0);
+  std::map<mpz_class, long double> permutations;
+  auto sample_permutations = get_log_permutation_probabilities_sampling(
+      G, get_graph_size(G0), params, SamplingMethod::MIN_DISCARD, SIGMA_TRIES);
+  std::priority_queue<std::pair<long double, mpz_class>> Q;
+  for (const auto &permutation : sample_permutations) {
+    Q.push(std::make_pair(permutation.second, permutation.first));
+  }
+  for (int i = 0; i < SIGMA_BEST; i++) {
+    vector<int> S = decode_permutation(Q.top().second, n);
+    long double score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
+    mpz_class best_sigma = Q.top().second;
+    long double best_score = score;
+    for (int j = 0; j < SIGMA_RANDOM_WALK_LENGTH; j++) {
+      std::uniform_int_distribution<int> swap_distribution(n0, n - 1);
+      int u = swap_distribution(generator), v = swap_distribution(generator);
+      if (u == v) {
         continue;
       }
+      swap(S[u], S[v]);
       score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
-      if (score >= best_score - RANDOM_WALK_THRESHOLD) {
-        Q.push(make_pair(score, sigma));
-        permutations.insert(make_pair(sigma, score));
-        best_score = max(best_score, score);
-        #pragma omp critical
-        {
-          if (permutations.size() % 1000 == 0) {
-            cerr << "Finished run " << permutations.size() << "/" << SIGMA_TRIES << endl;
-          }
-        }
+      if (best_score < score) {
+        best_score = score, best_sigma = encode_permutation(S);
+      } else {
+        swap(S[u], S[v]);
       }
-      swap(S[j], S[j + 1]);
     }
+    Q.pop();
   }
   normalize_log_probabilities(permutations);
+  print_best_permutations(permutations, G, params, n0, "random_walk", PERMUTATION_COUNT_LIMIT);
   auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
   set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
@@ -128,6 +127,9 @@ vector<double> LP_bound_approximate_single(
       get_log_permutation_probabilities_sampling(
           G, get_graph_size(G0), params, algorithm, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
+  print_best_permutations(
+      permutations, G, params, get_graph_size(G0),
+      SAMPLING_METHOD_NAME.find(algorithm)->second, PERMUTATION_COUNT_LIMIT);
   auto p_uv = get_p_uv_from_permutations(permutations, n, get_graph_size(G0));
   set_perfect_pairs(p_uv, perfect_pairs);
   vector<double> solutions;
@@ -141,7 +143,7 @@ vector<double> LP_bound_approximate_single(
 
 void LP_bound_exact(
     const int &n, const int &n0, const Parameters &params, ostream &out_file) {
-  Graph G0 = generate_seed(n0, 1.0);
+  Graph G0 = generate_seed(n0, 0.6);
   vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
     epsilon.push_back(eps);

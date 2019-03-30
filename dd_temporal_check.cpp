@@ -8,7 +8,7 @@ using namespace std;
 
 const int G_TRIES = 1, SIGMA_TRIES = 10000;
 const int MIN_TRIES_TEST = 1000, MAX_TRIES_TEST = 1000;
-const int PERMUTATION_SIZE_LIMIT = 10, PERMUTATION_COUNT_LIMIT = 10;
+const long double RANDOM_WALK_THRESHOLD = 1.0;
 
 class ErrorStruct {
  private:
@@ -141,32 +141,6 @@ void print_errors(
   print_errors(sigma_tries, errors, p_uv_mre);
 }
 
-void print_best_permutations(
-    const map<mpz_class, long double> &permutations, const Graph &G,
-    const Parameters &params, const int &n0, const string &algorithm_name, const int &limit) {
-  priority_queue<pair<long double, mpz_class>> Q;
-  int n = get_graph_size(G);
-  for (auto &permutation : permutations) {
-    Q.push(make_pair(permutation.second, permutation.first));
-  }
-  cout << "Best " << min(limit, static_cast<int>(Q.size())) << " permutations for "
-      << algorithm_name << " method:" << endl;
-  for (int i = 0; i < limit && !Q.empty(); i++) {
-    const auto &permutation = Q.top();
-    const auto V(decode_permutation(permutation.second, n));
-    if (n <= PERMUTATION_SIZE_LIMIT) {
-      for (const auto &v : V) {
-        cout << v << " ";
-      }
-    } else {
-      cout << "Permutation " << i << " ";
-    }
-    cout << permutation.first << " "
-        << get_log_permutation_probability(G, n0, params, reverse_permutation(V)) << endl;
-    Q.pop();
-  }
-}
-
 void print_compare(
     const map<VertexPair, long double> &opt, const map<VertexPair, long double> &apx,
     const int &n0, const int &n) {
@@ -271,6 +245,60 @@ void check_permutations(const int &n, const int &n0, const Parameters &params) {
   }
 }
 
+void check_random_walk(const int &n, const int &n0, const Parameters &params) {
+  Graph G0 = generate_seed(n0, 1.0);
+
+  for (int i = 0; i < G_TRIES; i++) {
+    Graph G(G0);
+    generate_graph(G, n, params);
+
+    vector<int> S = generate_permutation(n, n0);
+    apply_permutation(G, S);
+
+    map<mpz_class, long double> permutations;
+    auto sigma = encode_permutation(S);
+    long double score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
+    permutations.insert(make_pair(sigma, score));
+
+    random_device device;
+    mt19937 generator(device());
+    uniform_real_distribution<double> pick_distribution(0.0, 1.0);
+    long double best_score = score;
+    while (permutations.size() < SIGMA_TRIES) {
+      uniform_int_distribution<int> swap_distribution(n0, n - 1);
+      int u = swap_distribution(generator), v = swap_distribution(generator);
+      if (u == v) {
+        continue;
+      }
+      swap(S[u], S[v]), sigma = encode_permutation(S);
+      score = get_log_permutation_probability(G, n0, params, reverse_permutation(S));
+      if (pick_distribution(generator) <= exp2(score - best_score)) {
+        permutations.insert(make_pair(sigma, score));
+        best_score = max(best_score, score);
+        #pragma omp critical
+        {
+          if (permutations.size() % 10 == 0) {
+            cerr << "Finished run " << permutations.size() << "/" << SIGMA_TRIES << endl;
+          }
+        }
+      } else {
+        swap(S[u], S[v]);
+      }
+    }
+    print_best_permutations(permutations, G, params, n0, "random_walk", PERMUTATION_COUNT_LIMIT);
+    normalize_log_probabilities(permutations);
+    auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
+    for (int u = n0; u < n; u++) {
+      for (int v = n0; v < n; v++) {
+        auto uv(make_pair(u, v));
+        cout << setw(4) << u << setw(4) << v
+            << setw(20) << setprecision(9) << (p_uv.count(uv) ? p_uv.find(uv)->second : 0.0L)
+            << endl;
+      }
+    }
+  }
+}
+
 int main(int, char *argv[]) {
   try {
     string action(argv[1]), mode(argv[2]);
@@ -281,6 +309,8 @@ int main(int, char *argv[]) {
       check_convergence(n, n0, params);
     } else if (action == "permutations") {
       check_permutations(n, n0, params);
+    } else if (action == "random_walk") {
+      check_random_walk(n, n0, params);
     } else {
       throw invalid_argument("Invalid action: " + action);
     }
