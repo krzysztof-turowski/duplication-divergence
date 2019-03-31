@@ -74,6 +74,18 @@ class PartialOrderScore {
   double density = 0.0, precision = 0.0, correlation = 0.0, gamma = 0.0;
 };
 
+class Settings {
+ public:
+  double threshold, epsilon, perfect_pairs_fraction;
+
+  Settings(TEnv &environment) {
+    perfect_pairs_fraction =
+        read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
+    threshold = read_double(environment, "-threshold:", 0.5, "Threshold for uv");
+    epsilon = read_double(environment, "-epsilon:", 1.0, "Solution density");
+  }
+};
+
 PartialOrderScore get_average(const vector<PartialOrderScore> &scores) {
   PartialOrderScore average;
   for (const auto &score : scores) {
@@ -414,14 +426,14 @@ BinningScheme sort_by_probability_sum(
 PairingScheme sort_by_lp_solution(
     Graph &G, const int &n0, const Parameters &params, const double &epsilon,
     const double &x_uv_threshold, const std::set<VertexPair> &perfect_pairs) {
+  int n = get_graph_size(G);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, get_graph_size(G)),
+          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
           SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
+  const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
-  int n = get_graph_size(G);
   map<pair<int, int>, double> x_uv;
   double solution;
   tie(solution, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
@@ -583,7 +595,7 @@ PartialOrderScore get_score(
 PartialOrderScore temporal_algorithm_single(
     Graph &G, const int &n0, const vector<int> &node_age,
     const TemporalAlgorithm &algorithm, const Parameters &params,
-    TEnv &environment) {
+    const Settings &settings) {
   switch (algorithm) {
     case DEGREE_SORT:
       return get_score(sort_by_degree(G, n0), node_age);
@@ -598,32 +610,22 @@ PartialOrderScore temporal_algorithm_single(
     case NEIGHBORHOOD_RANK:
       return get_score(rank_by_neighborhood(G, n0), node_age);
     case PROBABILITY_SORT: {
-      double perfect_pairs_fraction =
-          read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
-      double threshold =
-          read_double(environment, "-threshold:", 0.5, "Threshold for x_uv");
-      auto perfect_pairs = get_perfect_pairs(node_age, perfect_pairs_fraction);
+      auto perfect_pairs = get_perfect_pairs(node_age, settings.perfect_pairs_fraction);
       return get_score(
-          sort_by_probability(G, n0, params, threshold, perfect_pairs), node_age, perfect_pairs);
+          sort_by_probability(G, n0, params, settings.threshold, perfect_pairs),
+          node_age, perfect_pairs);
     }
     case PROBABILITY_SUM_SORT: {
-      double perfect_pairs_fraction =
-          read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
-      auto perfect_pairs = get_perfect_pairs(node_age, perfect_pairs_fraction);
+      auto perfect_pairs = get_perfect_pairs(node_age, settings.perfect_pairs_fraction);
       return get_score(
           sort_by_probability_sum(G, n0, params, perfect_pairs), node_age, perfect_pairs);
     }
     case LP_SOLUTION_SORT: {
-      double perfect_pairs_fraction =
-          read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
-      double threshold =
-          read_double(environment, "-threshold:", 0.5, "Threshold for x_uv");
-      double epsilon =
-          read_double(environment, "-epsilon:", 1.0, "Solution density");
-      auto perfect_pairs = get_perfect_pairs(node_age, perfect_pairs_fraction);
+      auto perfect_pairs = get_perfect_pairs(node_age, settings.perfect_pairs_fraction);
       return get_score(
           sort_by_lp_solution(
-              G, n0, params, epsilon, threshold, perfect_pairs), node_age, perfect_pairs);
+              G, n0, params, settings.epsilon, settings.threshold, perfect_pairs),
+              node_age, perfect_pairs);
     }
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
@@ -667,7 +669,7 @@ void print(
 
 void synthetic_data(
     const int &n, const int &n0, const Parameters &params, const double &p0,
-    const TemporalAlgorithm &algorithm, TEnv &environment) {
+    const TemporalAlgorithm &algorithm, const Settings &settings) {
   Graph G0(generate_seed(n0, p0));
   vector<PartialOrderScore> scores(G_TRIES);
   vector<int> node_age(n, 0);
@@ -679,7 +681,7 @@ void synthetic_data(
     Graph G(G0);
     generate_graph(G, n, params);
     // TODO(kturowski): parametrize by different values of params than used to generate G
-    scores[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params, environment);
+    scores[i] = temporal_algorithm_single(G, n0, node_age, algorithm, params, settings);
     #pragma omp critical
     {
       if ((i + 1) % 1000 == 0) {
@@ -693,13 +695,13 @@ void synthetic_data(
 
 void real_world_data(
     const string &graph_name, const string &age_name, const TemporalAlgorithm &algorithm,
-    const Parameters &params, TEnv &environment) {
+    const Parameters &params, const Settings &settings) {
   Graph G;
   vector<int> age;
   int n0;
   tie(G, age, n0) =
       read_graph_with_age(FILES_FOLDER + graph_name, FILES_FOLDER + age_name, AGE_ZERO, AGE_MAX);
-  auto score = temporal_algorithm_single(G, n0, age, algorithm, params, environment);
+  auto score = temporal_algorithm_single(G, n0, age, algorithm, params, settings);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
   print(graph_name, algorithm, vector<PartialOrderScore>{score}, out_file);
 }
@@ -712,17 +714,19 @@ int main(int argc, char **argv) {
     string action = read_action(Env);
     string algorithm_name = read_string(
         Env, "-algorithm:", "all", "Temporal algorithm to run");
+    Settings settings(Env);
     if (action == "synthetic") {
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
       Parameters params_0 = read_parameters(Env);
+      
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
-          synthetic_data(n, n0, params_0, p0, algorithm.second, Env);
+          synthetic_data(n, n0, params_0, p0, algorithm.second, settings);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         synthetic_data(
-            n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, Env);
+            n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, settings);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
@@ -732,12 +736,12 @@ int main(int argc, char **argv) {
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           real_world_data(
-              graph_name, get_age_name(graph_name), algorithm.second, params, Env);
+              graph_name, get_age_name(graph_name), algorithm.second, params, settings);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         real_world_data(
             graph_name, get_age_name(graph_name),
-            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params, Env);
+            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params, settings);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
