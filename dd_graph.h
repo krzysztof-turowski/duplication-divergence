@@ -333,12 +333,14 @@ long double get_log_transition_probability(
   long double p(params.p), r(params.r);
   switch (params.mode) {
     case Mode::PURE_DUPLICATION:
-      assert(!(fabsl(p) < EPS && both > 0) && !(fabsl(1 - p) < EPS && only_u > 0));
+      assert(!(fabsl(p) < EPS && both > 0));
+      assert(!(fabsl(1 - p) < EPS && only_u > 0));
       return both * log2l(p) + only_u * log2l(1 - p) - log2l(get_graph_size(G) - 1);
     case Mode::PASTOR_SATORRAS:
-      assert(!(fabsl(p) < EPS && both > 0) && !(fabsl(1 - p) < EPS && only_u > 0)
-          && !(fabsl(r) < EPS && only_v > 0)
-          && !(fabsl((get_graph_size(G) - 1) - r) < EPS && none > 0));
+      assert(!(fabsl(p) < EPS && both > 0));
+      assert(!(fabsl(1 - p) < EPS && only_u > 0));
+      assert(!(fabsl(r) < EPS && only_v > 0));
+      assert(!(fabsl((get_graph_size(G) - 1) - r) < EPS && none > 0));
       return both * log2l(p) + only_u * log2l(1 - p) + only_v * log2l(r)
           + none * log2l(get_graph_size(G) - 1 - r)
           - (only_v + none + 1) * log2l(get_graph_size(G) - 1);
