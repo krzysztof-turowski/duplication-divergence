@@ -296,11 +296,17 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
 std::map<VertexPair, long double> get_p_uv_from_permutations(
     const std::map<mpz_class, long double> &permutations, const int &n, const int &n0) {
   std::map<VertexPair, long double> p_uv;
-  for (auto &permutation : permutations) {
-    std::vector<int> S = decode_permutation(permutation.first, n);
-    for (int i = n0; i < n; i++) {
-      for (int j = i + 1; j < n; j++) {
-          p_uv[std::make_pair(S[i], S[j])] += permutation.second;
+  #pragma omp parallel for
+  for(size_t i = 0; i < permutations.size(); i++) {
+    auto permutation = permutations.begin();
+    std::advance(permutation, i);
+    const auto &S = decode_permutation(permutation->first, n);
+    for (int j = n0; j < n; j++) {
+      for (int k = j + 1; k < n; k++) {
+        #pragma omp critical
+        {
+          p_uv[std::make_pair(S[j], S[k])] += permutation->second;
+        }
       }
     }
   }
