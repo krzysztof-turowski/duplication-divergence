@@ -261,8 +261,8 @@ std::pair<mpz_class, long double> get_log_permutation_sample(
         sample_vertex(H, n0, params, perfect_pairs, aux, algorithm, generator);
     S[get_graph_size(H) - 1] = get_index(H, v), p_sigma += pv;
     assert(aux.verify(H));
-    aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     perfect_pairs.remove_vertex(get_index(H, v));
+    aux.remove_vertex(get_neighbors(H, v)), delete_vertex(H, v);
     assert(aux.verify(H));
   }
   return std::make_pair(encode_permutation(S), p_sigma);
@@ -278,14 +278,14 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
     auto sigma_with_probability =
         get_log_permutation_sample(G, n0, params, perfect_pairs, aux, algorithm);
     auto permutation = permutations.find(sigma_with_probability.first);
-    if (permutation != permutations.end()) {
-      permutation->second = add_exp_log(permutation->second, sigma_with_probability.second);
-    } else {
-      permutations.insert(sigma_with_probability);
-    }
-    if ((i + 1) % 10000 == 0) {
-      #pragma omp critical
-      {
+    #pragma omp critical
+    {
+      if (permutation != permutations.end()) {
+        permutation->second = add_exp_log(permutation->second, sigma_with_probability.second);
+      } else {
+        permutations.insert(sigma_with_probability);
+      }
+      if ((i + 1) % 10000 == 0) {
         std::cerr << "Finished tries " << i + 1 << "/" << tries << std::endl;
       }
     }
