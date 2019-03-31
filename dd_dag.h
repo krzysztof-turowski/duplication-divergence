@@ -5,10 +5,15 @@ class DAG {
  private:
   std::vector<std::set<int>> H;
   std::vector<int> sources;
-  int n0;
 
  public:
   DAG(const int &size) : H(size), sources(size) { }
+
+  DAG(const DAG &other) : H(other.H.size()), sources(other.sources) {
+    for (size_t i = 0; i < H.size(); i++) {
+      H[i] = other.H[i];
+    }
+  }
 
   void add_edge(const int &u, const int &v) {
     H[u].insert(v), ++sources[v];
