@@ -237,16 +237,14 @@ void LP_bound_approximate(
 
 int main(int argc, char **argv) {
   try {
-    TEnv environment = prepare_environment(argc, argv);
-    G_TRIES = read_int(environment, "-gt:", 100, "G_TRIES");
-    SIGMA_TRIES = read_int(environment, "-st:", 100000, "SIGMA_TRIES");
+    Env = prepare_environment(argc, argv);
+    G_TRIES = read_int(Env, "-gt:", 100, "G_TRIES");
+    SIGMA_TRIES = read_int(Env, "-st:", 100000, "SIGMA_TRIES");
 
-    string algorithm = read_string(
-        environment, "-algorithm:", "all", "Sampling algorithm to run");
-    string mode = read_mode(environment);
-    const int n = read_n(environment), n0 = read_n0(environment);
-    const double p0 = read_p0(environment);
-    Parameters params = read_parameters(environment);
+    string algorithm = read_string(Env, "-algorithm:", "all", "Sampling algorithm to run");
+    const int n = read_n(Env), n0 = read_n0(Env);
+    const double p0 = read_p0(Env);
+    Parameters params = read_parameters(Env);
     string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
     if (algorithm == "exact") {
       if (!validate_problem_size(n, n0)) {

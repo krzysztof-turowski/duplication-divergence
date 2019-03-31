@@ -7,10 +7,7 @@
 #include <string>
 
 TEnv prepare_environment(int argc, char **argv) {
-  TEnv environment = TEnv(argc, argv, TNotify::StdNotify);
-  environment.PrepArgs(
-      TStr::Fmt("cpm. build: %s, %s. Time: %s", __TIME__, __DATE__, TExeTm::GetCurTm()));
-  return environment;
+  return TEnv(argc, argv, TNotify::StdNotify);
 }
 
 inline int read_int(
@@ -20,10 +17,10 @@ inline int read_int(
       TStr(prefix.c_str()), default_value, TStr(description.c_str()));
 }
 
-inline int read_double(
+inline double read_double(
     TEnv &environment, const std::string &prefix, const double &default_value,
     const std::string &description) {
-  return environment.GetIfArgPrefixInt(
+  return environment.GetIfArgPrefixFlt(
       TStr(prefix.c_str()), default_value, TStr(description.c_str()));
 }
 
@@ -44,7 +41,7 @@ inline int read_n(TEnv &environment) {
 }
 
 inline int read_n0(TEnv &environment) {
-  return read_int(environment, "-n:", 0, "Number of nodes in seed graph");
+  return read_int(environment, "-n0:", 0, "Number of nodes in seed graph");
 }
 
 inline int read_p0(TEnv &environment) {

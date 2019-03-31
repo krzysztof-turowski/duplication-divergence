@@ -353,14 +353,13 @@ BinningScheme rank_by_neighborhood(Graph &G, const int &n0) {
 PairingScheme sort_by_probability(
     Graph &G, const int &n0, const Parameters &params, const double &p_uv_threshold,
     const std::set<VertexPair> &perfect_pairs) {
+  int n = get_graph_size(G);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, get_graph_size(G)),
+          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
           SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
-  set_perfect_pairs(p_uv, perfect_pairs);
-  int n = get_graph_size(G);
+  const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   PairingScheme out;
   vector<int> S = get_reverse_permutation(G);
@@ -380,14 +379,13 @@ PairingScheme sort_by_probability(
 
 BinningScheme sort_by_probability_sum(
     Graph &G, const int &n0, const Parameters &params, const std::set<VertexPair> &perfect_pairs) {
+  int n = get_graph_size(G);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, get_graph_size(G)),
+          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
           SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  const auto p_uv = get_p_uv_from_permutations(permutations, get_graph_size(G), n0);
-  set_perfect_pairs(p_uv, perfect_pairs);
-  int n = get_graph_size(G);
+  const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   priority_queue<pair<long double, int>> p_v;
   vector<int> S = get_reverse_permutation(G);
@@ -708,39 +706,38 @@ void real_world_data(
 
 int main(int argc, char **argv) {
   try {
-    TEnv environment = prepare_environment(argc, argv);
-    G_TRIES = read_int(environment, "-gt:", 100, "G_TRIES");
-    SIGMA_TRIES = read_int(environment, "-st:", 100000, "SIGMA_TRIES");
-
-    string action = read_action(environment);
+    Env = prepare_environment(argc, argv);
+    G_TRIES = read_int(Env, "-gt:", 100, "G_TRIES");
+    SIGMA_TRIES = read_int(Env, "-st:", 100000, "SIGMA_TRIES");
+    string action = read_action(Env);
     string algorithm_name = read_string(
-        environment, "-algorithm:", "all", "Temporal algorithm to run");
+        Env, "-algorithm:", "all", "Temporal algorithm to run");
     if (action == "synthetic") {
-      const int n = read_n(environment), n0 = read_n0(environment);
-      const double p0 = read_p0(environment);
-      Parameters params_0 = read_parameters(environment);
+      const int n = read_n(Env), n0 = read_n0(Env);
+      const double p0 = read_p0(Env);
+      Parameters params_0 = read_parameters(Env);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
-          synthetic_data(n, n0, params_0, p0, algorithm.second, environment);
+          synthetic_data(n, n0, params_0, p0, algorithm.second, Env);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         synthetic_data(
-            n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, environment);
+            n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, Env);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
     } else if (action == "real_data") {
-      string graph_name = read_graph_name(environment), mode = read_mode(environment);
-      Parameters params = read_parameters(environment);
+      string graph_name = read_graph_name(Env);
+      Parameters params = read_parameters(Env);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           real_world_data(
-              graph_name, get_age_name(graph_name), algorithm.second, params, environment);
+              graph_name, get_age_name(graph_name), algorithm.second, params, Env);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         real_world_data(
             graph_name, get_age_name(graph_name),
-            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params, environment);
+            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params, Env);
       } else {
         throw invalid_argument("Invalid algorithm: " + algorithm_name);
       }
