@@ -81,8 +81,8 @@ class Settings {
   Settings(TEnv &environment) {
     perfect_pairs_fraction =
         read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
-    threshold = read_double(environment, "-threshold:", 0.5, "Threshold for uv");
-    epsilon = read_double(environment, "-epsilon:", 1.0, "Solution density");
+    threshold = read_double(environment, "-threshold:", nan(""), "Threshold for uv");
+    epsilon = read_double(environment, "-epsilon:", nan(""), "Solution density");
   }
 };
 
@@ -633,10 +633,17 @@ PartialOrderScore temporal_algorithm_single(
 }
 
 void print(
-    const string &name, const TemporalAlgorithm &algorithm,
+    const string &name, const TemporalAlgorithm &algorithm, const Settings &settings,
     const vector<PartialOrderScore> &scores, ostream &out_file, bool verbose = false) {
   cout << name << endl;
   cout << "Algorithm: " << LONG_ALGORITHM_NAME.find(algorithm)->second << endl;
+  cout << "Perfect pairs fraction: " << settings.perfect_pairs_fraction << endl;
+  if (!isnan(settings.threshold)) {
+    cout << "Threshold: " << fixed << setw(6) << setprecision(3) << settings.threshold << endl;
+  }
+  if (!isnan(settings.epsilon)) {
+    cout << "Epsilon: " << fixed << setw(6) << setprecision(3) << settings.epsilon << endl;
+  }
 
   auto mean_score = get_average(scores);
   cout << "Mean density: " << fixed << setw(6) << setprecision(3)
@@ -660,9 +667,16 @@ void print(
     }
   }
 
-  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second << " ";
+  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second << "-p:"
+      << fixed << setprecision(3) << settings.perfect_pairs_fraction;
+  if (!isnan(settings.threshold)) {
+    out_file << "-t:" << fixed << setprecision(3) << settings.threshold;
+  }
+  if (!isnan(settings.epsilon)) {
+    out_file << "-e:" << fixed << setprecision(3) << settings.epsilon;
+  }
   for (const auto &score : scores) {
-    out_file << score.density << "," << score.precision << " ";
+    out_file << " " << score.density << "," << score.precision;
   }
   out_file << endl;
 }
@@ -690,7 +704,7 @@ void synthetic_data(
     }
   }
   ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TA"), ios_base::app);
-  print("Synthetic data: " + params.to_string(), algorithm, scores, out_file);
+  print("Synthetic data: " + params.to_string(), algorithm, settings, scores, out_file);
 }
 
 void real_world_data(
@@ -703,7 +717,7 @@ void real_world_data(
       read_graph_with_age(FILES_FOLDER + graph_name, FILES_FOLDER + age_name, AGE_ZERO, AGE_MAX);
   auto score = temporal_algorithm_single(G, n0, age, algorithm, params, settings);
   ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, params.mode, "TA"), ios_base::app);
-  print(graph_name, algorithm, vector<PartialOrderScore>{score}, out_file);
+  print(graph_name, algorithm, settings, vector<PartialOrderScore>{score}, out_file);
 }
 
 int main(int argc, char **argv) {
