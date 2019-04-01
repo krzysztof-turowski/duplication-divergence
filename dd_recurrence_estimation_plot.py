@@ -62,5 +62,5 @@ def plot_data(data_file, filename, export):
     dd_plot.plot(name, export)
 
 args = dd_plot.get_parser().parse_args()
-with open('temp/' + args.filename) as input_file:
+with open('temp/' + args.filename + '-RE.txt') as input_file:
     plot_data(input_file, args.filename, args.export)
