@@ -285,7 +285,7 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
       } else {
         permutations.insert(sigma_with_probability);
       }
-      if ((i + 1) % 10000 == 0) {
+      if ((i + 1) % 10 == 0) {
         std::cerr << "Finished tries " << i + 1 << "/" << tries << std::endl;
       }
     }
@@ -296,10 +296,14 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
 std::map<VertexPair, long double> get_p_uv_from_permutations(
     const std::map<mpz_class, long double> &permutations, const int &n, const int &n0) {
   std::map<VertexPair, long double> p_uv;
+  const long double P_SIGMA_THRESHOLD = 10e-20L;
   #pragma omp parallel for
-  for(size_t i = 0; i < permutations.size(); i++) {
+  for (std::size_t i = 0; i < permutations.size(); i++) {
     auto permutation = permutations.begin();
     std::advance(permutation, i);
+    if (permutation->second < P_SIGMA_THRESHOLD) {
+      continue;
+    }
     const auto &S = decode_permutation(permutation->first, n);
     for (int j = n0; j < n; j++) {
       for (int k = j + 1; k < n; k++) {
@@ -308,6 +312,10 @@ std::map<VertexPair, long double> get_p_uv_from_permutations(
           p_uv[std::make_pair(S[j], S[k])] += permutation->second;
         }
       }
+    }
+    #pragma omp critical
+    {
+      std::cerr << "Finished permutation " << i + 1 << "/" << permutations.size() << std::endl;
     }
   }
   return p_uv;

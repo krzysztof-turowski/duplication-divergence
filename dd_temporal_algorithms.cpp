@@ -78,7 +78,7 @@ class Settings {
  public:
   double threshold, epsilon, perfect_pairs_fraction;
 
-  Settings(TEnv &environment) {
+  explicit Settings(TEnv &environment) {
     perfect_pairs_fraction =
         read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
     threshold = read_double(environment, "-threshold:", nan(""), "Threshold for uv");
@@ -371,7 +371,8 @@ PairingScheme sort_by_probability(
           G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
           SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
+  print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
+  const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   PairingScheme out;
   vector<int> S = get_reverse_permutation(G);
@@ -397,7 +398,8 @@ BinningScheme sort_by_probability_sum(
           G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
           SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
+  print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
+  const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   priority_queue<pair<long double, int>> p_v;
   vector<int> S = get_reverse_permutation(G);
@@ -667,8 +669,8 @@ void print(
     }
   }
 
-  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second << "-p:"
-      << fixed << setprecision(3) << settings.perfect_pairs_fraction;
+  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second
+      << "-p:" << fixed << setprecision(3) << settings.perfect_pairs_fraction;
   if (!isnan(settings.threshold)) {
     out_file << "-t:" << fixed << setprecision(3) << settings.threshold;
   }
@@ -733,7 +735,7 @@ int main(int argc, char **argv) {
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
       Parameters params_0 = read_parameters(Env);
-      
+
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           synthetic_data(n, n0, params_0, p0, algorithm.second, settings);

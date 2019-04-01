@@ -1,3 +1,5 @@
+#pragma once
+
 #include <set>
 #include <vector>
 
@@ -7,10 +9,10 @@ class DAG {
   std::vector<int> sources;
 
  public:
-  DAG(const int &size) : H(size), sources(size) { }
+  explicit DAG(const int &size) : H(size), sources(size) { }
 
-  DAG(const DAG &other) : H(other.H.size()), sources(other.sources) {
-    for (size_t i = 0; i < H.size(); i++) {
+  explicit DAG(const DAG &other) : H(other.H.size()), sources(other.sources) {
+    for (std::size_t i = 0; i < H.size(); i++) {
       H[i] = other.H[i];
     }
   }
@@ -25,7 +27,7 @@ class DAG {
 
   std::set<int> get_sources() const {
     std::set<int> out;
-    for (size_t i = 0; i < sources.size(); i++) {
+    for (std::size_t i = 0; i < sources.size(); i++) {
       if (is_source(i)) {
         out.insert(i);
       }
@@ -41,7 +43,7 @@ class DAG {
     return sources[v] == 0;
   }
 
-  void remove_vertex(const int &v) {  
+  void remove_vertex(const int &v) {
     for (const auto &u : get_neighbors(v)) {
       decrement_source(u);
     }
