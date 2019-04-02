@@ -11,7 +11,7 @@ class DAG {
  public:
   explicit DAG(const int &size) : H(size), sources(size) { }
 
-  explicit DAG(const DAG &other) : H(other.H.size()), sources(other.sources) {
+  DAG(const DAG &other) : H(other.H.size()), sources(other.sources) {
     for (std::size_t i = 0; i < H.size(); i++) {
       H[i] = other.H[i];
     }

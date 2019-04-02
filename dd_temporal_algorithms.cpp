@@ -24,7 +24,7 @@ typedef deque<Bin> BinningScheme;
 typedef vector<VertexPair> PairingScheme;
 
 int G_TRIES, SIGMA_TRIES;
-const int AGE_TWO = 2, AGE_MAX = std::numeric_limits<int>::max();
+const int AGE_MAX = std::numeric_limits<int>::max();
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -366,10 +366,10 @@ PairingScheme sort_by_probability(
     Graph &G, const int &n0, const Parameters &params, const double &p_uv_threshold,
     const std::set<VertexPair> &perfect_pairs) {
   int n = get_graph_size(G);
+  const auto &DAG = get_DAG_from_perfect_pairs(perfect_pairs, n);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
-          SamplingMethod::UNIFORM, SIGMA_TRIES);
+          G, n0, params, DAG, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
   const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
@@ -393,10 +393,10 @@ PairingScheme sort_by_probability(
 BinningScheme sort_by_probability_sum(
     Graph &G, const int &n0, const Parameters &params, const std::set<VertexPair> &perfect_pairs) {
   int n = get_graph_size(G);
+  const auto &DAG = get_DAG_from_perfect_pairs(perfect_pairs, n);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
-          SamplingMethod::UNIFORM, SIGMA_TRIES);
+          G, n0, params, DAG, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
   const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
@@ -429,10 +429,10 @@ PairingScheme sort_by_lp_solution(
     Graph &G, const int &n0, const Parameters &params, const double &epsilon,
     const double &x_uv_threshold, const std::set<VertexPair> &perfect_pairs) {
   int n = get_graph_size(G);
+  const auto &DAG = get_DAG_from_perfect_pairs(perfect_pairs, n);
   auto permutations =
       get_log_permutation_probabilities_sampling(
-          G, n0, params, get_DAG_from_perfect_pairs(perfect_pairs, n),
-          SamplingMethod::UNIFORM, SIGMA_TRIES);
+          G, n0, params, DAG, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
   const auto p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
@@ -725,8 +725,8 @@ void real_world_data(
 int main(int argc, char **argv) {
   try {
     Env = prepare_environment(argc, argv);
-    G_TRIES = read_int(Env, "-gt:", 100, "G_TRIES");
-    SIGMA_TRIES = read_int(Env, "-st:", 100000, "SIGMA_TRIES");
+    G_TRIES = read_int(Env, "-gt:", 1, "G_TRIES");
+    SIGMA_TRIES = read_int(Env, "-st:", 1, "SIGMA_TRIES");
     string action = read_action(Env);
     string algorithm_name = read_string(
         Env, "-algorithm:", "all", "Temporal algorithm to run");

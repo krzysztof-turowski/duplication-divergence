@@ -273,7 +273,7 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
     const SamplingMethod &algorithm, const int &tries) {
   std::map<mpz_class, long double> permutations;
   CompleteNeighborhoodStructure aux(G);
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads(20)
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability =
         get_log_permutation_sample(G, n0, params, perfect_pairs, aux, algorithm);
@@ -297,25 +297,18 @@ std::map<VertexPair, long double> get_p_uv_from_permutations(
     const std::map<mpz_class, long double> &permutations, const int &n, const int &n0) {
   std::map<VertexPair, long double> p_uv;
   const long double P_SIGMA_THRESHOLD = 10e-20L;
-  #pragma omp parallel for
-  for (std::size_t i = 0; i < permutations.size(); i++) {
-    auto permutation = permutations.begin();
-    std::advance(permutation, i);
-    if (permutation->second < P_SIGMA_THRESHOLD) {
+  for (const auto &permutation : permutations) {
+    if (permutation.second < P_SIGMA_THRESHOLD) {
       continue;
     }
-    const auto &S = decode_permutation(permutation->first, n);
+    const auto &S = decode_permutation(permutation.first, n);
     for (int j = n0; j < n; j++) {
       for (int k = j + 1; k < n; k++) {
         #pragma omp critical
         {
-          p_uv[std::make_pair(S[j], S[k])] += permutation->second;
+          p_uv[std::make_pair(S[j], S[k])] += permutation.second;
         }
       }
-    }
-    #pragma omp critical
-    {
-      std::cerr << "Finished permutation " << i + 1 << "/" << permutations.size() << std::endl;
     }
   }
   return p_uv;
