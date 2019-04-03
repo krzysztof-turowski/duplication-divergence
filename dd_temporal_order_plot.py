@@ -1,6 +1,6 @@
 """
 Tool for plotting the results from dd_temporal_order.
-Run: python -B ./dd_temporal_order_plot.py FILE [--export {pdf|png}]
+Run: python -B ./dd_temporal_order_plot.py FILE [--export {pdf|png}] [--detailed]
 Note: FILE is here *without* "-TC.txt" or "-TA.txt" suffix
 """
 
@@ -16,7 +16,7 @@ FIGURE_SIZE_SCALE = 0.5
 
 COLORS = ['r', 'b', 'm', 'k', 'g', 'orange', 'crimson', 'lime', 'gray', 'lightgray', 'pink', \
           'olive', 'khaki', 'saddlebrown', 'deepskyblue']
-POINTS = 30
+POINTS = 15
 
 def plot_algorithms(filename, detailed):
     if not os.path.isfile(filename):
@@ -62,12 +62,12 @@ def plot_labels():
     pyplot.gca().get_yaxis().set_major_locator(pyplot.MultipleLocator(y_scale))
     pyplot.gca().get_yaxis().set_minor_locator(pyplot.MultipleLocator(y_scale / 2))
 
-def plot_data(filename, export):
+def plot_data(filename, export, detailed):
     dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
     plot_theoterical_curves('temp/' + filename + '-TC.txt')
-    plot_algorithms('temp/' + filename + '-TA.txt', detailed = False)
+    plot_algorithms('temp/' + filename + '-TA.txt', detailed)
     plot_labels()
     dd_plot.plot(filename, export)
 
 args = dd_plot.get_parser().parse_args()
-plot_data(args.filename, args.export)
+plot_data(args.filename, args.export, args.detailed)
