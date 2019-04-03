@@ -313,6 +313,9 @@ std::map<VertexPair, long double> get_p_uv_from_permutations(
 
 std::set<VertexPair> get_perfect_pairs(
     const std::vector<int> &node_age, const double &fraction) {
+  if (std::isnan(fraction)) {
+    return std::set<VertexPair>();
+  }
   std::vector<VertexPair> count_age;
   for (size_t i = 0; i < node_age.size(); i++) {
     if (node_age[i] == AGE_ZERO) {

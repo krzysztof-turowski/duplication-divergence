@@ -80,7 +80,7 @@ class Settings {
 
   explicit Settings(TEnv &environment) {
     perfect_pairs_fraction =
-        read_double(environment, "-perfect:", 0.0, "Fraction of perfect pairs");
+        read_double(environment, "-perfect:", nan(""), "Fraction of perfect pairs");
     threshold = read_double(environment, "-threshold:", nan(""), "Threshold for uv");
     epsilon = read_double(environment, "-epsilon:", nan(""), "Solution density");
   }
@@ -667,13 +667,15 @@ void print(
     }
   }
 
-  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second
-      << "-p:" << fixed << setprecision(3) << settings.perfect_pairs_fraction;
+  out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second;
+  if (!isnan(settings.perfect_pairs_fraction)) {
+    out_file << "-pp:" << fixed << setprecision(3) << settings.perfect_pairs_fraction;
+  }
   if (!isnan(settings.threshold)) {
-    out_file << "-t:" << fixed << setprecision(3) << settings.threshold;
+    out_file << "-th:" << fixed << setprecision(3) << settings.threshold;
   }
   if (!isnan(settings.epsilon)) {
-    out_file << "-e:" << fixed << setprecision(3) << settings.epsilon;
+    out_file << "-eps:" << fixed << setprecision(3) << settings.epsilon;
   }
   for (const auto &score : scores) {
     out_file << " " << score.density << "," << score.precision;
