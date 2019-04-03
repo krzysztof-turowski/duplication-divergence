@@ -371,7 +371,6 @@ PairingScheme sort_by_probability(
       get_log_permutation_probabilities_sampling(
           G, n0, params, DAG, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
   const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   PairingScheme out;
@@ -398,7 +397,6 @@ BinningScheme sort_by_probability_sum(
       get_log_permutation_probabilities_sampling(
           G, n0, params, DAG, SamplingMethod::UNIFORM, SIGMA_TRIES);
   normalize_log_probabilities(permutations);
-  print_best_permutations(permutations, G, params, n0, "uniform", PERMUTATION_COUNT_LIMIT);
   const auto &p_uv = get_p_uv_from_permutations(permutations, n, n0);
 
   priority_queue<pair<long double, int>> p_v;
