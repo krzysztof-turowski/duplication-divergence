@@ -77,12 +77,14 @@ class PartialOrderScore {
 class Settings {
  public:
   double threshold, epsilon, perfect_pairs_fraction;
+  int bin_size;
 
   explicit Settings(TEnv &environment) {
     perfect_pairs_fraction =
         read_double(environment, "-perfect:", nan(""), "Fraction of perfect pairs");
     threshold = read_double(environment, "-threshold:", nan(""), "Threshold for uv");
     epsilon = read_double(environment, "-epsilon:", nan(""), "Solution density");
+    bin_size = read_int(environment, "-binsize:", 1, "Maximum bin size");
   }
 };
 
@@ -390,7 +392,8 @@ PairingScheme sort_by_probability(
 }
 
 BinningScheme sort_by_probability_sum(
-    Graph &G, const int &n0, const Parameters &params, const std::set<VertexPair> &perfect_pairs) {
+    Graph &G, const int &n0, const Parameters &params, const size_t &bin_size,
+    const std::set<VertexPair> &perfect_pairs) {
   int n = get_graph_size(G);
   const auto &DAG = get_DAG_from_perfect_pairs(perfect_pairs, n);
   auto permutations =
@@ -414,12 +417,16 @@ BinningScheme sort_by_probability_sum(
   }
 
   BinningScheme out;
+  Bin current_bin;
   while (!p_v.empty()) {
     const auto &p_i = p_v.top();
-    Bin current_bin{p_i.second};
-    out.push_back(current_bin);
+    current_bin.insert(p_i.second);
+    if (current_bin.size() == bin_size) {
+      out.push_back(current_bin), current_bin.clear();
+    }
     p_v.pop();
   }
+  out.push_back(current_bin);
   return out;
 }
 
@@ -618,14 +625,14 @@ PartialOrderScore temporal_algorithm_single(
     case PROBABILITY_SUM_SORT: {
       auto perfect_pairs = get_perfect_pairs(node_age, settings.perfect_pairs_fraction);
       return get_score(
-          sort_by_probability_sum(G, n0, params, perfect_pairs), node_age, perfect_pairs);
+          sort_by_probability_sum(G, n0, params, settings.bin_size, perfect_pairs),
+          node_age, perfect_pairs);
     }
     case LP_SOLUTION_SORT: {
       auto perfect_pairs = get_perfect_pairs(node_age, settings.perfect_pairs_fraction);
       return get_score(
-          sort_by_lp_solution(
-              G, n0, params, settings.epsilon, settings.threshold, perfect_pairs),
-              node_age, perfect_pairs);
+          sort_by_lp_solution(G, n0, params, settings.epsilon, settings.threshold, perfect_pairs),
+          node_age, perfect_pairs);
     }
     default:
       throw invalid_argument("Invalid algorithm: " + LONG_ALGORITHM_NAME.find(algorithm)->second);
@@ -670,6 +677,9 @@ void print(
   out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second;
   if (!isnan(settings.perfect_pairs_fraction)) {
     out_file << "-pp:" << fixed << setprecision(3) << settings.perfect_pairs_fraction;
+  }
+  if (settings.bin_size > 1) {
+    out_file << "-b:" << fixed << setprecision(3) << settings.bin_size;
   }
   if (!isnan(settings.threshold)) {
     out_file << "-th:" << fixed << setprecision(3) << settings.threshold;
