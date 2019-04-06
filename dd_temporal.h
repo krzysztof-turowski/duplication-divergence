@@ -19,6 +19,7 @@
 
 typedef std::pair<double, double> DensityPrecision;
 typedef std::pair<int, int> VertexPair;
+typedef CompleteNeighborhoodStructure NeighborhoodStructure;
 
 const int AGE_ZERO = 0;
 const int PERMUTATION_SIZE_LIMIT = 100, PERMUTATION_COUNT_LIMIT = 10;
@@ -163,7 +164,7 @@ std::map<mpz_class, long double> get_log_permutation_probabilities(
 std::map<mpz_class, long double> get_log_permutation_probabilities(
     const Graph &G, const int &n0, const Parameters &params) {
   Graph H(G);
-  CompleteNeighborhoodStructure aux(H);
+  NeighborhoodStructure aux(H);
   std::vector<int> S(get_graph_size(H), -1);
   for (int i = 0; i < n0; i++) {
     S[i] = i;
@@ -243,11 +244,11 @@ std::tuple<Vertex, double> sample_vertex(
 
 std::pair<mpz_class, long double> get_log_permutation_sample(
     const Graph &G, const int &n0, const Parameters &params, const DAG &perfect_pairs_G,
-    const CompleteNeighborhoodStructure &aux_G, const SamplingMethod &algorithm) {
+    const NeighborhoodStructure &aux_G, const SamplingMethod &algorithm) {
   std::random_device device;
   std::mt19937 generator(device());
   Graph H(G);
-  CompleteNeighborhoodStructure aux(aux_G);
+  NeighborhoodStructure aux(aux_G);
   DAG perfect_pairs(perfect_pairs_G);
 
   std::vector<int> S(get_graph_size(H), -1);
@@ -272,7 +273,7 @@ std::map<mpz_class, long double> get_log_permutation_probabilities_sampling(
     const Graph &G, const int &n0, const Parameters &params, const DAG &perfect_pairs,
     const SamplingMethod &algorithm, const int &tries) {
   std::map<mpz_class, long double> permutations;
-  CompleteNeighborhoodStructure aux(G);
+  NeighborhoodStructure aux(G);
   #pragma omp parallel for shared(permutations)
   for (int i = 0; i < tries; i++) {
     auto sigma_with_probability =

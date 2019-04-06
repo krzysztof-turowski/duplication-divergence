@@ -163,7 +163,7 @@ Graph read_graph(const std::string &graph_name) {
   return G;
 }
 
-class NeighborhoodStructure {
+class BasicNeighborhoodStructure {
  protected:
   template <typename T>
   struct counting_iterator {
@@ -183,12 +183,14 @@ class NeighborhoodStructure {
   virtual bool verify(const Graph &G) const = 0;
 };
 
-class NoNeighborhoodStructure : public NeighborhoodStructure {
+class NoNeighborhoodStructure : public BasicNeighborhoodStructure {
  private:
   const Graph &G;
 
  public:
   explicit NoNeighborhoodStructure(const Graph &H) : G(H) { }
+
+  explicit NoNeighborhoodStructure(const NoNeighborhoodStructure &other) : G(other.G) { }
 
   int common_neighbors(const Vertex &v, const Vertex &u) const {
     auto N_v(get_neighbors(G, v));
@@ -204,7 +206,7 @@ class NoNeighborhoodStructure : public NeighborhoodStructure {
   bool verify(const Graph &H) const { return &G == &H; }
 };
 
-class CompleteNeighborhoodStructure : public NeighborhoodStructure {
+class CompleteNeighborhoodStructure : public BasicNeighborhoodStructure {
  private:
   int n;
   std::vector<int> V;
@@ -281,7 +283,7 @@ inline long double add_exp_log(const long double &x, const long double &y) {
 
 bool is_feasible(
     const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
-    const NeighborhoodStructure &aux) {
+    const BasicNeighborhoodStructure &aux) {
   switch (params.mode) {
     case Mode::PURE_DUPLICATION: {
       bool uv = check_edge(G, u, v);
@@ -300,7 +302,7 @@ bool is_feasible(
 
 bool is_feasible(
     const Graph &G, const Parameters &params, const Vertex &v,
-    const NeighborhoodStructure &aux) {
+    const BasicNeighborhoodStructure &aux) {
   switch (params.mode) {
     case Mode::PURE_DUPLICATION: {
       std::vector<Vertex> V(get_vertices(G));
@@ -322,7 +324,7 @@ bool is_feasible(
 
 long double get_log_transition_probability(
     const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
-    const NeighborhoodStructure &aux) {
+    const BasicNeighborhoodStructure &aux) {
   if (!is_feasible(G, params, v, u, aux)) {
     return -std::numeric_limits<long double>::infinity();
   }
@@ -351,7 +353,7 @@ long double get_log_transition_probability(
 
 long double get_log_transition_probability(
     const Graph &G, const Parameters &params,
-    const Vertex &v, const NeighborhoodStructure &aux) {
+    const Vertex &v, const BasicNeighborhoodStructure &aux) {
   long double p_v = -std::numeric_limits<long double>::infinity();
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &u : V) {
@@ -363,7 +365,7 @@ long double get_log_transition_probability(
 }
 
 std::vector<long double> get_transition_probability(
-    const Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
+    const Graph &G, const Parameters &params, const BasicNeighborhoodStructure &aux) {
   std::vector<long double> out;
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &v : V) {
@@ -374,7 +376,7 @@ std::vector<long double> get_transition_probability(
 
 long double get_discard_score(
     const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
-    const NeighborhoodStructure &aux) {
+    const BasicNeighborhoodStructure &aux) {
   bool uv = check_edge(G, u, v);
   int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
       only_u = get_degree(G, u) - both - uv;
@@ -390,7 +392,7 @@ long double get_discard_score(
 
 long double get_discard_score(
     const Graph &G, const Parameters &params, const Vertex &v,
-    const NeighborhoodStructure &aux) {
+    const BasicNeighborhoodStructure &aux) {
   long double out = 0.0L;
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &u : V) {
