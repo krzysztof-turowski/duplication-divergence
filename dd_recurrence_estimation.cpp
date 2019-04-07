@@ -1,8 +1,12 @@
 // Tool for inference the values of parameters for various duplication-divergence models.
 // Compile: g++ dd_recurrence_estimation.cpp -O3 -o ./dd_recurrence_estimation
-// Run: ./dd_recurrence_estimation synthetic MODE n n0 PARAMETERS
-//   or ./dd_recurrence_estimation real_data FILE MODE
+// Example runs:
+//  ./dd_recurrence_estimation -action:synthetic -n:100 -n0:10
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+//  ./dd_recurrence_estimation -action:real_data -graph:G-test.txt
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
 
+#include "./dd_input.h"
 #include "./dd_header.h"
 
 #include <functional>
@@ -15,8 +19,8 @@ const double Q_STEP = 0.001, Q_EXP = 1.5;
 const double EPS = 10e-9;
 const double P_DISTANCE = 10e-2;
 const double TI_ALPHA = 0.05;
-const int TI_TRIES = 100;
 const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
+int TI_TRIES;
 
 enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
 
@@ -423,8 +427,8 @@ void process_graph(
   }
 }
 
-void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed_simple(n0, 1.0);
+void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
+  Graph G0 = generate_seed_simple(n0, p0);
   Graph G = G0;
   generate_graph_simple(G, n, params);
   std::ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
@@ -441,17 +445,19 @@ void real_world_data(
   process_graph(G, G0, mode, out_file);
 }
 
-int main(int, char *argv[]) {
+int main(int argc, char **argv) {
   try {
-    std::string action(argv[1]);
+    Env = prepare_environment(argc, argv);
+    TI_TRIES = read_int(Env, "-st:", 1, "Tolerance interval tries");
+    std::string action = read_action(Env);
     if (action == "synthetic") {
-      std::string mode(argv[2]);
-      int n = std::stoi(argv[3]), n0 = std::stoi(argv[4]);
-      Parameters params;
-      params.initialize(mode, argv + 5);
-      synthetic_data(n, n0, params);
+      const int n = read_n(Env), n0 = read_n0(Env);
+      const double p0 = read_p0(Env);
+      Parameters params = read_parameters(Env);
+      synthetic_data(n, n0, p0, params);
     } else if (action == "real_data") {
-      std::string graph_name(argv[2]), mode(argv[3]);
+      std::string graph_name = read_graph_name(Env);
+      std::string mode = read_mode(Env);
       real_world_data(graph_name, get_seed_name(graph_name), REVERSE_NAME.find(mode)->second);
     } else {
       throw std::invalid_argument("Invalid action: " + action);

@@ -34,7 +34,7 @@ all: g++ check
 g++: $(EXEC)
 
 clang++: CC = clang++
-clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unused-const-variable
+clang++: COMPILER_FLAGS = -ferror-limit=5 -Wno-unused-const-variable -fopenmp=libomp
 clang++: $(EXEC)
 
 debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined

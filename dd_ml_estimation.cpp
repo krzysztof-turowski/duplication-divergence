@@ -1,11 +1,16 @@
 // Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
 // Compile: g++ dd_ml_estimation.cpp -O3 -o ./dd_ml_estimation
-// Run: ./dd_ml_estimation synthetic MODE n n0 PARAMETERS or ./dd_ml_estimation real_data FILE MODE
+// Example runs:
+//  ./dd_ml_estimation -action:synthetic -n:100 -n0:10
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+//  ./dd_ml_estimation -action:real_data -graph:G-test.txt
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
 
+#include "./dd_input.h"
 #include "./dd_graph.h"
 
 const double STEP_P = 0.1, STEP_R = 1.0;
-const int IS_TRIES = 100;
+int IS_TRIES;
 
 class LikelihoodValue {
  public:
@@ -109,8 +114,8 @@ void print(
   }
 }
 
-void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G = generate_seed(n0, 1.0);
+void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
+  Graph G = generate_seed(n0, p0);
   generate_graph(G, n, params);
   auto likelihood_values = find_likelihood_values(G, n0, params.mode);
   std::ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "ML"));
@@ -126,17 +131,19 @@ void real_world_data(
   print(graph_name, likelihood_values, out_file);
 }
 
-int main(int, char *argv[]) {
+int main(int argc, char **argv) {
   try {
-    std::string action(argv[1]);
+    Env = prepare_environment(argc, argv);
+    IS_TRIES = read_int(Env, "-st:", 1, "Important sampling tries");
+    std::string action = read_action(Env);
     if (action == "synthetic") {
-      std::string mode(argv[2]);
-      int n = std::stoi(argv[3]), n0 = std::stoi(argv[4]);
-      Parameters params;
-      params.initialize(mode, argv + 5);
-      synthetic_data(n, n0, params);
+      const int n = read_n(Env), n0 = read_n0(Env);
+      const double p0 = read_p0(Env);
+      Parameters params = read_parameters(Env);
+      synthetic_data(n, n0, p0, params);
     } else if (action == "real_data") {
-      std::string graph_name(argv[2]), mode(argv[3]);
+      std::string graph_name = read_graph_name(Env);
+      std::string mode = read_mode(Env);
       real_world_data(graph_name, get_seed_name(graph_name), REVERSE_NAME.find(mode)->second);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
