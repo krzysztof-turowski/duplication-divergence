@@ -100,7 +100,7 @@ PartialOrderScore get_average(const vector<PartialOrderScore> &scores) {
 }
 
 inline std::string get_age_name(const std::string &graph_name) {
-  return std::regex_replace(graph_name, std::regex("^G"), "PH");
+  return std::regex_replace(graph_name, std::regex("^G"), "age");
 }
 
 vector<int> read_age(const string &age_name) {
