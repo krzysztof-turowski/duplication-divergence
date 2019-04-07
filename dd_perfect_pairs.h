@@ -5,6 +5,7 @@
 #include <gmpxx.h>
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <random>
 #include <set>
