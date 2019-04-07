@@ -24,10 +24,13 @@ else ifeq ($(LP_SOLVER),gurobi)
 else
 endif
 
-CPP_HDRS := $(wildcard *.h)
-CPP_SRCS := $(wildcard *.cpp)
-PY_SRCS := $(wildcard *.py)
-EXEC := $(patsubst %.cpp,%,$(CPP_SRCS))
+SRC_DIR = src
+BUILD_DIR = .
+
+CPP_HDRS := $(wildcard $(SRC_DIR)/*.h)
+CPP_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+PY_SRCS := $(wildcard $(SRC_DIR)/*.py)
+EXEC := $(patsubst $(SRC_DIR)/%.cpp,%,$(CPP_SRCS))
 
 all: g++ check
 
@@ -40,20 +43,20 @@ clang++: $(EXEC)
 debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
 debug: $(EXEC)
 
-%: %.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $@
+%: $(SRC_DIR)/%.cpp $(CPP_HDRS)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
 
-dd_automorphisms: dd_automorphisms.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(NAUTY_LIB) -o $@
+dd_automorphisms: $(SRC_DIR)/dd_automorphisms.cpp $(CPP_HDRS)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(NAUTY_LIB) -o $(BUILD_DIR)/$@
 
-dd_temporal_%: dd_temporal_%.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $@
+dd_temporal_%: $(SRC_DIR)/dd_temporal_%.cpp $(CPP_HDRS)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
 	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme,superfluous-parens --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
 
 clean:
-	@rm -vf $(EXEC)
+	@rm -vf $(addprefix $(BUILD_DIR)/,$(EXEC))
 
 .PHONY: all check clean
