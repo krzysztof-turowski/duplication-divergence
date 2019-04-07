@@ -53,7 +53,7 @@ dd_temporal_%: $(SRC_DIR)/dd_temporal_%.cpp $(CPP_HDRS)
 	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
 
 check:
-	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
+	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/include,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
 	pylint --disable=bad-whitespace,invalid-name,missing-docstring,too-many-locals,star-args,no-member,fixme,superfluous-parens --max-line-length=100 --extension-pkg-whitelist=numpy $(PY_SRCS)
 
 clean:
