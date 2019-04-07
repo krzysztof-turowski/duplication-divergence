@@ -1,24 +1,26 @@
 // Tool for inference the values of parameters for various duplication-divergence models.
 // Compile: g++ dd_recurrence_estimation.cpp -O3 -o ./dd_recurrence_estimation
-// Run: ./dd_recurrence_estimation synthetic MODE n n0 PARAMETERS
-//   or ./dd_recurrence_estimation real_data FILE MODE
+// Example runs:
+//  ./dd_recurrence_estimation -action:synthetic -n:100 -n0:10
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+//  ./dd_recurrence_estimation -action:real_data -graph:G-test.txt
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
 
+#include "./dd_input.h"
 #include "./dd_header.h"
 
 #include <functional>
 #include <tuple>
 
-using namespace std;
-
-typedef vector<set<unsigned>> Graph;
+typedef std::vector<std::set<unsigned>> Graph;
 
 const double R_STEP = 0.01, R_EXP = 1.5;
 const double Q_STEP = 0.001, Q_EXP = 1.5;
 const double EPS = 10e-9;
 const double P_DISTANCE = 10e-2;
 const double TI_ALPHA = 0.05;
-const int TI_TRIES = 100;
 const double PERCENTILE_95 = 1.96, PERCENTILE_99 = 2.575;
+int TI_TRIES;
 
 enum ToleranceInterval { DIRECT, EMPIRICAL_VARIANCE };
 
@@ -41,8 +43,8 @@ class DataObject {
 void degree_distribution(const Graph &G, DataObject &data) {
   data.no_vertices = G.size(), data.low_degree = G.size(), data.high_degree = 0;
   for (auto v : G) {
-    data.low_degree = min(data.low_degree, static_cast<int>(v.size()));
-    data.high_degree = max(data.high_degree, static_cast<int>(v.size()));
+    data.low_degree = std::min(data.low_degree, static_cast<int>(v.size()));
+    data.high_degree = std::max(data.high_degree, static_cast<int>(v.size()));
     data.average_degree += v.size();
     data.average_degree_squared += (v.size() * static_cast<double>(v.size()));
   }
@@ -83,15 +85,15 @@ DataObject get_params_for_synthetic_graph(
   return get_params_for_graph(G);
 }
 
-tuple<DataObject, DataObject> get_empirical_interval(
+std::tuple<DataObject, DataObject> get_empirical_interval(
     DataObject &g_data, const Graph &G0, const Parameters &params,
-    function<double& (DataObject&)> get_value) {
+    std::function<double& (DataObject&)> get_value) {
   if (!(TI_ALPHA < 0.5 && TI_ALPHA * TI_TRIES >= 1 && (1 - TI_ALPHA) * TI_TRIES >= 1)) {
-    throw invalid_argument(
-        "Invalid tolerance interval constants: TI_ALPHA = " + to_string(TI_ALPHA)
-            + ", TI_TRIES = " + to_string(TI_TRIES));
+    throw std::invalid_argument(
+        "Invalid tolerance interval constants: TI_ALPHA = " + std::to_string(TI_ALPHA)
+            + ", TI_TRIES = " + std::to_string(TI_TRIES));
   }
-  vector<DataObject> values(TI_TRIES);
+  std::vector<DataObject> values(TI_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < TI_TRIES; i++) {
     values[i] = get_params_for_synthetic_graph(G0, g_data.no_vertices, params);
@@ -102,22 +104,22 @@ tuple<DataObject, DataObject> get_empirical_interval(
   }
   switch (TI_ALGORITHM) {
     case ToleranceInterval::DIRECT: {
-        sort(
+        std::sort(
             values.begin(), values.end(), [&](DataObject &a, DataObject &b) {
                 return get_value(a) < get_value(b);
             });
         int low = floor(TI_ALPHA * TI_TRIES), high = (TI_TRIES - 1) - floor(TI_ALPHA * TI_TRIES);
-        return make_tuple(
+        return std::make_tuple(
             get_value(values[low]) < get_value(g_data) ? values[low] : g_data,
             get_value(values[high]) > get_value(g_data) ? values[high] : g_data);
       }
     case ToleranceInterval::EMPIRICAL_VARIANCE: {
         double empirical_first_moment =
-            accumulate(
+            std::accumulate(
                 values.begin(), values.end(), 0.0,
                 [&](double value, DataObject &a) { return value + get_value(a); }) / values.size();
         double empirical_second_moment =
-            accumulate(
+            std::accumulate(
                 values.begin(), values.end(), 0.0,
                 [&](double value, DataObject &a) {
                     return value + get_value(a) * get_value(a);
@@ -127,50 +129,52 @@ tuple<DataObject, DataObject> get_empirical_interval(
         DataObject g_data_low(g_data), g_data_high(g_data);
         get_value(g_data_low) -= PERCENTILE_95 * empirical_std_deviation;
         get_value(g_data_high) += PERCENTILE_95 * empirical_std_deviation;
-        return make_tuple(g_data_low, g_data_high);
+        return std::make_tuple(g_data_low, g_data_high);
       }
     default:
-      throw invalid_argument("Invalid tolerance interval computation algorithm");
+      throw std::invalid_argument("Invalid tolerance interval computation algorithm");
   }
 }
 
 inline bool contains(const double &low, const double &high, const double &value) {
-  return min(low, high) <= value && max(low, high) >= value;
+  return std::min(low, high) <= value && std::max(low, high) >= value;
 }
 
 void print(
-    const string &name, const double &g0_value, const double &g_value,
-    const vector<Parameters> &V, ostream &out_file) {
-  cout << fixed << setprecision(3) << name << " - G0: " << g0_value  << ", G: " << g_value << endl;
+    const std::string &name, const double &g0_value, const double &g_value,
+    const std::vector<Parameters> &V, std::ostream &out_file) {
+  std::cout << std::fixed << std::setprecision(3) << name
+      << " - G0: " << g0_value << ", G: " << g_value << std::endl;
   if (!V.empty()) {
     for (const auto &v : V) {
-      cout << v.to_string() << endl;
+      std::cout << v.to_string() << std::endl;
     }
   } else {
-    cout << "There are no suitable parameter values" << endl;
+    std::cout << "There are no suitable parameter values" << std::endl;
   }
   for (const auto &v : V) {
     out_file << v.to_csv() << " ";
   }
-  out_file << endl;
+  out_file << std::endl;
 }
 
 void print(
-    const string &name, const double &g0_value, const double &g_value,
-    const vector<Parameters> &V_low, const vector<Parameters> &V, const vector<Parameters> &V_high,
-    ostream &out_file) {
-  cout << fixed << setprecision(3) << name << " - G0: " << g0_value  << ", G: " << g_value << endl;
+    const std::string &name, const double &g0_value, const double &g_value,
+    const std::vector<Parameters> &V_low, const std::vector<Parameters> &V,
+    const std::vector<Parameters> &V_high, std::ostream &out_file) {
+  std::cout << std::fixed << std::setprecision(3) << name
+      << " - G0: " << g0_value << ", G: " << g_value << std::endl;
   if (!V.empty()) {
     for (size_t i = 0; i < V.size(); i++) {
-      cout << V[i].to_string(V_low[i], V_high[i]) << endl;
+      std::cout << V[i].to_string(V_low[i], V_high[i]) << std::endl;
     }
   } else {
-    cout << "There are no suitable parameter values" << endl;
+    std::cout << "There are no suitable parameter values" << std::endl;
   }
   for (size_t i = 0; i < V.size(); i++) {
     out_file << V_low[i].to_csv() << ";" << V[i].to_csv() << ";" << V_high[i].to_csv() << " ";
   }
-  out_file << endl;
+  out_file << std::endl;
 }
 
 void chung_lu_estimate_iterative(
@@ -191,14 +195,14 @@ void chung_lu_estimate_iterative(
 
 Parameters chung_lu_binary_search_p(
     DataObject &g0_data, DataObject &g_data, const double &q,
-    function<double& (DataObject&)> get_value) {
+    std::function<double& (DataObject&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
     double p_mid = (p_high + p_low) / 2;
     apx_data = g0_data;
     chung_lu_estimate_iterative(apx_data, p_mid, q, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+    if (contains(get_value(apx_data), std::numeric_limits<double>::infinity(), get_value(g_data))) {
       p_low = p_mid;
     } else {
       p_high = p_mid;
@@ -211,14 +215,14 @@ Parameters chung_lu_binary_search_p(
 
 Parameters chung_lu_binary_search_q(
     DataObject &g0_data, DataObject &g_data, const double &p,
-    function<double& (DataObject&)> get_value) {
+    std::function<double& (DataObject&)> get_value) {
   double q_low = 0.0, q_high = 1.0, error = EPS;
   DataObject apx_data;
   while (q_high - q_low > error) {
     double q_mid = (q_high + q_low) / 2;
     apx_data = g0_data;
     chung_lu_estimate_iterative(apx_data, p, q_mid, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+    if (contains(get_value(apx_data), std::numeric_limits<double>::infinity(), get_value(g_data))) {
       q_low = q_mid;
     } else {
       q_high = q_mid;
@@ -229,9 +233,9 @@ Parameters chung_lu_binary_search_q(
   return params;
 }
 
-vector<Parameters> chung_lu_get_parameters(
-    DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
-  vector<Parameters> S;
+std::vector<Parameters> chung_lu_get_parameters(
+    DataObject &g0_data, DataObject &g_data, std::function<double& (DataObject&)> get_value) {
+  std::vector<Parameters> S;
   double q_step = Q_STEP;
   for (double q = 0.0; q <= 1.0 + EPS; q += q_step) {
     DataObject apx_min(g0_data), apx_max(g0_data);
@@ -248,14 +252,15 @@ vector<Parameters> chung_lu_get_parameters(
 }
 
 void chung_lu_estimate_parameter(
-    const string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
-    function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval) {
-  vector<Parameters> S = chung_lu_get_parameters(g0_data, g_data, get_value);
+    const std::string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
+    std::function<double& (DataObject&)> get_value, std::ofstream &out_file,
+    bool tolerance_interval) {
+  std::vector<Parameters> S = chung_lu_get_parameters(g0_data, g_data, get_value);
   if (tolerance_interval) {
-    vector<Parameters> S_low, S_high;
+    std::vector<Parameters> S_low, S_high;
     for (auto params : S) {
       DataObject g_data_low, g_data_high;
-      tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
+      std::tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
       S_low.push_back(chung_lu_binary_search_q(g0_data, g_data_low, params.p, get_value));
       S_high.push_back(chung_lu_binary_search_q(g0_data, g_data_high, params.p, get_value));
     }
@@ -266,7 +271,7 @@ void chung_lu_estimate_parameter(
 }
 
 void chung_lu_estimate(
-    DataObject &g_data, DataObject &g0_data, const Graph &G0, ofstream &out_file) {
+    DataObject &g_data, DataObject &g0_data, const Graph &G0, std::ofstream &out_file) {
   auto D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
   chung_lu_estimate_parameter("Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
 
@@ -309,7 +314,7 @@ void pastor_satorras_estimate_iterative(
 
 Parameters pastor_satorras_binary_search_p(
     DataObject &g0_data, DataObject &g_data, const double &r,
-    function<double& (DataObject&)> get_value) {
+    std::function<double& (DataObject&)> get_value) {
   double p_low = 0.0, p_high = 1.0, error = EPS;
   DataObject apx_data;
   while (p_high - p_low > error) {
@@ -317,7 +322,7 @@ Parameters pastor_satorras_binary_search_p(
     apx_data = g0_data;
     pastor_satorras_estimate_iterative(
         apx_data, p_mid, r, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+    if (contains(get_value(apx_data), std::numeric_limits<double>::infinity(), get_value(g_data))) {
       p_low = p_mid;
     } else {
       p_high = p_mid;
@@ -330,7 +335,7 @@ Parameters pastor_satorras_binary_search_p(
 
 Parameters pastor_satorras_binary_search_r(
     DataObject &g0_data, DataObject &g_data, const double &p,
-    function<double& (DataObject&)> get_value) {
+    std::function<double& (DataObject&)> get_value) {
   double r_low = 0.0, r_high = g0_data.no_vertices, error = EPS;
   DataObject apx_data;
   while (r_high - r_low > error) {
@@ -338,7 +343,7 @@ Parameters pastor_satorras_binary_search_r(
     apx_data = g0_data;
     pastor_satorras_estimate_iterative(
         apx_data, p, r_mid, g0_data.no_vertices, g_data.no_vertices);
-    if (contains(get_value(apx_data), numeric_limits<double>::infinity(), get_value(g_data))) {
+    if (contains(get_value(apx_data), std::numeric_limits<double>::infinity(), get_value(g_data))) {
       r_low = r_mid;
     } else {
       r_high = r_mid;
@@ -349,9 +354,9 @@ Parameters pastor_satorras_binary_search_r(
   return params;
 }
 
-vector<Parameters> pastor_satorras_get_parameters(
-    DataObject &g0_data, DataObject &g_data, function<double& (DataObject&)> get_value) {
-  vector<Parameters> S;
+std::vector<Parameters> pastor_satorras_get_parameters(
+    DataObject &g0_data, DataObject &g_data, std::function<double& (DataObject&)> get_value) {
+  std::vector<Parameters> S;
   double r_max = g0_data.no_vertices, r_step = R_STEP;
   for (double r = 0.0; r <= r_max + EPS; r += r_step) {
     DataObject apx_min(g0_data), apx_max(g0_data);
@@ -371,14 +376,15 @@ vector<Parameters> pastor_satorras_get_parameters(
 }
 
 void pastor_satorras_estimate_parameter(
-    const string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
-    function<double& (DataObject&)> get_value, ofstream &out_file, bool tolerance_interval) {
-  vector<Parameters> S = pastor_satorras_get_parameters(g0_data, g_data, get_value);
+    const std::string &name, DataObject &g_data, DataObject &g0_data, const Graph &G0,
+    std::function<double& (DataObject&)> get_value, std::ofstream &out_file,
+    bool tolerance_interval) {
+  std::vector<Parameters> S = pastor_satorras_get_parameters(g0_data, g_data, get_value);
   if (tolerance_interval) {
-    vector<Parameters> S_low, S_high;
+    std::vector<Parameters> S_low, S_high;
     for (auto params : S) {
       DataObject g_data_low, g_data_high;
-      tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
+      std::tie(g_data_low, g_data_high) = get_empirical_interval(g_data, G0, params, get_value);
       S_low.push_back(pastor_satorras_binary_search_r(g0_data, g_data_low, params.p, get_value));
       S_high.push_back(pastor_satorras_binary_search_r(g0_data, g_data_high, params.p, get_value));
     }
@@ -389,7 +395,7 @@ void pastor_satorras_estimate_parameter(
 }
 
 void pastor_satorras_estimate(
-    DataObject &g_data, DataObject &g0_data, const Graph &G0, ofstream &out_file) {
+    DataObject &g_data, DataObject &g0_data, const Graph &G0, std::ofstream &out_file) {
   auto D_lambda = [](DataObject &data) -> double& { return data.average_degree; };
   pastor_satorras_estimate_parameter(
       "Average degree", g_data, g0_data, G0, D_lambda, out_file, true);
@@ -407,7 +413,7 @@ void pastor_satorras_estimate(
 }
 
 void process_graph(
-    const Graph &G, const Graph &G0, const Mode &mode, ofstream &out_file) {
+    const Graph &G, const Graph &G0, const Mode &mode, std::ofstream &out_file) {
   DataObject g0_data = get_params_for_graph(G0, true), g_data = get_params_for_graph(G, true);
   switch (mode) {
     case CHUNG_LU:
@@ -417,44 +423,47 @@ void process_graph(
       pastor_satorras_estimate(g_data, g0_data, G0, out_file);
       break;
     default:
-      throw invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
   }
 }
 
-void synthetic_data(const int &n, const int &n0, const Parameters &params) {
-  Graph G0 = generate_seed_simple(n0, 1.0);
+void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
+  Graph G0 = generate_seed_simple(n0, p0);
   Graph G = G0;
   generate_graph_simple(G, n, params);
-  ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
-  cout << "Synthetic data: " + params.to_string() << endl;
+  std::ofstream out_file(TEMP_FOLDER + get_synthetic_filename(n, n0, params, ""));
+  std::cout << "Synthetic data: " + params.to_string() << std::endl;
   process_graph(G, G0, params.mode, out_file);
 }
 
-void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
+void real_world_data(
+    const std::string &graph_name, const std::string &seed_name, const Mode &mode) {
   Graph G = read_graph_simple(FILES_FOLDER + graph_name);
   Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
-  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "RE"));
-  cout << "File: " << graph_name << endl;
+  std::ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "RE"));
+  std::cout << "File: " << graph_name << std::endl;
   process_graph(G, G0, mode, out_file);
 }
 
-int main(int, char *argv[]) {
+int main(int argc, char **argv) {
   try {
-    string action(argv[1]);
+    Env = prepare_environment(argc, argv);
+    TI_TRIES = read_int(Env, "-st:", 1, "Tolerance interval tries");
+    std::string action = read_action(Env);
     if (action == "synthetic") {
-      string mode(argv[2]);
-      int n = stoi(argv[3]), n0 = stoi(argv[4]);
-      Parameters params;
-      params.initialize(mode, argv + 5);
-      synthetic_data(n, n0, params);
+      const int n = read_n(Env), n0 = read_n0(Env);
+      const double p0 = read_p0(Env);
+      Parameters params = read_parameters(Env);
+      synthetic_data(n, n0, p0, params);
     } else if (action == "real_data") {
-      string graph_name(argv[2]), mode(argv[3]);
+      std::string graph_name = read_graph_name(Env);
+      std::string mode = read_mode(Env);
       real_world_data(graph_name, get_seed_name(graph_name), REVERSE_NAME.find(mode)->second);
     } else {
-      throw invalid_argument("Invalid action: " + action);
+      throw std::invalid_argument("Invalid action: " + action);
     }
-  } catch (const exception &e) {
-    cerr << "ERROR: " << e.what() << endl;
+  } catch (const std::exception &e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
   }
   return 0;
 }

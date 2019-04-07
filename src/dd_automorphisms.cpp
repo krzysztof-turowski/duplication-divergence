@@ -1,7 +1,11 @@
 // Tool for computation automorphisms for various duplication-divergence models.
 // Compile: g++ dd_automorphisms.cpp LIB/nauty/nauty.a -O3 -o ./dd_automorphisms
-// Run: ./dd_automorphisms real_graph FILE or ./dd_automorphisms real_seed FILE MODE PARAMETERS
+// Example runs:
+//  ./dd_recurrence_estimation -action:real_graph -graph:G-test.txt
+//  ./dd_recurrence_estimation -action:real_seed -graph:G-test.txt
+//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
 
+#include "./dd_input.h"
 #include "./dd_header.h"
 #include "./dd_automorphisms.h"
 
@@ -12,7 +16,7 @@
 typedef std::tuple<double, double, double, double> AutomorphismsInfo;
 typedef std::tuple<double, double, double, double> PValuesInfo;
 
-const int PVAL_TRIES = 100;
+int PVAL_TRIES;
 
 enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
@@ -186,14 +190,15 @@ void log_automorphisms(const std::string &graph_name) {
   print(graph_name, log_automorphisms_single(G));
 }
 
-int main(int, char *argv[]) {
+int main(int argc, char **argv) {
   try {
-    std::string action(argv[1]), graph_name(argv[2]);
+    Env = prepare_environment(argc, argv);
+    std::string action = read_string(Env, "-action:", "", "Action: real_graph, real_seed");
+    std::string graph_name = read_graph_name(Env);
     // TODO(unknown): test parameters ranges
     if (action == "real_seed") {
-      std::string mode(argv[3]);
-      Parameters params;
-      params.initialize(mode, argv + 4);
+      PVAL_TRIES = read_int(Env, "-st:", 1, "p-value tries");
+      Parameters params = read_parameters(Env);
       log_automorphisms_p_value(graph_name, get_seed_name(graph_name), params);
     } else if (action == "real_graph") {
       log_automorphisms(graph_name);
