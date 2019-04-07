@@ -7,6 +7,7 @@
 
 #include "./dd_input.h"
 #include "./dd_temporal.h"
+#include "./dd_perfect_pairs.h"
 
 #if defined(glpk)
   #include "./dd_glpk.h"
@@ -24,7 +25,6 @@ typedef deque<Bin> BinningScheme;
 typedef vector<VertexPair> PairingScheme;
 
 int G_TRIES, SIGMA_TRIES;
-const int AGE_MAX = std::numeric_limits<int>::max();
 
 enum TemporalAlgorithm {
   DEGREE_SORT, DEGREE_PEEL, NEIGHBORHOOD_SORT, NEIGHBORHOOD_PEEL_SL, NEIGHBORHOOD_PEEL_LF,
@@ -100,7 +100,7 @@ PartialOrderScore get_average(const vector<PartialOrderScore> &scores) {
 }
 
 inline std::string get_age_name(const std::string &graph_name) {
-  return std::regex_replace(graph_name, std::regex("^G"), "PH");
+  return std::regex_replace(graph_name, std::regex("^G"), "age");
 }
 
 vector<int> read_age(const string &age_name) {

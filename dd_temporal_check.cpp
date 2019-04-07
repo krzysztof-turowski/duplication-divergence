@@ -1,6 +1,7 @@
 // Tools for checking p_uv estimation for various duplication-divergence models.
 
 #include "./dd_temporal.h"
+#include "./dd_perfect_pairs.h"
 
 #include <queue>
 
