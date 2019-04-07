@@ -6,6 +6,7 @@
 
 #include "./dd_input.h"
 #include "./dd_temporal.h"
+#include "./dd_perfect_pairs.h"
 
 #if defined(glpk)
   #include "./dd_glpk.h"
