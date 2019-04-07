@@ -1,9 +1,9 @@
 #pragma once
 
+#include <graph/graph.h>
+
 #include <set>
 #include <vector>
-
-#include "./lib/koala/graph/graph.h"
 
 inline int get_graph_size(const Koala::Graph<int, int> &G) {
   return G.getVertNo();
@@ -25,7 +25,8 @@ inline void set_index(
   v->setInfo(value);
 }
 
-inline int get_degree(Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v) {
+inline int get_degree(
+    const Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v) {
   return G.deg(v);
 }
 
@@ -36,7 +37,7 @@ inline void add_edge(
 }
 
 inline bool check_edge(
-    Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v,
+    const Koala::Graph<int, int> &G, const Koala::Graph<int, int>::PVertex &v,
     const Koala::Graph<int, int>::PVertex &u) {
   return G.getEdge(v, u) != NULL;
 }

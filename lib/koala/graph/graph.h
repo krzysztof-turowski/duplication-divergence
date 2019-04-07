@@ -135,14 +135,14 @@ namespace Koala
 		template< class A, class B > class ExtVertAssocCont
 		{
 		public:
-			typedef AssocArray< A,B > Type;/**<\brief Defined type.*/
+			// typedef AssocArray< A,B > Type;/**<\brief Defined type.*/
 			// Exemplary usage. Other possibilities:
 
 			//  typedef AssocTable < BiDiHashMap<A,B> > Type;
 
             //  typedef AssocTable < HashMap<A,B> > Type;
 
-            //  typedef AssocTable < std::map<A,B> > Type;
+             typedef AssocTable < std::map<A,B> > Type;
 		};
 
 		/** \brief The type of container for adjacency matrix for directed edges.

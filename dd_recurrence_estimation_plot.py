@@ -1,6 +1,6 @@
 """
 Tool for plotting the results from dd_recurrence_estimation.
-Run: python -B ./dd_recurrence_estimation_plot.py FILE [--export {pdf}]
+Run: python -B ./dd_recurrence_estimation_plot.py FILE [--export {pdf|png}]
 """
 
 import os
@@ -43,7 +43,8 @@ def read_data(data):
     else:
         raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
-def plot_parameter((X, Y_min, Y, Y_max), label, color):
+def plot_parameter(XY_tuple, label, color):
+    (X, Y_min, Y, Y_max) = XY_tuple
     pyplot.plot(X, Y, color = color, marker = None, alpha = 0.75, label = label)
     if Y_min is not None and Y_max is not None:
         pyplot.fill_between(X, Y_min, Y_max, color = color, alpha = 0.25)

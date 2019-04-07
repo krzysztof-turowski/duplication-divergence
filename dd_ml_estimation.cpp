@@ -23,7 +23,7 @@ long double likelihood_value(
   random_device device;
   mt19937 generator(device());
   Graph H(G);
-  NeighborhoodStructure aux(H);
+  CompleteNeighborhoodStructure aux(H);
 
   long double ML_value = 0;
   while (get_graph_size(H) > n0) {
@@ -31,22 +31,21 @@ long double likelihood_value(
     vector<long double> P = get_transition_probability(H, params_0, aux);
     long double P_sum = accumulate(P.begin(), P.end(), 0.0L);
     if (P_sum == 0.0L) {
-      return 0.0L;
+      return -std::numeric_limits<long double>::infinity();
     }
     discrete_distribution<int> choose_vertex(P.begin(), P.end());
     int index = choose_vertex(generator);
-    long double p_transition = get_transition_probability(H, params, V[index], aux);
-    if (p_transition == 0.0L) {
-      return 0.0L;
+    long double log_p_transition = get_log_transition_probability(H, params, V[index], aux);
+    if (!std::isfinite(log_p_transition)) {
+      return -std::numeric_limits<long double>::infinity();
     }
-    long double log_p_transition = log(p_transition);
-    ML_value += log(P_sum) + log_p_transition - log(P[index]);
+    ML_value += log2l(P_sum) + log_p_transition - log2l(P[index]);
 
     aux.remove_vertex(get_neighbors(H, V[index]));
     delete_vertex(H, V[index]);
     aux.verify(H);
   }
-  return exp(ML_value);
+  return ML_value;
 }
 
 LikelihoodValue importance_sampling(
@@ -60,9 +59,11 @@ LikelihoodValue importance_sampling(
       std::cerr << "Run " << i + 1 << "/" << IS_TRIES << std::endl;
     }
   }
-  long double likelihood_score =
-      accumulate(likelihood_values.begin(), likelihood_values.end(), 0.0L) / IS_TRIES;
-  return LikelihoodValue(params, likelihood_score);
+  long double likelihood_score = -std::numeric_limits<long double>::infinity();
+  for (const auto &value : likelihood_values) {
+    likelihood_score = add_exp_log(likelihood_score, value);
+  }
+  return LikelihoodValue(params, likelihood_score - log2l(IS_TRIES));
 }
 
 // TODO(unknown): split into gradient search and sampling likelihood over some parameters interval
@@ -104,7 +105,7 @@ void print(
     cout << value.params.to_string() << " ML score: " << value.likelihood << endl;
   }
   for (auto const& value : likelihood_values) {
-    out_file << value.params.to_csv() << "," << log(value.likelihood) << " ";
+    out_file << value.params.to_csv() << "," << value.likelihood << " ";
   }
 }
 

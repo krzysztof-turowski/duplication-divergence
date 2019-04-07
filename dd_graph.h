@@ -1,9 +1,5 @@
 #pragma once
 
-#include <string>
-#include <set>
-#include <vector>
-
 #include "./dd_header.h"
 
 #if defined(koala)
@@ -35,11 +31,13 @@
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wcast-qual"
   #pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
-  #pragma GCC diagnostic ignored "-Wmisleading-indentation"
   #pragma GCC diagnostic ignored "-Wold-style-cast"
   #pragma GCC diagnostic ignored "-Wpedantic"
   #pragma GCC diagnostic ignored "-Wshadow"
   #pragma GCC diagnostic ignored "-Wunused-parameter"
+  #if __GNUC__ >= 6
+    #pragma GCC diagnostic ignored "-Wmisleading-indentation"
+  #endif
   #include "./dd_snap.h"
   #pragma GCC diagnostic pop
 
@@ -56,6 +54,12 @@
   typedef NetworKit::Graph Graph;
   typedef NetworKit::node Vertex;
 #endif
+
+#include <cassert>
+#include <limits>
+#include <string>
+#include <set>
+#include <vector>
 
 const double EPS = 10e-9;
 
@@ -145,8 +149,7 @@ Graph read_graph(const std::string &graph_name) {
   Graph G;
   std::vector<Vertex> V;
   int u, v;
-  while (!graph_file.eof()) {
-    graph_file >> u >> v;
+  while (graph_file >> u >> v) {
     if (v >= get_graph_size(G)) {
       for (int i = get_graph_size(G); i <= v; i++) {
         V.push_back(add_vertex(G, i));
@@ -160,11 +163,8 @@ Graph read_graph(const std::string &graph_name) {
   return G;
 }
 
-class NeighborhoodStructure {
- private:
-  int n;
-  std::vector<int> V;
-
+class BasicNeighborhoodStructure {
+ protected:
   template <typename T>
   struct counting_iterator {
     size_t count;
@@ -177,20 +177,59 @@ class NeighborhoodStructure {
   };
 
  public:
-  explicit NeighborhoodStructure(
-      Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
+  virtual int common_neighbors(const Vertex &v, const Vertex &u) const = 0;
+  virtual void remove_vertex(const std::set<Vertex> &neighbors) = 0;
+  virtual void restore_vertex(const std::set<Vertex> &neighbors) = 0;
+  virtual bool verify(const Graph &G) const = 0;
+};
+
+class NoNeighborhoodStructure : public BasicNeighborhoodStructure {
+ private:
+  const Graph &G;
+
+ public:
+  explicit NoNeighborhoodStructure(const Graph &H) : G(H) { }
+
+  explicit NoNeighborhoodStructure(const NoNeighborhoodStructure &other) : G(other.G) { }
+
+  int common_neighbors(const Vertex &v, const Vertex &u) const {
+    auto N_v(get_neighbors(G, v));
+    auto N_u(get_neighbors(G, u));
+    return set_intersection(
+        N_v.begin(), N_v.end(), N_u.begin(), N_u.end(), counting_iterator<Vertex>()).count;
+  }
+
+  void remove_vertex(const std::set<Vertex>&) { }
+
+  void restore_vertex(const std::set<Vertex>&) { }
+
+  bool verify(const Graph &H) const { return &G == &H; }
+};
+
+class CompleteNeighborhoodStructure : public BasicNeighborhoodStructure {
+ private:
+  int n;
+  std::vector<int> V;
+
+ public:
+  explicit CompleteNeighborhoodStructure(
+      const Graph &G) : n(get_graph_size(G)), V(get_graph_size(G) * get_graph_size(G)) {
     auto vertices = get_vertices(G);
-    for (const auto &v : vertices) {
-      auto N_v(get_neighbors(G, v));
-      for (const auto &u : vertices) {
-        auto N_u(get_neighbors(G, u));
-        V[get_index(v, u, n)] =
+    #pragma omp parallel for
+    for (std::size_t v_i = 0; v_i < vertices.size(); v_i++) {
+      auto N_v(get_neighbors(G, vertices[v_i]));
+      for (std::size_t u_i = 0; u_i < vertices.size(); u_i++) {
+        auto N_u(get_neighbors(G, vertices[u_i]));
+        V[get_index(vertices[v_i], vertices[u_i], n)] =
             set_intersection(
                 N_v.begin(), N_v.end(), N_u.begin(), N_u.end(),
                 counting_iterator<Vertex>()).count;
       }
     }
   }
+
+  explicit CompleteNeighborhoodStructure(
+      const CompleteNeighborhoodStructure &other) : n(other.n), V(other.V) { }
 
   int common_neighbors(const Vertex &v, const Vertex &u) const {
     return V[get_index(v, u, n)];
@@ -232,53 +271,132 @@ class NeighborhoodStructure {
   }
 };
 
-long double get_transition_probability(
-    Graph &G, const Parameters &params,
-    const Vertex &v, const Vertex &u,
-    const NeighborhoodStructure &aux) {
-  bool uv = check_edge(G, u, v);
-  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
-      only_u = get_degree(G, u) - both - uv,
-      none = (get_graph_size(G) - 2) - both - only_u - only_v;
-  long double p(params.p), r(params.r);
+inline long double add_exp_log(const long double &x, const long double &y) {
+  if (x == -std::numeric_limits<long double>::infinity()) {
+    return y;
+  }
+  if (y == -std::numeric_limits<long double>::infinity()) {
+    return x;
+  }
+  return x > y ? x + log2l(1.0L + exp2l(y - x)) : y + log2l(1.0L + exp2l(x - y));
+}
+
+bool is_feasible(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const BasicNeighborhoodStructure &aux) {
   switch (params.mode) {
-    case Mode::PURE_DUPLICATION:
-      if (only_v > 0 || (fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)) {
-        return 0.0;
+    case Mode::PURE_DUPLICATION: {
+      bool uv = check_edge(G, u, v);
+      int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv;
+      if (!uv && only_v == 0) {
+        return true;
       }
-      return pow(p, both) * pow(1 - p, only_u) / (get_graph_size(G) - 1);
+      return false;
+    }
     case Mode::PASTOR_SATORRAS:
-      if ((fabsl(p) < EPS && both > 0) || (fabsl(p - 1.0) < EPS && only_u > 0)
-          || (fabsl(r) < EPS && only_v > 0)
-          || (fabsl(r - (get_graph_size(G) - 1)) < EPS && none > 0)) {
-        return 0.0;
-      }
-      return pow(p, both) * pow(params.r / (get_graph_size(G) - 1), only_v) * pow(1 - p, only_u)
-          * pow(1 - (r / (get_graph_size(G) - 1)), none) / (get_graph_size(G) - 1);
+      return true;
     default:
       throw std::invalid_argument("Invalid mode: " + params.to_string());
   }
 }
 
-long double get_transition_probability(
-    Graph &G, const Parameters &params,
-    const Vertex &v, const NeighborhoodStructure &aux) {
-  long double p_v = 0;
+bool is_feasible(
+    const Graph &G, const Parameters &params, const Vertex &v,
+    const BasicNeighborhoodStructure &aux) {
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION: {
+      std::vector<Vertex> V(get_vertices(G));
+      for (const auto &u : V) {
+        if (u != v) {
+          if (is_feasible(G, params, v, u, aux)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    case Mode::PASTOR_SATORRAS:
+      return true;
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+long double get_log_transition_probability(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const BasicNeighborhoodStructure &aux) {
+  if (!is_feasible(G, params, v, u, aux)) {
+    return -std::numeric_limits<long double>::infinity();
+  }
+  bool uv = check_edge(G, u, v);
+  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both,
+      only_u = get_degree(G, u) - both - uv,
+      none = (get_graph_size(G) - 1) + both - only_u - only_v;
+  long double p(params.p), r(params.r);
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION:
+      assert(!(fabsl(p) < EPS && both > 0));
+      assert(!(fabsl(1 - p) < EPS && only_u > 0));
+      return both * log2l(p) + only_u * log2l(1 - p) - log2l(get_graph_size(G) - 1);
+    case Mode::PASTOR_SATORRAS:
+      assert(!(fabsl(p) < EPS && both > 0));
+      assert(!(fabsl(1 - p) < EPS && only_u > 0));
+      assert(!(fabsl(r) < EPS && only_v > 0));
+      assert(!(fabsl((get_graph_size(G) - 1) - r) < EPS && none > 0));
+      return both * log2l(p) + only_u * log2l(1 - p) + only_v * log2l(r)
+          + none * log2l(get_graph_size(G) - 1 - r)
+          - (only_v + none + 1) * log2l(get_graph_size(G) - 1);
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+long double get_log_transition_probability(
+    const Graph &G, const Parameters &params,
+    const Vertex &v, const BasicNeighborhoodStructure &aux) {
+  long double p_v = -std::numeric_limits<long double>::infinity();
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &u : V) {
     if (u != v) {
-      p_v += get_transition_probability(G, params, v, u, aux);
+      p_v = add_exp_log(p_v, get_log_transition_probability(G, params, v, u, aux));
     }
   }
   return p_v;
 }
 
 std::vector<long double> get_transition_probability(
-    Graph &G, const Parameters &params, const NeighborhoodStructure &aux) {
+    const Graph &G, const Parameters &params, const BasicNeighborhoodStructure &aux) {
   std::vector<long double> out;
   std::vector<Vertex> V(get_vertices(G));
   for (const auto &v : V) {
-    out.push_back(get_transition_probability(G, params, v, aux));
+    out.push_back(exp2l(get_log_transition_probability(G, params, v, aux)));
+  }
+  return out;
+}
+
+long double get_discard_score(
+    const Graph &G, const Parameters &params, const Vertex &v, const Vertex &u,
+    const BasicNeighborhoodStructure &aux) {
+  bool uv = check_edge(G, u, v);
+  int both = aux.common_neighbors(v, u), only_v = get_degree(G, v) - both - uv,
+      only_u = get_degree(G, u) - both - uv;
+  switch (params.mode) {
+    case Mode::PURE_DUPLICATION:
+      return !uv && only_v == 0 ? expl(-4 * only_u) : 0.0L;
+    case Mode::PASTOR_SATORRAS:
+      return expl(-4 * only_u - 8 * only_v);
+    default:
+      throw std::invalid_argument("Invalid mode: " + params.to_string());
+  }
+}
+
+long double get_discard_score(
+    const Graph &G, const Parameters &params, const Vertex &v,
+    const BasicNeighborhoodStructure &aux) {
+  long double out = 0.0L;
+  std::vector<Vertex> V(get_vertices(G));
+  for (const auto &u : V) {
+    out += get_discard_score(G, params, v, u, aux);
   }
   return out;
 }

@@ -24,7 +24,7 @@ install:
   # Libraries
   - sudo python -m pip install numpy scipy matplotlib
   - sudo python -m pip install cpplint pylint
-  - bash -e ./configure_libs.sh glpk nauty networkit snap
+  - bash -e ./configure_libs.sh glpk koala nauty networkit snap
   - source ~/.bashrc
 
 before_script:

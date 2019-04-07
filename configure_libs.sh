@@ -53,6 +53,9 @@ if [ "$#" -gt 0 ]; then
         LIBRARY_DIRS="$LIBRARY_DIRS:$GUROBI_DIR/lib"
       fi
     fi
+    if [[ "$lib" == "koala" ]]; then
+      INCLUDE_DIRS="$INCLUDE_DIRS:$CURRENT_DIR/lib/koala"
+    fi
     if [[ "$lib" == "nauty" ]]; then
       DIR=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep nauty | head -1)
       ld -L ${DIR:-.} -l:nauty.a 2>/dev/null || CHECK=`echo $?`

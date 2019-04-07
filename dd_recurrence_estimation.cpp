@@ -10,7 +10,7 @@
 
 using namespace std;
 
-typedef vector<set<int>> Graph;
+typedef vector<set<unsigned>> Graph;
 
 const double R_STEP = 0.01, R_EXP = 1.5;
 const double Q_STEP = 0.001, Q_EXP = 1.5;
@@ -433,7 +433,7 @@ void synthetic_data(const int &n, const int &n0, const Parameters &params) {
 void real_world_data(const string &graph_name, const string &seed_name, const Mode &mode) {
   Graph G = read_graph_simple(FILES_FOLDER + graph_name);
   Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
-  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "-RE"));
+  ofstream out_file(TEMP_FOLDER + get_real_filename(graph_name, mode, "RE"));
   cout << "File: " << graph_name << endl;
   process_graph(G, G0, mode, out_file);
 }
