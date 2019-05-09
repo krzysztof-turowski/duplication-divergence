@@ -1,10 +1,27 @@
-// Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
-// Compile: g++ dd_ml_estimation.cpp -O3 -o ./dd_ml_estimation
-// Example runs:
-//  ./dd_ml_estimation -action:synthetic -n:100 -n0:10
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
-//  ./dd_ml_estimation -action:real_data -graph:G-test.txt
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+/*
+Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
+This is an implementation and our extension of the idea proposed in the following paper.
+Wiuf, Carsten, Markus Brameier, Oskar Hagberg, and Michael PH Stumpf. "A likelihood approach to analysis of network data." Proceedings of the National Academy of Sciences 103, no. 20 (2006): 7566-7570.
+
+Compile: make dd_ml_estimation
+
+Syntax: ./dd_ml_estimation <options>
+<options> are
+-action:
+   synthetic: synthetic random graph generations from DD-model
+   real_data: real world graph
+-graph: If action is `real_data`, give graph file name and file should be in edge list format.
+-st: Number of independent tries for estimating the log-likelihood function. We use the idea proposed by Wiuf et al, and hence these tries correspond to importance sampling tries.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the DD-graph model.
+<parameters>: Depending on `mode`, the parameters `n,p,q,r`of the DD model.
+-n0, -p0: These are the parameters for generating seed graph in the case of `synthetic` action.
+
+Example runs:
+ ./dd_ml_estimation -action:synthetic -n:100 -n0:10
+     -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+ ./dd_ml_estimation -action:real_data -graph:G-s-cerevisiae.txt
+     -mode:pastor_satorras -st:1000
+ */
 
 #include "./dd_input.h"
 #include "./dd_graph.h"
