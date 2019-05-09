@@ -4,7 +4,7 @@
 //  ./dd_recurrence_estimation -action:synthetic -n:100 -n0:10
 //      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
 //  ./dd_recurrence_estimation -action:real_data -graph:G-test.txt
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+//      -mode:pastor_satorras -st:1000
 
 #include "./dd_input.h"
 #include "./dd_header.h"
