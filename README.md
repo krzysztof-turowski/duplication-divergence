@@ -1,6 +1,6 @@
 # duplication-divergence
 
-This repository provides two tools for the following studies of duplication-divergence random graph model on real data:
+This repository provides software tools for the following studies of duplication-divergence random graph model on real data:
 * Parameter estimation for duplication-divergence model\
   Associated paper: [1] [Revisiting Parameter Estimation in Biological Networks: Influence of Symmetries](https://www.cs.purdue.edu/homes/jithinks/files/publications/parameter_estimation_2019.pdf)
 * Given a single snapshot of a dynamic network, provide algorithms to infer the arrival order of the nodes.
