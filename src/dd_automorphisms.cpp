@@ -6,17 +6,20 @@ Compile: make dd_automorphisms
 Syntax: ./dd_automorphisms <options>
 <options> are
 -action:
-   real_graph: Find the number of symmetries in the given real_graph file
-   real_seed: Find the expected number of symmetries of a synthetic graph with given parameters and given seed file.
+  real_graph: Find the logarithm of the number of symmetries in the given real_graph file
+  real_seed: Find the expected logarithm of the number of symmetries of a synthetic graph with given parameters and given seed file.
+  synthetic: Find the average logarithm of the number of symmetries of a synthetic graph with given size and given parameters.
 -graph: Graph file name and file should be in edge list format. In case of `real_seed` option, seed graph name is extracted from the graph file name
--st: When action is `real_seed`, number of independent tries to calculate empirical p-value.
--mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` action, the mode (type) of the DD-graph model.
-<parameters>: Depending on `mode`, the parameters `p,q,r` of the DD model.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` or `synthetic` action, the mode (type) of the duplication-divergence graph model.
+-st: When action is `real_seed` or `synthetic`, number of independent tries to calculate empirical average and/or p-value.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence model.
+-n: The size of a graph in the case of `synthetic` action.
+-n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
 
 Example runs:
- ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
- ./dd_automorphisms -action:real_seed -graph:G-s-cerevisiae.txt
-     -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+  ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
+  ./dd_automorphisms -action:real_seed -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+  ./dd_automorphisms -action:synthetic -n:200 -n0:20 -st:100 -mode:pastor_satorras
 */
 
 #include "./dd_input.h"
@@ -30,7 +33,7 @@ Example runs:
 typedef std::tuple<double, double, double, double> AutomorphismsInfo;
 typedef std::tuple<double, double, double, double> PValuesInfo;
 
-int PVAL_TRIES;
+int PVAL_TRIES, AVG_TRIES;
 
 enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
@@ -157,6 +160,19 @@ double get_average(
       }) / log_aut_H.size();
 }
 
+AutomorphismsInfo get_average(const std::vector<AutomorphismsInfo> &log_aut_H) {
+  auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
+  auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
+  auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
+  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+
+  return AutomorphismsInfo(
+      get_average(log_aut_H, get_log_aut),
+      get_average(log_aut_H, get_log_aut_isolated),
+      get_average(log_aut_H, get_log_aut_cherries),
+      get_average(log_aut_H, get_log_aut_copies));
+}
+
 double get_p_value(
     const AutomorphismsInfo log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H,
     std::function<double(const AutomorphismsInfo&)> get_value) {
@@ -172,6 +188,20 @@ double get_p_value(
   return 2 * std::min(p_lower, p_upper) / log_aut_H.size();
 }
 
+PValuesInfo get_p_value(
+    const AutomorphismsInfo log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H) {
+  auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
+  auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
+  auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
+  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+
+  return PValuesInfo(
+      get_p_value(log_aut_G, log_aut_H, get_log_aut),
+      get_p_value(log_aut_G, log_aut_H, get_log_aut_isolated),
+      get_p_value(log_aut_G, log_aut_H, get_log_aut_cherries),
+      get_p_value(log_aut_G, log_aut_H, get_log_aut_copies));
+}
+
 void log_automorphisms_p_value(
     const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
   Graph G = read_graph_simple(FILES_FOLDER + graph_name);
@@ -179,25 +209,10 @@ void log_automorphisms_p_value(
   AutomorphismsInfo log_aut_G = log_automorphisms_single(G);
   std::vector<AutomorphismsInfo> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
 
-  auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
-  auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
-  auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
-  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
-
-  AutomorphismsInfo log_aut_avg_values =
-      AutomorphismsInfo(
-          get_average(log_aut_H, get_log_aut),
-          get_average(log_aut_H, get_log_aut_isolated),
-          get_average(log_aut_H, get_log_aut_cherries),
-          get_average(log_aut_H, get_log_aut_copies));
+  AutomorphismsInfo log_aut_avg_values = get_average(log_aut_H);
   print(graph_name, log_aut_avg_values, false);
 
-  PValuesInfo p_values =
-      PValuesInfo(
-          get_p_value(log_aut_G, log_aut_H, get_log_aut),
-          get_p_value(log_aut_G, log_aut_H, get_log_aut_isolated),
-          get_p_value(log_aut_G, log_aut_H, get_log_aut_cherries),
-          get_p_value(log_aut_G, log_aut_H, get_log_aut_copies));
+  PValuesInfo p_values = get_p_value(log_aut_G, log_aut_H);
   print("", p_values, false);
 }
 
@@ -206,17 +221,37 @@ void log_automorphisms(const std::string &graph_name) {
   print(graph_name, log_automorphisms_single(G), false);
 }
 
+void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
+  Graph G0(generate_seed_simple(n0, p0));
+  switch (mode) {
+    case PASTOR_SATORRAS:
+      std::vector<AutomorphismsInfo> log_aut_G = log_automorphisms(G0, n, params, AVG_TRIES);
+      AutomorphismsInfo log_aut_avg_values = get_average(log_aut_G);
+      print("Synthetic data: " + params.to_string(), log_aut_avg_values, false);
+      break;
+    default:
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
+  }
+}
+
 int main(int argc, char **argv) {
   try {
     Env = prepare_environment(argc, argv);
-    std::string action = read_string(Env, "-action:", "", "Action: real_graph, real_seed");
-    std::string graph_name = read_graph_name(Env);
+    std::string action = read_string(Env, "-action:", "", "Action: real_graph, real_seed, synthetic");
     // TODO(unknown): test parameters ranges
-    if (action == "real_seed") {
+    if (action == "synthetic") {
+      AVG_TRIES = read_int(Env, "-st:", 1, "Number of tries");
+      const int n = read_n(Env), n0 = read_n0(Env);
+      const double p0 = read_p0(Env);
+      Parameters params = read_parameters(Env);
+      synthetic_data(n, n0, p0, params);
+    } else if (action == "real_seed") {
       PVAL_TRIES = read_int(Env, "-st:", 1, "p-value tries");
+      std::string graph_name = read_graph_name(Env);
       Parameters params = read_parameters(Env);
       log_automorphisms_p_value(graph_name, get_seed_name(graph_name), params);
     } else if (action == "real_graph") {
+      std::string graph_name = read_graph_name(Env);
       log_automorphisms(graph_name);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
