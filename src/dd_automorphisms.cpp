@@ -1,9 +1,23 @@
-// Tool for computation automorphisms for various duplication-divergence models.
-// Compile: g++ dd_automorphisms.cpp LIB/nauty/nauty.a -O3 -o ./dd_automorphisms
-// Example runs:
-//  ./dd_recurrence_estimation -action:real_graph -graph:G-test.txt
-//  ./dd_recurrence_estimation -action:real_seed -graph:G-test.txt
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+/*
+Tool for computation automorphisms for various duplication-divergence models.
+
+Compile: make dd_automorphisms
+
+Syntax: ./dd_automorphisms <options>
+<options> are
+-action:
+   real_graph: Find the number of symmetries in the given real_graph file
+   real_seed: Find the expected number of symmetries of a synthetic graph with given parameters and given seed file.
+-graph: Graph file name and file should be in edge list format. In case of `real_seed` option, seed graph name is extracted from the graph file name
+-st: When action is `real_seed`, number of independent tries to calculate empirical p-value.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` action, the mode (type) of the DD-graph model.
+<parameters>: Depending on `mode`, the parameters `n,p,q,r`of the DD model.
+
+Example runs:
+ ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
+ ./dd_automorphisms -action:real_seed -graph:G-s-cerevisiae.txt
+     -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+*/
 
 #include "./dd_input.h"
 #include "./dd_header.h"
