@@ -22,3 +22,21 @@ make dd_automorphisms
 
 ./dd_automorphisms -action:real_graph -graph:G-s-pombe.txt
 ./dd_automorphisms -action:real_seed -graph:G-s-pombe.txt -st:100 -mode:pastor_satorras -p:0.983 -r:0.85
+
+for p in $(seq 0.0 1.0 0.1);
+do for r in $(seq 0.0 0.4 5.0);
+  do ./dd_automorphisms -action:synthetic -n:200 -n0:20 -p0:1.0 -st:100 -mode:pastor_satorras -p:$p -r:$r
+  done
+done
+
+for p in $(seq 0.0 1.0 0.1);
+do for r in $(seq 0.0 0.4 5.0);
+  do ./dd_automorphisms -action:synthetic -n:1000 -n0:20 -p0:1.0 -st:100 -mode:pastor_satorras -p:$p -r:$r
+  done
+done
+
+for p in $(seq 0.0 1.0 0.1);
+do for r in $(seq 0.0 0.4 5.0);
+  do ./dd_automorphisms -action:synthetic -n:5000 -n0:20 -p0:1.0 -st:100 -mode:pastor_satorras -p:$p -r:$r
+  done
+done
