@@ -157,6 +157,20 @@ bash scripts/run_ml_estimation.sh
 make dd_temporal_bound
 ```
 
+**Example runs**
+
+To plot the exact upper bound from LP relaxation, averaged over 100 random graphs on 13 vertices, generated from Pastor-Satorras model run for example
+```bash
+./dd_temporal_bound -algorithm:exact -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100
+```
+
+To plot one of the example approximation algorithms (*local-unif-sampling*) based on 1000 permutation samples run
+```bash
+./dd_temporal_bound -algorithm:local-unif-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:1000
+```
+
+The results are **appended** to file `temp/synthetic-13-6-PS-0.300-0.60-TC.txt` containing data in text format.
+
 ### `dd_temporal_algorithms`: temporal ordering algorithms
 
 **Compilation**
@@ -165,7 +179,30 @@ make dd_temporal_bound
 make dd_temporal_algorithms
 ```
 
-**Note:** the results from `dd_temporal_bound` and `dd_temporal_algorithms` are **appended** to the temporary files.
+**Greedy algorithms**
+
+```bash
+./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.3 -r:1.0 -p0:0.6 -algorithm:sort_by_degree -gt:100
+```
+The command run on 100 synthetic graphs on 50 vertices generated from Pastor-Satorras model with `p = 0.6`, `r = 1.0` and a random Erdos-Renyi seed graph on 10 vertices with edge probability 0.6. It returns the order given by *sort-by-degree* algorithm (see [2]).
+
+The results are **appended** to file `temp/synthetic-50-10-PS-0.300-1.00-TA.txt` containing data in text format.
+
+**Unsupervised learning**
+
+```bash
+./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:p_uv_threshold -gt:100 -st:100000 -threshold:0.7
+./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:sort_by_p_uv_sum -gt:100 -st:100000 -binsize:1
+```
+First command executes the *$p_{uv}$-threshold* algorithm with $\tau = 0.7$, second executes *sort-by-$p_{uv}$-sum* algorithm with bin size 1 (for details, see [2]).
+
+**Supervised learning**
+
+```bash
+./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:p_uv_threshold -gt:100 -st:100000 -threshold:0.7 -perfect:0.001
+./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:sort_by_p_uv_sum -gt:100 -st:100000 -binsize:1 -perfect:0.001
+```
+These are exactly the same algorithms as above, but this time each uses 0.1% of the total number of recognizable pairs from the original order.
 
 ### `dd_temporal_order_plot`: plot temporal ordering results
 

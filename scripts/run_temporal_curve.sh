@@ -4,9 +4,9 @@ make dd_temporal_bound
 make dd_temporal_algorithms
 
 ./dd_temporal_bound -algorithm:exact -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100
-./dd_temporal_bound -algorithm:uniform -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:10
-./dd_temporal_bound -algorithm:uniform -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:100
-./dd_temporal_bound -algorithm:uniform -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:1000
+./dd_temporal_bound -algorithm:local-unif-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:10
+./dd_temporal_bound -algorithm:local-unif-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:100
+./dd_temporal_bound -algorithm:local-unif-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:1000
 ./dd_temporal_bound -algorithm:high-prob-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:10
 ./dd_temporal_bound -algorithm:high-prob-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:100
 ./dd_temporal_bound -algorithm:high-prob-sampling -n:13 -n0:6 -mode:pastor_satorras -p:0.3 -r:0.6 -p0:0.6 -gt:100 -st:1000
