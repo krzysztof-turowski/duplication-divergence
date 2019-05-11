@@ -1,10 +1,24 @@
-// Tool for inference the values of parameters for various duplication-divergence models.
-// Compile: g++ dd_recurrence_estimation.cpp -O3 -o ./dd_recurrence_estimation
-// Example runs:
-//  ./dd_recurrence_estimation -action:synthetic -n:100 -n0:10
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
-//  ./dd_recurrence_estimation -action:real_data -graph:G-test.txt
-//      -mode:pastor_satorras -st:1000
+/*
+Tool for inference the values of parameters for various duplication-divergence models.
+
+Compile: make dd_recurrence_estimation
+
+Syntax: ./dd_recurrence_estimation <options>
+<options> are
+-action:
+  synthetic: synthetic random graph generations from duplication-divergence model
+  real_data: real-world network
+-graph: If action is `real_data`, then provide graph file name (located in `files/` folder). File should be in edge list format.
+-st: Number of independent tries for estimating the empirical tolerance interval for parameters.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the DD model.
+-n: The size of a graph in the case of `synthetic` action.
+-n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
+
+Example runs:
+  ./dd_recurrence_estimation -action:synthetic -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+  ./dd_recurrence_estimation -action:real_data -graph:G-test.txt -mode:pastor_satorras -st:1000
+*/
 
 #include "./dd_input.h"
 #include "./dd_header.h"
