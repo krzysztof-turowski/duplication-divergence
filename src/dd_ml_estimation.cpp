@@ -13,7 +13,8 @@ Syntax: ./dd_ml_estimation <options>
 -graph: If action is `real_data`, give graph file name and file should be in edge list format.
 -st: Number of independent tries for estimating the log-likelihood function. We use the idea proposed by Wiuf et al, and hence these tries correspond to importance sampling tries.
 -mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the DD-graph model.
-<parameters>: Depending on `mode`, the parameters `n,p,q,r`of the DD model.
+<parameters>: Depending on `mode`, the parameters `p,q,r`of the DD model.
+-n: The size of a graph in the case of `synthetic` action.
 -n0, -p0: These are the parameters for generating seed graph in the case of `synthetic` action.
 
 Example runs:
