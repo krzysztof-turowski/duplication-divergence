@@ -44,8 +44,8 @@ inline int read_n0(TEnv &environment) {
   return read_int(environment, "-n0:", 0, "Number of nodes in seed graph");
 }
 
-inline int read_p0(TEnv &environment) {
-  return read_double(environment, "-p0:", 0, "Probability p_0 for seed graph");
+inline double read_p0(TEnv &environment) {
+  return read_double(environment, "-p0:", 1.0, "Probability p_0 for seed graph");
 }
 
 inline std::string read_mode(TEnv &environment) {

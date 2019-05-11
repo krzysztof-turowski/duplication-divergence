@@ -67,7 +67,7 @@ def plot_data(filename, export, detailed):
     plot_theoterical_curves('temp/' + filename + '-TC.txt')
     plot_algorithms('temp/' + filename + '-TA.txt', detailed)
     plot_labels()
-    dd_plot.plot(filename, export)
+    dd_plot.plot(filename + '-T', export)
 
 args = dd_plot.get_parser().parse_args()
 plot_data(args.filename, args.export, args.detailed)

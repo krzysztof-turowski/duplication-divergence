@@ -11,7 +11,7 @@ Syntax: ./dd_automorphisms <options>
 -graph: Graph file name and file should be in edge list format. In case of `real_seed` option, seed graph name is extracted from the graph file name
 -st: When action is `real_seed`, number of independent tries to calculate empirical p-value.
 -mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` action, the mode (type) of the DD-graph model.
-<parameters>: Depending on `mode`, the parameters `n,p,q,r`of the DD model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the DD model.
 
 Example runs:
  ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
@@ -136,12 +136,14 @@ std::vector<AutomorphismsInfo> log_automorphisms(
 }
 
 template <typename T>
-void print(const std::string &graph_name, const T &info) {
+void print(const std::string &graph_name, const T &info, const bool &all_types) {
   std::cout << std::left << std::setw(25) << graph_name << " " << std::right;
   std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<0>(info) << " ";
-  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<1>(info) << " ";
-  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<2>(info) << " ";
-  std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<3>(info) << " ";
+  if (all_types) {
+    std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<1>(info) << " ";
+    std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<2>(info) << " ";
+    std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<3>(info) << " ";
+  }
   std::cout << std::endl;
 }
 
@@ -188,7 +190,7 @@ void log_automorphisms_p_value(
           get_average(log_aut_H, get_log_aut_isolated),
           get_average(log_aut_H, get_log_aut_cherries),
           get_average(log_aut_H, get_log_aut_copies));
-  print(graph_name, log_aut_avg_values);
+  print(graph_name, log_aut_avg_values, false);
 
   PValuesInfo p_values =
       PValuesInfo(
@@ -196,12 +198,12 @@ void log_automorphisms_p_value(
           get_p_value(log_aut_G, log_aut_H, get_log_aut_isolated),
           get_p_value(log_aut_G, log_aut_H, get_log_aut_cherries),
           get_p_value(log_aut_G, log_aut_H, get_log_aut_copies));
-  print("", p_values);
+  print("", p_values, false);
 }
 
 void log_automorphisms(const std::string &graph_name) {
   Graph G(read_graph_simple(FILES_FOLDER + graph_name));
-  print(graph_name, log_automorphisms_single(G));
+  print(graph_name, log_automorphisms_single(G), false);
 }
 
 int main(int argc, char **argv) {

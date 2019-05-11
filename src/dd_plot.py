@@ -38,10 +38,10 @@ def get_parser():
 
 def plot(name, export):
     if export == 'pdf':
-        pyplot.savefig('{0}/{1}.pdf'.format(TEMP_FOLDER, name),
+        pyplot.savefig(r'{0}/{1}.pdf'.format(TEMP_FOLDER, name),
                        bbox_inches = 'tight', pad_inches = 0.05)
     elif export == 'png':
-        pyplot.savefig('{0}/{1}.png'.format(TEMP_FOLDER, name),
+        pyplot.savefig(r'{0}/{1}.png'.format(TEMP_FOLDER, name),
                        bbox_inches = 'tight', pad_inches = 0.05)
     else:
         pyplot.show()

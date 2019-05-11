@@ -3,8 +3,6 @@ Tool for plotting the results from dd_recurrence_estimation.
 Run: python -B ./dd_recurrence_estimation_plot.py FILE [--export {pdf|png}]
 """
 
-import os
-
 import numpy
 import matplotlib.pyplot as pyplot
 
@@ -50,7 +48,6 @@ def plot_parameter(XY_tuple, label, color):
         pyplot.fill_between(X, Y_min, Y_max, color = color, alpha = 0.25)
 
 def plot_data(data_file, filename, export):
-    name = os.path.splitext(filename.strip())[0]
     dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
     data = data_file.readlines()
     plot_parameter(read_data(data[0]), label = 'Degree', color = 'red')
@@ -60,7 +57,7 @@ def plot_data(data_file, filename, export):
     pyplot.legend(loc = 'upper left')
     pyplot.gca().get_xaxis().set_major_locator(pyplot.MaxNLocator(8))
     pyplot.gca().get_yaxis().set_major_locator(pyplot.MaxNLocator(8))
-    dd_plot.plot(name, export)
+    dd_plot.plot(filename + '-RE', export)
 
 args = dd_plot.get_parser().parse_args()
 with open('temp/' + args.filename + '-RE.txt') as input_file:
