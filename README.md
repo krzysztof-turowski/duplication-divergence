@@ -55,7 +55,7 @@ In addition to the above, the following files are available to reproduce the fig
 | `dd_recurrence_estimation_plot` | Plot estimated parameters via degree, open triangles and traingles recurrence-relations with our methods and find the confidence interval and convergence point |
 |`dd_temporal_order_plot` | Plot the temporal order algorithms for recovering the node orders (ordered cluster labels) in the precision vs density curve|
 
-## Parameter estimation by automorphisms and recurrence-relations estimation
+## Parameter estimation by automorphisms and recurrence-relations fitting
 
 ### `dd_automorphisms`: finding the number of automorphisms and its p-value
 
