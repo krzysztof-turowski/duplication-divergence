@@ -51,7 +51,6 @@ def read_data(data, interpolate = False):
     return x_range, y_range, matrix
 
 def plot_data(data_file, filename, export):
-    name = os.path.splitext(filename.strip())[0]
     dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
     x, y, data = read_data(data_file.readlines()[0])
     image = pyplot.imshow(data, cmap = 'BuPu', interpolation = 'nearest', aspect = 'auto')
@@ -65,8 +64,8 @@ def plot_data(data_file, filename, export):
     pyplot.gca().set_yticks(numpy.linspace(0, len(y) - 1, num = Y_LABELS, endpoint = True))
     pyplot.gca().set_yticklabels([(round(float(label), 1)) for label in labels_y])
     pyplot.gcf().colorbar(image)
-    dd_plot.plot(name, export)
+    dd_plot.plot(filename + '-ML', export)
 
 args = dd_plot.get_parser().parse_args()
-with open('temp/' + args.filename) as input_file:
+with open('temp/' + args.filename + '-ML.txt') as input_file:
     plot_data(input_file, args.filename, args.export)

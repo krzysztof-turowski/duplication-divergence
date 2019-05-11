@@ -27,6 +27,8 @@ where
 
 The choice of libraries to use is done via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in Makefile.
 
+**Note:** remember to invoke `source ~/.bashrc` or update enviroment *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually.
+
 ## Overview of the library
 
 ### Available programs
@@ -224,6 +226,6 @@ bash scripts/run_temporal_reinforced.sh
 
 ## Data
 
-All the data files we have used in our experiments are provided in `files` folder - Arxiv, Simple English Wikipedia and CollegeMsg networks, and the protein-protein interaction (PPI) networks.
+All the data files we have used in our experiments are provided in `files` folder: arXiv, Simple English Wikipedia and CollegeMsg networks, and the protein-protein interaction (PPI) networks.
 We collect the PPI data of seven species from [BioGRID](https://thebiogrid.org/).
-The phylogentic tree based age of the proteins are gathered from [ProteinHistorian](http://lighthouse.ucsf.edu/ProteinHistorian/) and are also provided.
+The age of the proteins are based on phylogentic tree data gathered from [ProteinHistorian](http://lighthouse.ucsf.edu/ProteinHistorian/) and are also provided.
