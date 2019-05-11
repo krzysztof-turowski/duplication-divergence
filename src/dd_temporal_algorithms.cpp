@@ -31,15 +31,15 @@ enum TemporalAlgorithm {
 };
 
 const std::map<TemporalAlgorithm, std::string> SHORT_ALGORITHM_NAME = {
-  { TemporalAlgorithm::DEGREE_SORT, "sort_by_degree" },
-  { TemporalAlgorithm::DEGREE_PEEL, "peel_by_degree" },
-  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort_by_neighborhood" },
-  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL, "peel_by_neighborhood_sl" },
-  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF, "peel_by_neighborhood_lf" },
-  { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank_by_neighborhood" },
-  { TemporalAlgorithm::PROBABILITY_SORT, "sort_by_probability" },
-  { TemporalAlgorithm::PROBABILITY_SUM_SORT, "sort_by_probability_sum" },
-  { TemporalAlgorithm::LP_SOLUTION_SORT, "sort_by_lp_solution" },
+  { TemporalAlgorithm::DEGREE_SORT, "sort-by-degree" },
+  { TemporalAlgorithm::DEGREE_PEEL, "peel-by-degree" },
+  { TemporalAlgorithm::NEIGHBORHOOD_SORT, "sort-by-neighborhood" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL, "peel-by-neighborhood" },
+  { TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF, "peel-by-neighborhood-lf" },
+  { TemporalAlgorithm::NEIGHBORHOOD_RANK, "rank-by-neighborhood" },
+  { TemporalAlgorithm::PROBABILITY_SORT, "$p_{uv}$-threshold" },
+  { TemporalAlgorithm::PROBABILITY_SUM_SORT, "sort-by-$p_{uv}$-sum" },
+  { TemporalAlgorithm::LP_SOLUTION_SORT, "sort-by-lp-solution" },
 };
 
 const std::map<TemporalAlgorithm, std::string> LONG_ALGORITHM_NAME = {
@@ -60,11 +60,11 @@ const std::map<std::string, TemporalAlgorithm> REVERSE_ALGORITHM_NAME = {
   { "sort_by_degree", TemporalAlgorithm::DEGREE_SORT },
   { "peel_by_degree", TemporalAlgorithm::DEGREE_PEEL },
   { "sort_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_SORT },
-  { "peel_by_neighborhood_sl", TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL },
+  { "peel_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_PEEL_SL },
   { "peel_by_neighborhood_lf", TemporalAlgorithm::NEIGHBORHOOD_PEEL_LF },
   { "rank_by_neighborhood", TemporalAlgorithm::NEIGHBORHOOD_RANK },
-  { "sort_by_probability", TemporalAlgorithm::PROBABILITY_SORT },
-  { "sort_by_probability_sum", TemporalAlgorithm::PROBABILITY_SUM_SORT },
+  { "p_uv_threshold", TemporalAlgorithm::PROBABILITY_SORT },
+  { "sort_by_p_uv_sum", TemporalAlgorithm::PROBABILITY_SUM_SORT },
   { "sort_by_lp_solution", TemporalAlgorithm::LP_SOLUTION_SORT },
 };
 

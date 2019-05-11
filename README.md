@@ -21,11 +21,11 @@ Install libraries and set environment variables using the following command
 bash ./configure_libs.sh LIB1 LIB2 ...
 ```
 where
-- available graph libraries: *koala*, *snap*, *networkit*,
+- available graph libraries: *koala*, *snap*, *networkit* ,
 - available LP libraries: *glpk*, *gurobi* (note: need separate download and license),
 - available automorphisms library: *nauty*.
 
-The choice of libraries to use is done via variables **GRAPH_LIB** and **LP_SOLVER** in Makefile.
+The choice of libraries to use is done via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in Makefile.
 
 ## Overview of the library
 
@@ -36,8 +36,8 @@ The choice of libraries to use is done via variables **GRAPH_LIB** and **LP_SOLV
 | `dd_automorphisms`    | Find the number of automorphisms and its p-value |
 | `dd_ml_estimation`      | Maximum likelihood estimation (MLE) of the parameters      |
 | `dd_recurrence_estimation` | Parameter estimation using our Recurrence-relation method      |
-|`dd_temporal_bound` | Algorithms to approximate the integer programming optimization solution with the linear programming optimization |
-| `dd_temporal_algorithms` | Temporal ranking algorithms |
+|`dd_temporal_bound` | Algorithms to approximate the upper bounds on optimal ordering to recover using LP relaxation |
+| `dd_temporal_algorithms` | Temporal ordering algorithms |
 
 
 To compile any of the above `program` issue
@@ -137,7 +137,7 @@ This generates a file `temp/G-100-20-PS-0.1-0.3-PS-ML.txt` containing results in
 
 To plot the MLE result from this temporary file and save it as a PDF file run:
 ```bash
-python -B ./dd_ml_estimation_plot.py G-100-20-PS-0.1-0.3-PS-ML.txt --export pdf
+python -B ./src/dd_ml_estimation_plot.py G-100-20-PS-0.1-0.3-PS-ML.txt --export pdf
 ```
 
 **Reproduce cited results**
@@ -147,9 +147,9 @@ The script that was used to obtain MLE scores and plots in [1] can be run
 bash scripts/run_ml_estimation.sh
 ```
 
-## Temporal ranking algorithms
+## Temporal ordering algorithms
 
-### `dd_temporal_bound`: temporal ranking bound
+### `dd_temporal_bound`: upper bound on temporal ordering
 
 **Compilation**
 
@@ -157,7 +157,7 @@ bash scripts/run_ml_estimation.sh
 make dd_temporal_bound
 ```
 
-### `dd_temporal_algorithms`: temporal ranking algorithms
+### `dd_temporal_algorithms`: temporal ordering algorithms
 
 **Compilation**
 
@@ -165,7 +165,25 @@ make dd_temporal_bound
 make dd_temporal_algorithms
 ```
 
+**Note:** the results from `dd_temporal_bound` and `dd_temporal_algorithms` are **appended** to the temporary files.
+
+### `dd_temporal_order_plot`: plot temporal ordering results
+
+Suppose we have both temporary files `G-test-TC.txt` (containing data related to the temporal bounds) and `G-test-TA.txt` (containing results of various algorithms).
+To plot results from files and save it as a PDF file run:
+```bash
+python -B ./src/dd_ml_estimation_plot.py G-test --export pdf
+```
+If you want to plot not only the mean result, but also the distribution of the results for each algorithm add `--detailed` option.
+In case any of the files is missing, the script will report it in a command line, but plot the existing data nevertheless.
+
 **Reproduce cited results**
+
+The scripts that were used to find all the data collected in [2] are as following:
+```bash
+bash scripts/run_temporal_curve.sh
+bash scripts/run_temporal_reinforced.sh
+```
 
 ## Data
 

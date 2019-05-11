@@ -26,15 +26,15 @@ const int PERMUTATION_SIZE_LIMIT = 100, PERMUTATION_COUNT_LIMIT = 10;
 enum SamplingMethod { WIUF, UNIFORM, MIN_DISCARD };
 
 const std::map<SamplingMethod, std::string> SAMPLING_METHOD_NAME = {
-  { SamplingMethod::WIUF, "wiuf" },
-  { SamplingMethod::UNIFORM, "uniform" },
-  { SamplingMethod::MIN_DISCARD, "min_discard" },
+  { SamplingMethod::WIUF, "high-prob-sampling" },
+  { SamplingMethod::UNIFORM, "local-unif-sampling" },
+  { SamplingMethod::MIN_DISCARD, "discard-minimum-sampling" },
 };
 
 const std::map<std::string, SamplingMethod> SAMPLING_METHOD_REVERSE_NAME = {
-  { "wiuf", SamplingMethod::WIUF },
-  { "uniform", SamplingMethod::UNIFORM },
-  { "min_discard", SamplingMethod::MIN_DISCARD },
+  { "high-prob-sampling", SamplingMethod::WIUF },
+  { "local-unif-sampling", SamplingMethod::UNIFORM },
+  { "discard-minimum-sampling", SamplingMethod::MIN_DISCARD },
 };
 
 inline bool validate_problem_size(const int &n, const int &n0) {
