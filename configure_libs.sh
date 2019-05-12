@@ -35,6 +35,7 @@ if [ "$#" -gt 0 ]; then
         if [[ $UNAME == "Darwin" ]]; then
           MAC_PATH = "/Library"
         fi
+        echo $MAC_PATH
         if [[ -z "$GUROBI_HOME" ]]; then
           GUROBI_LIB=$(find -L /usr/lib $HOME $CURRENT_DIR $MAC_PATH -path */lib/libgurobi_c++.a -print0 2>/dev/null | head -1)
           GUROBI_DIR="$(dirname "$(dirname "$GUROBI_LIB")")"
