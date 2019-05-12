@@ -31,7 +31,7 @@ def initialize_figure(plot_style, figure_size_scale):
 
 def get_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', metavar = 'FILE', required = True, help = 'data to plot')
+    parser.add_argument('filename', metavar = 'FILE', help = 'data to plot')
     parser.add_argument('--export', choices = ['pdf', 'png'], help = 'export plot to file')
     return parser
 
