@@ -174,7 +174,7 @@ AutomorphismsInfo get_average(const std::vector<AutomorphismsInfo> &log_aut_H) {
 }
 
 double get_p_value(
-    const AutomorphismsInfo log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H,
+    const AutomorphismsInfo &log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H,
     std::function<double(const AutomorphismsInfo&)> get_value) {
   double log_aut_G_value = get_value(log_aut_G);
   double p_lower =
@@ -189,7 +189,7 @@ double get_p_value(
 }
 
 PValuesInfo get_p_value(
-    const AutomorphismsInfo log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H) {
+    const AutomorphismsInfo &log_aut_G, const std::vector<AutomorphismsInfo> &log_aut_H) {
   auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
   auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
   auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
@@ -241,13 +241,13 @@ int main(int argc, char **argv) {
         read_string(Env, "-action:", "", "Action: real_graph, real_seed, synthetic");
     // TODO(unknown): test parameters ranges
     if (action == "synthetic") {
-      AVG_TRIES = read_int(Env, "-st:", 1, "Number of tries");
+      AVG_TRIES = read_int(Env, "-gt:", 1, "Number of tries");
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
       Parameters params = read_parameters(Env);
       synthetic_data(n, n0, p0, params);
     } else if (action == "real_seed") {
-      PVAL_TRIES = read_int(Env, "-st:", 1, "p-value tries");
+      PVAL_TRIES = read_int(Env, "-gt:", 1, "p-value tries");
       std::string graph_name = read_graph_name(Env);
       Parameters params = read_parameters(Env);
       log_automorphisms_p_value(graph_name, get_seed_name(graph_name), params);
