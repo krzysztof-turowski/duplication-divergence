@@ -36,30 +36,31 @@ def plot_labels():
     pyplot.ylabel('CCDF($deg$)')
     pyplot.legend(loc = 'lower left', prop = {'size': 12})
 
-def test_powerlaw(graph_name, action, args):
+def test_powerlaw(graph_name, action, argument_list):
     if action == 'real_graph':
         G = networkx.read_edgelist('files/' + graph_name + '.txt', nodetype = int)
         get_fitness(graph_name, G)
-        if args.plot:
+        if argument_list.plot:
             dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
             plot_powerlaw(G)
             plot_labels()
             dd_plot.plot(graph_name + '-P', 'pdf')
     elif action == 'real_seed':
         seed_name = re.sub('^G-', 'G0-', graph_name, flags = re.MULTILINE)
+        TRIES, mode, p, r = argument_list.gt, argument_list.mode, argument_list.p, argument_list.r
         G0 = networkx.read_edgelist('files/' + seed_name + '.txt', nodetype = int)
         n = networkx.read_edgelist('files/' + graph_name + '.txt', nodetype = int).order()
         gamma_avg, percentile_avg = 0, 0
-        for _ in range(args.gt):
-            if args.mode == 'pastor_satorras':
-                G = dd_header.generate_pastor_satorras(G0.copy(), n, G0.order(), args.p, args.r)
+        for _ in range(TRIES):
+            if mode == 'pastor_satorras':
+                G = dd_header.generate_pastor_satorras(G0.copy(), n, G0.order(), p, r)
             else:
-                raise ValueError('Unknown mode: {0}'.format(args.mode))
+                raise ValueError('Unknown mode: {0}'.format(mode))
             gamma, percentile = get_fitness(graph_name, G)
             gamma_avg += gamma
             percentile_avg += percentile
         print('{0}: average gamma {1}, average percentile {2:.2f}'.format(
-            graph_name, gamma_avg / args.gt, percentile_avg / args.gt))
+            graph_name, gamma_avg / TRIES, percentile_avg / TRIES))
     else:
         raise ValueError('Unknown action: {0}'.format(action))
 

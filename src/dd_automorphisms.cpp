@@ -223,14 +223,15 @@ void log_automorphisms(const std::string &graph_name) {
 
 void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
   Graph G0(generate_seed_simple(n0, p0));
-  switch (mode) {
-    case PASTOR_SATORRAS:
+  switch (params.mode) {
+    case PASTOR_SATORRAS: {
       std::vector<AutomorphismsInfo> log_aut_G = log_automorphisms(G0, n, params, AVG_TRIES);
       AutomorphismsInfo log_aut_avg_values = get_average(log_aut_G);
       print("Synthetic data: " + params.to_string(), log_aut_avg_values, false);
       break;
+    }
     default:
-      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(mode)->second);
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
   }
 }
 
