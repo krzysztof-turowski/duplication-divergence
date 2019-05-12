@@ -7,12 +7,12 @@ This repository provides software tools for the following studies of duplication
 It implements the optimal and approximate solutions of the problem. The optimal solution is a result of an integer programming formulation with coefficients found by importance sampling techniques.\
   Associated paper: [2] [Temporal Ordered Clustering in Dynamic Networks](https://arxiv.org/abs/1905.00672)
 
-##### Table of Contents
+#### Table of Contents
 1. [Getting started](#getting-started)
 2. [Overview of the library](#overview)
-3. [Examples for parameter estimation by automorphisms and recurrence-relations fitting](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-parameter-estimation-by-automorphisms-and-recurrence-relations-fitting)
-4. [Examples for temporal ordering algorithms](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-temporal-ordering-algorithms)
-5. [Data](https://github.com/krzysztof-turowski/duplication-divergence#data)
+3. [Examples for parameter estimation by automorphisms and recurrence-relations fitting](#examples-estimation)
+4. [Examples for temporal ordering algorithms](#examples-temporal-order)
+5. [Data](#data)
 
 ## <a name="getting-started"></a>Getting started
 Download the repository or clone it with the following command
@@ -68,7 +68,7 @@ In addition to the above, the following files are available to reproduce the fig
 | `dd_recurrence_estimation_plot` | Plot estimated parameters via degree, open triangles and traingles recurrence-relations with our methods and find the confidence interval and convergence point |
 |`dd_temporal_order_plot` | Plot the temporal order algorithms for recovering the node orders (ordered cluster labels) in the precision vs density curve|
 
-## Examples for parameter estimation by automorphisms and recurrence-relations fitting
+## <a name="examples-estimation"></a>Examples for parameter estimation by automorphisms and recurrence-relations fitting
 
 #### `dd_automorphisms`: finding the number of automorphisms and its p-value
 
@@ -160,7 +160,7 @@ The script that was used to obtain MLE scores and plots in [1] can be run
 bash scripts/run_ml_estimation.sh
 ```
 
-## Examples for temporal ordering algorithms
+## <a name="examples-temporal-order"></a>Examples for temporal ordering algorithms
 
 #### `dd_temporal_bound`: upper bound on temporal ordering
 
@@ -235,7 +235,7 @@ bash scripts/run_temporal_curve.sh
 bash scripts/run_temporal_reinforced.sh
 ```
 
-## Data
+## <a name="data"></a>Data
 
 All the data files we have used in our experiments are provided in `files` folder: arXiv, Simple English Wikipedia and CollegeMsg networks, and the protein-protein interaction (PPI) networks.
 We collect the PPI data of seven species from [BioGRID](https://thebiogrid.org/).
