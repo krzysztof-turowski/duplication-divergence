@@ -8,13 +8,13 @@ It implements the optimal and approximate solutions of the problem. The optimal 
   Associated paper: [2] [Temporal Ordered Clustering in Dynamic Networks](https://arxiv.org/abs/1905.00672)
 
 ##### Table of Contents
-1. [Getting started](https://github.com/krzysztof-turowski/duplication-divergence#getting-started)
-2. [Overview of the library](https://github.com/krzysztof-turowski/duplication-divergence#overview-of-the-library)
+1. [Getting started](#getting-started)
+2. [Overview of the library](#overview)
 3. [Examples for parameter estimation by automorphisms and recurrence-relations fitting](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-parameter-estimation-by-automorphisms-and-recurrence-relations-fitting)
 4. [Examples for temporal ordering algorithms](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-temporal-ordering-algorithms)
 5. [Data](https://github.com/krzysztof-turowski/duplication-divergence#data)
 
-## Getting started
+## <a name="getting-started"></a>Getting started
 Download the repository or clone it with the following command
 ```bash
 git clone https://github.com/krzysztof-turowski/duplication-divergence.git DIR
@@ -38,7 +38,7 @@ One of the graph and optimization libraries should be configured before compilin
 - Remember to invoke `source ~/.bashrc` or update enviroment *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually.
 - The optimization libraries *glpk* and *gurobi* require separate download and installation. The *gurobi* need a license too (free license available for academic use).
 
-## Overview of the library
+## <a name="overview"></a>Overview of the library
 
 **Available main programs**
 
