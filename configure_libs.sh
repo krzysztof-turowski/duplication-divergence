@@ -31,8 +31,12 @@ if [ "$#" -gt 0 ]; then
         echo "Gurobi already present"
       else
         echo "Gurobi not present"
+        UNAME = $(uname)
+        if [[ $UNAME == "Darwin" ]]
+          MAC_PATH = "/Library"
+        fi
         if [[ -z "$GUROBI_HOME" ]]; then
-          GUROBI_LIB=$(find -L /usr/lib $HOME $CURRENT_DIR -path */lib/libgurobi_c++.a -print0 2>/dev/null | head -1)
+          GUROBI_LIB=$(find -L /usr/lib $HOME $CURRENT_DIR $MAC_PATH -path */lib/libgurobi_c++.a -print0 2>/dev/null | head -1)
           GUROBI_DIR="$(dirname "$(dirname "$GUROBI_LIB")")"
           echo "export GUROBI_HOME=$GUROBI_DIR" >> $HOME/.bashrc
         else
