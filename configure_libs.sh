@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script for libraries configuration. Run: bash ./configure_lish.sh
+# Script for libraries configuration. Run: bash ./configure_libs.sh
 
 set -e
 if [ "$#" -gt 0 ]; then

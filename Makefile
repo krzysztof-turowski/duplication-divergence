@@ -3,7 +3,7 @@ CC = g++
 COMPILER_FLAGS =-fmax-errors=5 -Wlogical-op -Wstrict-null-sentinel -Wnoexcept
 FLAGS = -std=c++17 -lstdc++ -Wall -Wextra -Wstrict-aliasing -Wpedantic -Werror -Wunreachable-code -Wcast-align -Wcast-qual -Wctor-dtor-privacy -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wsign-promo -Wstrict-overflow=2 -Wswitch-default -Wundef -fdiagnostics-show-option -O3 -pthread
 
-ifeq ($(UNAME), Darwin)
+ifeq ($(UNAME),Darwin)
   COMPILER_FLAGS += -Xclang -fopenmp -lomp
 else
   COMPILER_FLAGS += -fopenmp
@@ -11,7 +11,7 @@ endif
 
 GRAPH_LIB = snap
 NAUTY_LIB = -l:nauty.a -Wno-unused-variable -DTHREADS=1
-LP_SOLVER = gurobi
+LP_SOLVER = glpk
 
 INPUT_FLAGS = -lsnap -Wno-error -fpermissive
 
