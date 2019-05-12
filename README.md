@@ -1,12 +1,17 @@
 # duplication-divergence
 
-This repository provides software tools for the following studies of duplication-divergence random graph model on real data:
+This repository provides software tools for the following studies of duplication-divergence random graph model on real data.
 * Parameter estimation for duplication-divergence model\
   Associated paper: [1] [Revisiting Parameter Estimation in Biological Networks: Influence of Symmetries](https://www.cs.purdue.edu/homes/jithinks/files/publications/parameter_estimation_2019.pdf)
 * Given a single snapshot of a dynamic network, provide algorithms to infer the arrival order of the nodes.
 It implements the optimal and approximate solutions of the problem. The optimal solution is a result of an integer programming formulation with coefficients found by importance sampling techniques.\
   Associated paper: [2] [Temporal Ordered Clustering in Dynamic Networks](https://arxiv.org/abs/1905.00672)
 
+##### Table of Contents
+1. [Getting started](#gettingstarted)
+2.
+
+<a name="gettingstarted" />
 ## Getting started
 Download the repository or clone it with the following command
 ```bash
@@ -15,26 +20,25 @@ cd DIR
 git submodule update --init --recursive
 ```
 
-## Installation
-Install libraries and set environment variables using the following command
+**Configuration of libraries**:\
+Compile some of the libraries and set environment variables using the following command
 ```bash
 bash ./configure_libs.sh LIB1 LIB2 ...
 ```
-where
-- available graph libraries: *koala*, *snap*, *networkit*
-- available optimization libraries: *glpk*, *gurobi*
-- available automorphisms library: *nauty*
+where LIB1, LIB2 etc correspond to
+- graph libraries: *koala* (default), *snap*, *networkit*
+- optimization libraries: *glpk*, *gurobi*
+- automorphisms library: *nauty*
 
-
-The choice of libraries to use is done via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in Makefile.
+One of the graph and optimization libraries should be configured before compiling the programs. The choice of libraries to use is done via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in the Makefile.
 
 **Note:**
 - Remember to invoke `source ~/.bashrc` or update enviroment *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually.
-- The optimization libraries *glpk* and *gurobi* require separate down
+- The optimization libraries *glpk* and *gurobi* require separate download and installation. The *gurobi* need a license too (free license available for academic use).
 
 ## Overview of the library
 
-### Available programs
+**Available main programs**
 
 | Program        | Function           |
 | ------------- |-------------|
@@ -54,15 +58,17 @@ The syntax and examples for running the compiled programs are provided at the be
 
 In addition to the above, the following files are available to reproduce the figures of the associated papers. See the source Python files for the syntax and examples.
 
+**Available plotting programs**
+
 | Program        | Function           |
 | ------------- |-------------|
 | `dd_ml_estimation_plot`      | Plot the log-likelihood as a function of the parameters `p` and `r` of the duplication-divergence model.
 | `dd_recurrence_estimation_plot` | Plot estimated parameters via degree, open triangles and traingles recurrence-relations with our methods and find the confidence interval and convergence point |
 |`dd_temporal_order_plot` | Plot the temporal order algorithms for recovering the node orders (ordered cluster labels) in the precision vs density curve|
 
-## Parameter estimation by automorphisms and recurrence-relations fitting
+## Examples for parameter estimation by automorphisms and recurrence-relations fitting
 
-### `dd_automorphisms`: finding the number of automorphisms and its p-value
+#### `dd_automorphisms`: finding the number of automorphisms and its p-value
 
 **Compilation**
 
@@ -91,7 +97,7 @@ The script that was used to obtain number of automorphisms and test p-values in 
 bash scripts/run_automorphisms.sh
 ```
 
-### `dd_recurrence_estimation`: parameter estimation using recurrence-relation method
+#### `dd_recurrence_estimation`: parameter estimation using recurrence-relation method
 
 **Compilation**
 
@@ -122,7 +128,7 @@ The script that was used to obtain estimated parameters and plots in [1] can be 
 bash scripts/run_recurrence_estimation.sh
 ```
 
-### `dd_ml_estimation`: maximum likelihood estimation (MLE) of the parameters
+#### `dd_ml_estimation`: maximum likelihood estimation (MLE) of the parameters
 
 **Compilation**
 
@@ -152,9 +158,9 @@ The script that was used to obtain MLE scores and plots in [1] can be run
 bash scripts/run_ml_estimation.sh
 ```
 
-## Temporal ordering algorithms
+## Examples for emporal ordering algorithms
 
-### `dd_temporal_bound`: upper bound on temporal ordering
+#### `dd_temporal_bound`: upper bound on temporal ordering
 
 **Compilation**
 
@@ -176,7 +182,7 @@ To plot one of the example approximation algorithms (*local-unif-sampling*) base
 
 The results are **appended** to file `temp/synthetic-13-6-PS-0.300-0.60-TC.txt` containing data in text format.
 
-### `dd_temporal_algorithms`: temporal ordering algorithms
+#### `dd_temporal_algorithms`: temporal ordering algorithms
 
 **Compilation**
 
@@ -209,7 +215,7 @@ First command executes the *$p_{uv}$-threshold* algorithm with $\tau = 0.7$, sec
 ```
 These are exactly the same algorithms as above, but this time each uses 0.1% of the total number of recognizable pairs from the original order.
 
-### `dd_temporal_order_plot`: plot temporal ordering results
+#### `dd_temporal_order_plot`: plot temporal ordering results
 
 Suppose we have both temporary files `G-test-TC.txt` (containing data related to the temporal bounds) and `G-test-TA.txt` (containing results of various algorithms).
 To plot results from files and save it as a PDF file run:
