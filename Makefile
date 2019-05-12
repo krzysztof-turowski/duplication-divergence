@@ -11,7 +11,7 @@ endif
 
 GRAPH_LIB = snap
 NAUTY_LIB = -l:nauty.a -Wno-unused-variable -DTHREADS=1
-LP_SOLVER = glpk
+LP_SOLVER = gurobi
 
 INPUT_FLAGS = -lsnap -Wno-error -fpermissive
 
