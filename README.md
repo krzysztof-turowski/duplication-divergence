@@ -8,10 +8,12 @@ It implements the optimal and approximate solutions of the problem. The optimal 
   Associated paper: [2] [Temporal Ordered Clustering in Dynamic Networks](https://arxiv.org/abs/1905.00672)
 
 ##### Table of Contents
-1. [Getting started](#gettingstarted)
-2.
+1. [Getting started](https://github.com/krzysztof-turowski/duplication-divergence#getting-started)
+2. [Overview of the library](https://github.com/krzysztof-turowski/duplication-divergence#overview-of-the-library)
+3. [Examples for parameter estimation by automorphisms and recurrence-relations fitting](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-parameter-estimation-by-automorphisms-and-recurrence-relations-fitting)
+4. [Examples for temporal ordering algorithms](https://github.com/krzysztof-turowski/duplication-divergence#examples-for-temporal-ordering-algorithms)
+5. [Data](https://github.com/krzysztof-turowski/duplication-divergence#data)
 
-<a name="gettingstarted" />
 ## Getting started
 Download the repository or clone it with the following command
 ```bash
@@ -158,7 +160,7 @@ The script that was used to obtain MLE scores and plots in [1] can be run
 bash scripts/run_ml_estimation.sh
 ```
 
-## Examples for emporal ordering algorithms
+## Examples for temporal ordering algorithms
 
 #### `dd_temporal_bound`: upper bound on temporal ordering
 
