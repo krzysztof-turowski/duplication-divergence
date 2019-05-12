@@ -32,7 +32,7 @@ if [ "$#" -gt 0 ]; then
       else
         echo "Gurobi not present"
         UNAME = $(uname)
-        if [[ $UNAME == "Darwin" ]]
+        if [[ $UNAME == "Darwin" ]]; then
           MAC_PATH = "/Library"
         fi
         if [[ -z "$GUROBI_HOME" ]]; then
