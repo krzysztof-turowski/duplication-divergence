@@ -12,7 +12,7 @@ PLOT_STYLE = 'ggplot'
 FIGURE_SIZE_SCALE = 0.75
 
 def get_fitness(filename, G):
-    degree_list = [degree for _, degree in dict(G.degree()).items()]
+    degree_list = [degree for _, degree in dict(G.degree()).items() if degree > 0]
     fit = powerlaw.Fit(degree_list, discrete = True)
     gamma = fit.power_law.alpha
     cutoff = fit.power_law.xmin
@@ -23,7 +23,7 @@ def get_fitness(filename, G):
     return gamma, percentile
 
 def plot_powerlaw(G):
-    degree_list = [degree for _, degree in dict(G.degree()).items()]
+    degree_list = [degree for _, degree in dict(G.degree()).items() if degree > 0]
     figure = pyplot.subplot(111)
     fit = powerlaw.Fit(degree_list, discrete = True)
     fit.power_law.plot_ccdf(color = 'r', linestyle = '--', ax = figure, label = 'with cutoff')
