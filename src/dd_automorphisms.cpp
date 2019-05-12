@@ -237,7 +237,8 @@ void synthetic_data(const int &n, const int &n0, const double &p0, const Paramet
 int main(int argc, char **argv) {
   try {
     Env = prepare_environment(argc, argv);
-    std::string action = read_string(Env, "-action:", "", "Action: real_graph, real_seed, synthetic");
+    std::string action =
+        read_string(Env, "-action:", "", "Action: real_graph, real_seed, synthetic");
     // TODO(unknown): test parameters ranges
     if (action == "synthetic") {
       AVG_TRIES = read_int(Env, "-st:", 1, "Number of tries");
