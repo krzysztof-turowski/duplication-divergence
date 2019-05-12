@@ -18,7 +18,7 @@ if [ "$#" -gt 0 ]; then
         echo "GLPK not present"
         if [[ "$lib" == "glpk" ]]; then
           GLPK_LIB=$(find -L /usr/lib /usr/local/lib $HOME -name libglpk.a -print0 2>/dev/null | head -1)
-          GLPK_DIR=$(dirname $(dirname $GLPK_LIB))
+          GLPK_DIR="$(dirname "$(dirname "$GLPK_LIB")")"
           INCLUDE_DIRS="$INCLUDE_DIRS:$GLPK_DIR/include"
           LIBRARY_DIRS="$LIBRARY_DIRS:$GLPK_DIR/lib"
         fi
