@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Script for libraries configuration. Run: bash ./configure_lish.sh
+# Script for libraries configuration. Run: bash ./configure_libs.sh
 
 set -e
 if [ "$#" -gt 0 ]; then
   CURRENT_DIR=`pwd`
+  UNAME=`uname`
   INCLUDE_DIRS=""
   LIBRARY_DIRS=""
   for lib in "$@"
@@ -18,7 +19,7 @@ if [ "$#" -gt 0 ]; then
         echo "GLPK not present"
         if [[ "$lib" == "glpk" ]]; then
           GLPK_LIB=$(find -L /usr/lib /usr/local/lib $HOME -name libglpk.a -print0 2>/dev/null | head -1)
-          GLPK_DIR=$(dirname $(dirname $GLPK_LIB))
+          GLPK_DIR="$(dirname "$(dirname "$GLPK_LIB")")"
           INCLUDE_DIRS="$INCLUDE_DIRS:$GLPK_DIR/include"
           LIBRARY_DIRS="$LIBRARY_DIRS:$GLPK_DIR/lib"
         fi
@@ -31,9 +32,12 @@ if [ "$#" -gt 0 ]; then
         echo "Gurobi already present"
       else
         echo "Gurobi not present"
+        if [[ $UNAME == "Darwin" ]]; then
+          MAC_PATH="/Library"
+        fi
         if [[ -z "$GUROBI_HOME" ]]; then
-          GUROBI_LIB=$(find -L /usr/lib $HOME $CURRENT_DIR -path */lib/libgurobi_c++.a -print0 2>/dev/null | head -1)
-          GUROBI_DIR=$(dirname $(dirname $GUROBI_LIB))
+          GUROBI_LIB=$(find -L /usr/lib $HOME $CURRENT_DIR $MAC_PATH -path */lib/libgurobi_c++.a -print0 2>/dev/null | head -1)
+          GUROBI_DIR="$(dirname "$(dirname "$GUROBI_LIB")")"
           echo "export GUROBI_HOME=$GUROBI_DIR" >> $HOME/.bashrc
         else
           GUROBI_DIR=$GUROBI_HOME

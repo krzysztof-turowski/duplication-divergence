@@ -11,10 +11,10 @@ Syntax: ./dd_automorphisms <options>
   synthetic: Find the average logarithm of the number of symmetries of a synthetic graph with given size and given parameters.
 -graph: Graph file name and file should be in edge list format. In case of `real_seed` option, seed graph name is extracted from the graph file name
 -mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` or `synthetic` action, the mode (type) of the duplication-divergence graph model.
--st: When action is `real_seed` or `synthetic`, number of independent tries to calculate empirical average and/or p-value.
 <parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence model.
 -n: The size of a graph in the case of `synthetic` action.
 -n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
+-gt: When action is `real_seed` or `synthetic`, number of independent tries to calculate empirical average and/or p-value.
 
 Example runs:
   ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
