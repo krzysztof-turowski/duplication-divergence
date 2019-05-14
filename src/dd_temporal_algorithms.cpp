@@ -681,17 +681,17 @@ void print(
 
   out_file << SHORT_ALGORITHM_NAME.find(algorithm)->second;
   if (!std::isnan(settings.perfect_pairs_fraction)) {
-    out_file << "-$\alpha$:" << std::fixed << std::setprecision(3)
+    out_file << "-$\\alpha$:" << std::fixed << std::setprecision(3)
         << settings.perfect_pairs_fraction;
   }
   if (settings.bin_size > 1) {
     out_file << "-$|C|:" << std::fixed << std::setprecision(3) << settings.bin_size;
   }
   if (!std::isnan(settings.threshold)) {
-    out_file << "-$\tau$:" << std::fixed << std::setprecision(3) << settings.threshold;
+    out_file << "-$\\tau$:" << std::fixed << std::setprecision(3) << settings.threshold;
   }
   if (!std::isnan(settings.epsilon)) {
-    out_file << "-$\varepsilon$:" << std::fixed << std::setprecision(3) << settings.epsilon;
+    out_file << "-$\\varepsilon$:" << std::fixed << std::setprecision(3) << settings.epsilon;
   }
   for (const auto &score : scores) {
     if (!std::isnan(score.precision)) {

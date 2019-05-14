@@ -27,16 +27,16 @@ Set environment variables and compile libraries that reside inside the `lib` fol
 ```bash
 bash ./configure_libs.sh LIB1 LIB2 ...
 ```
-where LIB1, LIB2 etc correspond to
-- graph libraries: koala, snap, networkit
-- optimization libraries: glpk, gurobi
-- automorphisms library: nauty
+where *LIB1*, *LIB2* etc correspond to.
+- graph libraries: *koala*, *snap*, *networkit*,
+- LP optimization libraries: *glpk*, *gurobi*,
+- automorphisms library: *nauty*.
 
-One of the graph and optimization libraries should be configured before compiling the programs in this repo. The choice of libraries to use can be changed via variables GRAPH_LIB (default: snap) and LP_SOLVER (default: glpk) in the Makefile.
+One of the graph and optimization libraries should be configured before compiling the programs in this repo. The choice of libraries to use can be changed via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in the Makefile.
 
 **Note:**
-- Remember to invoke `source ~/.bashrc` or update enviroment *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually after running the bash script.
-- The optimization libraries glpk and gurobi require separate download and installation. The *gurobi* need a license too (free license available for academic use).
+- Remember to invoke `source ~/.bashrc` or update enviroment variables *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually after running the bash script.
+- The optimization libraries *glpk* and *gurobi* require separate download and installation. The *gurobi* need a license too (free license available for academic use).
 
 ## <a name="overview"></a>Overview of the library
 
@@ -83,6 +83,7 @@ Find logarithm of the number of automorphisms of a given real-world network (edg
 ```bash
 ./dd_automorphisms -action:real_graph -graph:G-a-thaliana.txt
 ```
+A network is required to be in edge-list format.
 
 Find p-value of the log of automorphisms a given real-world network, its seed graph and the set of graph parameters:
 
@@ -97,7 +98,7 @@ Reproduce the results in [1] to obtain the number of automorphisms and p-values 
 bash scripts/run_automorphisms.sh
 ```
 
-#### `dd_recurrence_estimation`: parameter estimation using recurrence-relation method
+### `dd_recurrence_estimation`: parameter estimation using recurrence-relation method
 
 Compilation
 
@@ -113,7 +114,7 @@ This generates a file `temp/G-100-20-PS-0.1-0.3-PS-RE.txt` containing results in
 
 Plot estimated parameters from the outputted above temporary file and save it as a PDF file:
 ```bash
-python -B ./src/dd_recurrence_estimation_plot.py G-100-20-PS-0.1-0.3-PS-RE.txt --export pdf
+python -B ./src/dd_recurrence_estimation_plot.py G-100-20-PS-0.1-0.3-PS --export pdf
 ```
 
 Reproduce cited results in [1] to obtain estimated parameters for various graphs:
@@ -130,7 +131,6 @@ make dd_ml_estimation
 ```
 
 Find log-likelihood scores of various parameters for a given real-world network with Pastor-Satorras model
-
 ```bash
 ./dd_ml_estimation -action:real_data -graph:G-100-20-PS-0.1-0.3.txt -mode:pastor_satorras -st:100
 ```
@@ -151,7 +151,6 @@ bash scripts/run_ml_estimation.sh
 #### `dd_temporal_bound`: upper bound on temporal ordering
 
 Compilation
-
 ```bash
 make dd_temporal_bound
 ```
@@ -170,7 +169,6 @@ The results are *appended* to a text file `temp/synthetic-13-6-PS-0.300-0.60-TC.
 #### `dd_temporal_algorithms`: temporal ordering algorithms
 
 Compilation
-
 ```bash
 make dd_temporal_algorithms
 ```
@@ -191,7 +189,6 @@ The results are appended to a text file `temp/synthetic-50-10-PS-0.300-1.00-TA.t
 The first command executes the *$p_{uv}$-threshold* algorithm with $\tau = 0.7$. The second command executes *sort-by-$p_{uv}$-sum* algorithm with bin size 1 (for details, see [2]).
 
 **Supervised learning** solution:
-
 ```bash
 ./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:p_uv_threshold -gt:100 -st:100000 -threshold:0.7 -perfect:0.001
 ./dd_temporal_algorithms -action:synthetic -n:50 -n0:10 -mode:pastor_satorras -p:0.6 -r:1.0 -p0:0.6 -algorithm:sort_by_p_uv_sum -gt:100 -st:100000 -binsize:1 -perfect:0.001

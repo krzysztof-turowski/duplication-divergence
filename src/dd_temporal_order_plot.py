@@ -69,5 +69,7 @@ def plot_data(filename, export, detailed):
     plot_labels()
     dd_plot.plot(filename + '-T', export)
 
-args = dd_plot.get_parser().parse_args()
+parser = dd_plot.get_parser()
+parser.add_argument('--detailed', action = 'store_true', help = 'plot details')
+args = parser.parse_args()
 plot_data(args.filename, args.export, args.detailed)
