@@ -28,14 +28,14 @@ Set environment variables and compile libraries that reside inside the `lib` fol
 bash ./configure_libs.sh LIB1 LIB2 ...
 ```
 where *LIB1*, *LIB2* etc correspond to.
-- graph libraries: *koala*, *snap*, *networkit* ,
+- graph libraries: *koala*, *snap*, *networkit*,
 - LP optimization libraries: *glpk*, *gurobi*,
 - automorphisms library: *nauty*.
 
 One of the graph and optimization libraries should be configured before compiling the programs in this repo. The choice of libraries to use can be changed via variables **GRAPH_LIB** (default: *snap*) and **LP_SOLVER** (default: *glpk*) in the Makefile.
 
 **Note:**
-- Remember to invoke `source ~/.bashrc` or update enviroment *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually after running the bash script.
+- Remember to invoke `source ~/.bashrc` or update enviroment variables *CPLUS_INCLUDE_PATH*, *LD_LIBRARY_PATH* and *LIBRARY_PATH* manually after running the bash script.
 - The optimization libraries *glpk* and *gurobi* require separate download and installation. The *gurobi* need a license too (free license available for academic use).
 
 ## <a name="overview"></a>Overview of the library
