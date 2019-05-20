@@ -1,6 +1,19 @@
-// Tool for graph conversion from popular formats.
-// Compile: g++ dd_convert.cpp -O3 -o ./dd_convert
-// Run: ./dd_convert -graph:FILENAME -age:FILENAME -out:FILE_SUFFIX
+/*
+Tool for graph conversion from edge list to edge list format. Relabels the vertices such that the seed graph has always the labels starting from 0.
+
+Compile: make dd_convert
+
+Syntax: ./dd_convert <options>
+<options> are
+-graph: Name of the file to read the graph (in edge list format, with self-loops)
+-age: Name of the file to read the age information
+-out: A common suffix of all the files generated.
+
+Example runs:
+  ./dd_convert -graph:G-input.txt -age:age-input.txt -out:out.txt
+
+This will generate G-out.txt with the converted graph, G0-out.txt with the seed graph and age-out.txt 
+*/
 
 #include "./dd_input.h"
 

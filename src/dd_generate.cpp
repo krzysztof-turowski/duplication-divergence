@@ -1,6 +1,18 @@
-// Tool for graph generation for various duplication-divergence models.
-// Compile: g++ dd_generate.cpp -O3 -o ./dd_generate
-// Example run: ./dd_generate -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6
+/*
+Tool for graph generation for various duplication-divergence models.
+
+Compile: make dd_generate
+
+Syntax: ./dd_generate <options>
+<options> are
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence graph model.
+-n: The size of a graph.
+-n0, -p0: The parameters for generating a seed graph.
+
+Example runs:
+  ./dd_generate -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6
+*/
 
 #include "./dd_input.h"
 #include "./dd_header.h"
