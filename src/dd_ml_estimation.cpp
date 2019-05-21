@@ -2,7 +2,7 @@
 Tool for computation the Maximum Likelihood Estimator for various duplication-divergence models.
 
 This is an implementation and our extension of the idea proposed in:
-Wiuf, Carsten, Markus Brameier, Oskar Hagberg, and Michael PH Stumpf. "A likelihood approach to analysis of network data." Proceedings of the National Academy of Sciences 103, no. 20 (2006): 7566-7570.
+Wiuf, Carsten, Markus Brameier, Oskar Hagberg, and Michael Stumpf. "A likelihood approach to analysis of network data." Proceedings of the National Academy of Sciences 103, no. 20 (2006): 7566-7570.
 
 Compile: make dd_ml_estimation
 
@@ -12,9 +12,9 @@ Syntax: ./dd_ml_estimation <options>
   synthetic: synthetic random graph generations from duplication-divergence model
   real_data: real-world network
 -graph: If action is `real_data`, then provide graph file name (located in `files/` folder). File should be in edge list format.
--st: Number of independent tries for estimating the log-likelihood function. We use the idea proposed by Wiuf et al, and hence these tries correspond to importance sampling tries.
+-st: Number of independent tries for estimating the log-likelihood function. These tries correspond to importance sampling tries (see Wiuf et al.).
 -mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
-<parameters>: Depending on `mode`, the parameters `p,q,r` of the DD model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence graph model.
 -n: The size of a graph in the case of `synthetic` action.
 -n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
 

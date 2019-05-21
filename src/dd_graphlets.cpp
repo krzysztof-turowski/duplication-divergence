@@ -1,3 +1,24 @@
+/*
+Generate information about the basic parameters of the graph: mean degree, number of open triangles, number of triangles for various duplication-divergence models.
+
+Compile: make dd_graphlets
+
+Syntax: ./dd_graphlets <options>
+<options> are
+-action:
+  synthetic: synthetic random graph generations from duplication-divergence model
+  real_seed: synthetic graphs with given parameters and given seed file.
+-graph: If action is `real_seed`, then provide graph file name (located in `files/` folder). File should be in edge list format.
+-gt: Number of independent graphs generated from a given seed for a given parameters.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the DD model.
+-n: The size of a graph in the case of `synthetic` action.
+-n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
+
+Example run:
+  ./dd_graphlets -action:real_seed -graph:G-a-thaliana.txt -gt:100 -mode:pastor_satorras -p:0.98 -r:0.49
+*/ 
+
 #include "./dd_input.h"
 #include "./dd_graphlets.h"
 

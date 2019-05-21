@@ -1,10 +1,34 @@
-// Algorithms computating the temporal order for various duplication-divergence models.
-// Compile: g++ dd_temporal_algorithms.cpp -O3 -o ./dd_temporal_algorithms
-// Example runs:
-//  ./dd_temporal_algorithms -action:synthetic -algorithm:all -n:100 -n0:10
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100 -st:1000
-//  ./dd_temporal_algorithms -action:real_data -algorithm:sort_by_degree -graph:G-test.txt
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+/*
+Algorithms for inferring the temporal order for various duplication-divergence models.
+
+Compile: make dd_temporal_algorithms
+
+Syntax: ./dd_temporal_algorithms <options>
+<options> are
+-action:
+  synthetic: synthetic random graph generations from duplication-divergence model
+  real_data: real-world network
+-algorithm:
+  sort_by_degree: bin vertices by degree in decreasing order
+  peel_by_degree: bin vertices by repeatedly removing vertices with the lowest degree
+  sort_by_neighborhood: bin vertices by building a subset relation of N(v)
+  peel_by_neighborhood: bin vertices by repeatedly removing vertices v s.t. N(v) is not a subset of any N(u)
+  p_uv_threshold: find p_uv values and round it with a given threshold
+  sort_by_p_uv_sum: find p_v = sum of p_uv values and sort them in decreasing order
+  sort_by_lp_solution: find solution of LP relaxation and round it with a given threshold
+  all: run all algorithms at once
+-graph: If action is `real_data`, then provide graph file name (located in `files/` folder). File should be in edge list format.
+-st: Number of independent permissible ordering to generate in the case of `p_uv_threshold`, `sort_by_p_uv_sum`, `sort_by_lp_solution` algorithms.
+-gt: Number of independently generated graphs to test in the case of `synthetic` action.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence graph model.
+-n: The size of a graph in the case of `synthetic` action.
+-n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
+
+Example runs:
+  ./dd_temporal_algorithms -action:synthetic -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100 -st:1000
+  ./dd_temporal_algorithms -action:real_data -algorithm:sort_by_degree -graph:G-test.txt -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -st:1000
+*/ 
 
 #include "./dd_input.h"
 #include "./dd_perfect_pairs.h"

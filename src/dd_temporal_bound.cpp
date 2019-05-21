@@ -1,10 +1,24 @@
-// Tools for computation the temporal order bound for various duplication-divergence models.
-// Compile: g++ dd_temporal_bound.cpp -O3 -lgmpxx -lgmp -lglpk -o ./dd_temporal_bound
-// Example run:
-//  ./dd_temporal_bound -algorithm:exact -n:100 -n0:10
-//      -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100 -st:1000
+/*
+Tool for computing the upper bound for temporal order inference for various duplication-divergence models.
 
-// TODO(kturowski): deal gurobi output suppression and output to std::cout instead of std::cerr
+Compile: make dd_temporal_bound
+
+Syntax: ./dd_temporal_bound <options>
+<options> are
+-algorithm:
+  exact: generate all admissible permutations for a given graph under a given model
+  local-unif-sampling: sample admissible permutations according to the local uniform sampling rule
+  high-prob-sampling: sample admissible permutations according to the high probability sampling rule
+-st: Number of independent admissible permutations sampled by the algorithm `local-unif-sampling` or `high-prob-sampling`.
+-gt: Number of independently generated graphs to test.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence graph model.
+-n: The size of a graph.
+-n0, -p0: The parameters for generating a seed graph.
+
+Example run:
+  ./dd_temporal_bound -algorithm:high-prob-sampling -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100 -st:1000
+*/ 
 
 #include "./dd_input.h"
 #include "./dd_perfect_pairs.h"

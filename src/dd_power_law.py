@@ -1,3 +1,20 @@
+"""
+Tool for checking the quality of power-law estimations using powerlaw package.
+
+Run: python -B ./dd_power_law.py <options> [--plot]
+<options> are
+filename: name of the graph (in edge list format) to test
+-action:
+  real_graph: Find the logarithm of the number of symmetries in the given real_graph file
+  real_seed: Find the expected logarithm of the number of symmetries of a synthetic graph
+             with given parameters and given seed file.
+-gt: When action is `real_seed`, number of independent tries to calculate
+     empirical average and/or p-value.
+-mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `real_seed` or `synthetic` action,
+       the mode (type) of the duplication-divergence graph model.
+<parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence model.
+"""
+
 import argparse
 import re
 
