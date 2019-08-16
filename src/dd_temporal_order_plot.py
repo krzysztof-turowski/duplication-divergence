@@ -14,8 +14,11 @@ import dd_plot
 PLOT_STYLE = 'ggplot'
 FIGURE_SIZE_SCALE = 0.5
 
-COLORS = ['r', 'b', 'm', 'k', 'g', 'orange', 'crimson', 'lime', 'gray', 'lightgray', 'pink', \
-          'olive', 'khaki', 'saddlebrown', 'deepskyblue']
+COLORS_TA = ['g', 'm', 'gray', 'lime', \
+             'r', 'coral', 'orange', 'yellow', 'b', 'dodgerblue', 'skyblue', 'cyan']
+COLORS_TC = ['k', 'b', 'b', 'b', 'g', 'g', 'g']
+MARKERS = ['o', 'o', 'o', 'o', 's', 's', 's', 's', '^', '^', '^']
+STYLES = ['-', '-', '--', ':', '-', '--', ':']
 POINTS = 15
 
 def plot_algorithms(filename, detailed):
@@ -24,19 +27,19 @@ def plot_algorithms(filename, detailed):
         return
     with open(filename) as data_file:
         data = data_file.readlines()
-    for line, color in zip(data, COLORS):
+    for line, color, marker in zip(data, COLORS_TA, MARKERS):
         values = line.strip().split(' ')
         density, precision = zip(*[[float(parameter) for parameter in value.split(',')]
                                    for value in values[1:]])
         pyplot.plot(
-            [numpy.mean(density)], [numpy.mean(precision)], color = color, marker = 'o',
+            [numpy.mean(density)], [numpy.mean(precision)], color = color, marker = marker,
             linestyle = 'None', label = values[0], alpha = 0.7)
         if detailed:
             points = min(POINTS, len(density))
             pyplot.plot(
                 [numpy.mean(density[offset::points]) for offset in range(points)],
                 [numpy.mean(precision[offset::points]) for offset in range(points)],
-                color = color, marker = 'o', linestyle = 'None', label = None, alpha = 0.3)
+                color = color, marker = marker, linestyle = 'None', label = None, alpha = 0.3)
 
 def plot_theoterical_curves(filename):
     if not os.path.isfile(filename):
@@ -44,16 +47,17 @@ def plot_theoterical_curves(filename):
         return
     with open(filename) as data_file:
         data = data_file.readlines()
-    for line, color in zip(data, COLORS):
+    for line, color, style in zip(data, COLORS_TC, STYLES):
         values = line.strip().split(' ')
         density, precision = zip(*[[float(parameter) for parameter in value.split(',')]
                                    for value in values[1:]])
-        pyplot.plot(density, precision, color = color, label = values[0], alpha = 0.7)
+        pyplot.plot(
+            density, precision, color = color, linestyle = style, label = values[0], alpha = 0.7)
 
 def plot_labels():
-    pyplot.legend(loc = 'upper left')
+    pyplot.legend(bbox_to_anchor = (0, 1.02, 1, 0.102), loc = 3, ncol = 2, mode = 'expand')
     pyplot.ylabel(r'$\theta$')
-    pyplot.xlabel(r'$\epsilon$')
+    pyplot.xlabel(r'$\varepsilon$')
     y_bottom, y_top = min(max(-0.05, sum(pyplot.ylim()) - 1.05), 0.45), 1.05
     pyplot.ylim(y_bottom, y_top)
     x_scale, y_scale = 0.2, round((y_top - y_bottom) / 5, 1)
