@@ -2,10 +2,10 @@
 
 This repository provides software tools for the following studies of duplication-divergence random graph model on real data.
 * Parameter estimation for duplication-divergence model\
-  Associated paper: [1] [Revisiting Parameter Estimation in Biological Networks: Influence of Symmetries](https://www.cs.purdue.edu/homes/jithinks/files/publications/parameter_estimation_2019.pdf)
+  Associated paper: [1] [Revisiting Parameter Estimation in Biological Networks: Influence of Symmetries](https://www.biorxiv.org/content/10.1101/674739v1)
 * Given a single snapshot of a dynamic network, provide algorithms to infer the arrival order of the nodes.
 It implements the optimal and approximate solutions of the problem. The optimal solution is a result of an integer programming formulation with coefficients found by importance sampling techniques.\
-  Associated paper: [2] [Temporal Ordered Clustering in Dynamic Networks](https://arxiv.org/abs/1905.00672)
+  Associated paper: [2] [Recovery of Vertex Orderings in Dynamic Graphs: Algorithms for a General Solution](https://arxiv.org/abs/1905.00672)
 
 #### Table of Contents
 1. [Getting started](#getting-started)
