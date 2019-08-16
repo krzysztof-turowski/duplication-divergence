@@ -57,7 +57,7 @@ def plot_theoterical_curves(filename):
 def plot_labels():
     pyplot.legend(bbox_to_anchor = (0, 1.02, 1, 0.102), loc = 3, ncol = 2, mode = 'expand')
     pyplot.ylabel(r'$\theta$')
-    pyplot.xlabel(r'$\epsilon$')
+    pyplot.xlabel(r'$\varepsilon$')
     y_bottom, y_top = min(max(-0.05, sum(pyplot.ylim()) - 1.05), 0.45), 1.05
     pyplot.ylim(y_bottom, y_top)
     x_scale, y_scale = 0.2, round((y_top - y_bottom) / 5, 1)
