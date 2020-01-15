@@ -58,3 +58,36 @@ done
 for perfect in ${PERFECT[@]}; do
   ./dd_temporal_algorithms -action:real_data -graph:G-college-msg.txt -mode:pastor_satorras -p:0.65 -r:0.45 -algorithm:p_uv_threshold -st:100000 -threshold:0.5 -perfect:$perfect
 done
+
+./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:sort_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:peel_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:sort_by_neighborhood
+./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:peel_by_neighborhood
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:sort_by_p_uv_sum -st:100000 -binsize:1 -perfect:$perfect
+done
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-mus-musculus.txt -mode:pastor_satorras -p:0.96 -r:0.32 -algorithm:p_uv_threshold -st:100000 -threshold:0.5 -perfect:$perfect
+done
+
+./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:sort_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:peel_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:sort_by_neighborhood
+./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:peel_by_neighborhood
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:sort_by_p_uv_sum -st:100000 -binsize:1 -perfect:$perfect
+done
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-s-cerevisiae.txt -mode:pastor_satorras -p:0.98 -r:0.35 -algorithm:p_uv_threshold -st:100000 -threshold:0.5 -perfect:$perfect
+done
+
+./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:sort_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:peel_by_degree
+./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:sort_by_neighborhood
+./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:peel_by_neighborhood
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:sort_by_p_uv_sum -st:100000 -binsize:1 -perfect:$perfect
+done
+for perfect in ${PERFECT[@]}; do
+  ./dd_temporal_algorithms -action:real_data -graph:G-s-pombe.txt -mode:pastor_satorras -p:0.983 -r:0.85 -algorithm:p_uv_threshold -st:100000 -threshold:0.5 -perfect:$perfect
+done
