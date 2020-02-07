@@ -92,9 +92,9 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
           vars[index] =
               LP->addVar(
                   0.0, 1.0, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0,
-                  GRB_CONTINUOUS, LP_name("x", {i, j}));
+                  GRB_CONTINUOUS, LP_name("y", {i, j}));
         } else {
-          vars[index] = LP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name("x", {i, j}));
+          vars[index] = LP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name("y", {i, j}));
         }
       }
     }
@@ -155,7 +155,32 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     throw std::domain_error(
         "LP solver exception code: " + std::to_string(e.getErrorCode())
             + ", message: " + e.getMessage());
-  } catch (const std::domain_error &e) {
+  } catch (const std::exception &e) {
+    delete LP, delete environment;
+    throw e;
+  }
+}
+
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
+    const double &epsilon, const bool get_solution = false) {
+  try {
+    GRBEnv* environment = new GRBEnv();
+    GRBModel *LP = new GRBModel(*environment);
+    LP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
+    LP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
+    double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+
+    // TODO
+
+    auto value = LP_solve(LP, vars, n, n0, s_index, get_solution);
+    delete LP, delete environment;
+    return value;
+  } catch (const GRBException &e) {
+    throw std::domain_error(
+        "LP solver exception code: " + std::to_string(e.getErrorCode())
+            + ", message: " + e.getMessage());
+  } catch (const std::exception &e) {
     delete LP, delete environment;
     throw e;
   }
