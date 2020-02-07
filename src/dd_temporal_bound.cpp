@@ -70,7 +70,7 @@ std::vector<double> LP_bound_exact_single(
   std::vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
-    std::tie(solution, std::ignore) = LP_solve(p_uv, n, get_graph_size(G0), eps);
+    std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
     solutions.push_back(solution);
   }
   return solutions;
@@ -95,7 +95,7 @@ std::vector<double> LP_bound_approximate_single(
   std::vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
-    std::tie(solution, std::ignore) = LP_solve(p_uv, n, get_graph_size(G0), eps);
+    std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
     solutions.push_back(solution);
   }
   return solutions;
