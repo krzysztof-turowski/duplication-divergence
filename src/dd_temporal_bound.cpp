@@ -9,6 +9,9 @@ Syntax: ./dd_temporal_bound <options>
   exact: generate all admissible permutations for a given graph under a given model
   local-unif-sampling: sample admissible permutations according to the local uniform sampling rule
   high-prob-sampling: sample admissible permutations according to the high probability sampling rule
+-program:
+  ordering: LP formulation based on partial ordering relaxation
+  binning: LP formulation based on bin assignment relaxation
 -st: Number of independent admissible permutations sampled by the algorithm `local-unif-sampling` or `high-prob-sampling`.
 -gt: Number of independently generated graphs to test.
 -mode: {pure_duplication, pastor_satorras, chung_lu}. In case of `synthetic` action, the mode (type) of the duplication-divergence graph model.
@@ -18,7 +21,7 @@ Syntax: ./dd_temporal_bound <options>
 
 Example run:
   ./dd_temporal_bound -algorithm:high-prob-sampling -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100 -st:1000
-*/ 
+*/
 
 #include "./dd_input.h"
 #include "./dd_perfect_pairs.h"
@@ -34,6 +37,23 @@ Example run:
 
 int G_TRIES, SIGMA_TRIES;
 const double EPS_MIN = 0.05, EPS_STEP = 0.05;
+
+enum LpFormulation { PARTIAL_ORDERING, BINNING };
+
+const std::map<LpFormulation, std::string> SHORT_FORMULATION_NAME = {
+  { LpFormulation::PARTIAL_ORDERING, "ordering" },
+  { LpFormulation::BINNING, "binning" },
+};
+
+const std::map<LpFormulation, std::string> LONG_FORMULATION_NAME = {
+  { LpFormulation::PARTIAL_ORDERING, "LP formulation based on partial order" },
+  { LpFormulation::BINNING, "LP formulation based on bin assignment" },
+};
+
+const std::map<std::string, LpFormulation> REVERSE_FORMULATION_NAME = {
+  { "ordering", LpFormulation::PARTIAL_ORDERING },
+  { "binning", LpFormulation::BINNING },
+};
 
 void print_density_precision(
     const std::string &name, const std::vector<double> &density,
@@ -55,8 +75,8 @@ void print_density_precision(
 }
 
 std::vector<double> LP_bound_exact_single(
-    const Graph &G0, const int &n, const Parameters &params, const std::vector<double> &epsilon,
-    const std::set<VertexPair> &perfect_pairs) {
+    const Graph &G0, const int &n, const Parameters &params, const LpFormulation& lp_formulation,
+    const std::vector<double> &epsilon, const std::set<VertexPair> &perfect_pairs) {
   Graph G(G0);
   generate_graph(G, n, params);
 
@@ -70,7 +90,16 @@ std::vector<double> LP_bound_exact_single(
   std::vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
-    std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
+    switch (lp_formulation) {
+      case PARTIAL_ORDERING:
+        std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
+        break;
+      case BINNING:
+        std::tie(solution, std::ignore) = LP_binning_solve(p_uv, n, get_graph_size(G0), eps);
+        break;
+      default:
+        break;
+    }
     solutions.push_back(solution);
   }
   return solutions;
@@ -78,7 +107,8 @@ std::vector<double> LP_bound_exact_single(
 
 std::vector<double> LP_bound_approximate_single(
     const Graph &G0, const int &n, const Parameters &params, const SamplingMethod &algorithm,
-    const std::vector<double> &epsilon, const std::set<VertexPair> &perfect_pairs) {
+    const LpFormulation& lp_formulation, const std::vector<double> &epsilon,
+    const std::set<VertexPair> &perfect_pairs) {
   Graph G(G0);
   generate_graph(G, n, params);
 
@@ -95,7 +125,16 @@ std::vector<double> LP_bound_approximate_single(
   std::vector<double> solutions;
   for (const double &eps : epsilon) {
     double solution;
-    std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
+    switch (lp_formulation) {
+      case PARTIAL_ORDERING:
+        std::tie(solution, std::ignore) = LP_ordering_solve(p_uv, n, get_graph_size(G0), eps);
+        break;
+      case BINNING:
+        std::tie(solution, std::ignore) = LP_binning_solve(p_uv, n, get_graph_size(G0), eps);
+        break;
+      default:
+        break;
+    }
     solutions.push_back(solution);
   }
   return solutions;
@@ -103,7 +142,7 @@ std::vector<double> LP_bound_approximate_single(
 
 void LP_bound_exact(
     const int &n, const int &n0, const Parameters &params, const double &p0,
-    std::ostream &out_file) {
+    const LpFormulation& lp_formulation, std::ostream &out_file) {
   Graph G0 = generate_seed(n0, p0);
   std::vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
@@ -113,7 +152,8 @@ void LP_bound_exact(
   std::vector<std::vector<double>> solutions(G_TRIES);
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
-    solutions[i] = LP_bound_exact_single(G0, n, params, epsilon, std::set<VertexPair>());
+    solutions[i] =
+        LP_bound_exact_single(G0, n, params, lp_formulation, epsilon, std::set<VertexPair>());
     #pragma omp critical
     {
       std::cerr << "Finished run " << i + 1 << "/" << G_TRIES << std::endl;
@@ -132,7 +172,7 @@ void LP_bound_exact(
 
 void LP_bound_approximate(
     const int &n, const int &n0, const Parameters &params, const double &p0,
-    const SamplingMethod &algorithm, std::ostream &out_file) {
+    const SamplingMethod &algorithm, const LpFormulation& lp_formulation, std::ostream &out_file) {
   Graph G0 = generate_seed(n0, p0);
   std::vector<double> epsilon;
   for (double eps = EPS_MIN; eps <= 1.0 + 10e-9; eps += EPS_STEP) {
@@ -143,7 +183,8 @@ void LP_bound_approximate(
   #pragma omp parallel for
   for (int i = 0; i < G_TRIES; i++) {
     solutions[i] =
-        LP_bound_approximate_single(G0, n, params, algorithm, epsilon, std::set<VertexPair>());
+        LP_bound_approximate_single(
+            G0, n, params, algorithm, lp_formulation, epsilon, std::set<VertexPair>());
     #pragma omp critical
     {
       std::cerr << "Finished run " << i + 1 << "/" << G_TRIES << std::endl;
@@ -170,10 +211,15 @@ int main(int argc, char **argv) {
     SIGMA_TRIES = read_int(Env, "-st:", 1, "SIGMA_TRIES");
 
     std::string algorithm = read_string(Env, "-algorithm:", "all", "Sampling algorithm to run");
+    std::string lp_formulation =
+        read_string(Env, "-program:", "ordering", "LP formulation to run");
     const int n = read_n(Env), n0 = read_n0(Env);
     const double p0 = read_p0(Env);
     Parameters params = read_parameters(Env);
     std::string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
+    if (!REVERSE_FORMULATION_NAME.count(lp_formulation)) {
+      throw std::invalid_argument("Invalid LP formulation: " + lp_formulation);
+    }
     if (algorithm == "exact") {
       if (!validate_problem_size(n, n0)) {
         throw std::out_of_range(
@@ -181,11 +227,13 @@ int main(int argc, char **argv) {
                 + ", n0 = " + std::to_string(n0));
       }
       std::ofstream out_file(name, std::ios_base::app);
-      LP_bound_exact(n, n0, params, p0, out_file);
+      LP_bound_exact(
+          n, n0, params, p0, REVERSE_FORMULATION_NAME.find(lp_formulation)->second, out_file);
     } else if (SAMPLING_METHOD_REVERSE_NAME.count(algorithm)) {
       std::ofstream out_file(name, std::ios_base::app);
       LP_bound_approximate(
-          n, n0, params, p0, SAMPLING_METHOD_REVERSE_NAME.find(algorithm)->second, out_file);
+          n, n0, params, p0, SAMPLING_METHOD_REVERSE_NAME.find(algorithm)->second,
+          REVERSE_FORMULATION_NAME.find(lp_formulation)->second, out_file);
     } else {
       throw std::invalid_argument("Invalid algorithm: " + algorithm);
     }
