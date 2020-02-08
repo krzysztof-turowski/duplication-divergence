@@ -31,6 +31,12 @@ inline int LP_get_variable_index(const int &u, const int &v, const int &n, const
   return (u - n0) * (n - n0) + (v - n0);
 }
 
+inline int LP_get_variable_index(
+    const int &u, const int &i, const int &v, const int &j, const int &n, const int &n0) {
+  int x = LP_get_variable_index(u, i, n, n0), y = LP_get_variable_index(v, j, n, n0);
+  return LP_get_variable_index(n, n0, n, n0) + x * (n - n0) * (n - n0) + y;
+}
+
 inline void add_transitivity_constraint(
     GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
     const int &s_index, const int &i, const int &j, const int &k) {
@@ -47,28 +53,7 @@ inline void add_transitivity_constraint(
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
     const int &s_index, const bool get_solution = false) {
-  LP->set(GRB_IntParam_OutputFlag, 0);
-  LP->optimize();
-  int status = LP->get(GRB_IntAttr_Status);
-  if (status == GRB_OPTIMAL) {
-    double objective = LP->get(GRB_DoubleAttr_ObjVal);
-    std::map<std::pair<int, int>, double> solution;
-    if (get_solution) {
-      double s = vars[s_index].get(GRB_DoubleAttr_X);
-      for (int i = n0; i < n; i++) {
-        for (int j = n0; j < n; j++) {
-          if (i == j) {
-            continue;
-          }
-          double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
-          solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
-        }
-      }
-    }
-    return std::make_tuple(objective, solution);
-  } else {
-    throw std::domain_error("Invalid LP status: " + std::to_string(status));
-  }
+
 }
 
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
@@ -148,16 +133,32 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
       }
     }
     LP->addConstr(row, GRB_EQUAL, 1.0, LP_name("D", {}));
-    auto value = LP_solve(LP, vars, n, n0, s_index, get_solution);
-    delete LP, delete environment;
-    return value;
+
+    LP->set(GRB_IntParam_OutputFlag, 0);
+    LP->optimize();
+    int status = LP->get(GRB_IntAttr_Status);
+    if (status == GRB_OPTIMAL) {
+      double objective = LP->get(GRB_DoubleAttr_ObjVal);
+      std::map<std::pair<int, int>, double> solution;
+      if (get_solution) {
+        double s = vars[s_index].get(GRB_DoubleAttr_X);
+        for (int i = n0; i < n; i++) {
+          for (int j = n0; j < n; j++) {
+            double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
+            solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+          }
+        }
+      }
+      delete LP, delete environment;
+      return std::make_tuple(objective, solution);
+    } else {
+      delete LP, delete environment;
+      throw std::domain_error("Invalid LP status: " + std::to_string(status));
+    }
   } catch (const GRBException &e) {
     throw std::domain_error(
         "LP solver exception code: " + std::to_string(e.getErrorCode())
             + ", message: " + e.getMessage());
-  } catch (const std::exception &e) {
-    delete LP, delete environment;
-    throw e;
   }
 }
 
@@ -165,23 +166,87 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false) {
   try {
+    (void)get_solution;
     GRBEnv* environment = new GRBEnv();
     GRBModel *LP = new GRBModel(*environment);
     LP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
     LP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
     double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
-    // TODO
+    // Identity
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        GRBLinExpr row =
+            vars[LP_get_variable_index(u, i, n, n0)]
+                - vars[LP_get_variable_index(u, i, u, i, n, n0)];
+        LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("I", {u, i}));
+      }
+    }
+    // Symmetry
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        for (int v = n0; v < n; v++) {
+          for (int j = i + 1; j < n; j++) {
+            GRBLinExpr row =
+                vars[LP_get_variable_index(u, i, v, j, n, n0)]
+                    - vars[LP_get_variable_index(v, j, u, i, n, n0)];
+            LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("S", {u, i, v, j}));
+          }
+        }
+      }
+    }
+    // y-density
+    for (int u = n0; u < n; u++) {
+      GRBLinExpr row = 0;
+      for (int i = n0; i < n; i++) {
+        row += vars[LP_get_variable_index(u, i, n, n0)];
+      }
+      row -= vars[s_index];
+      LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("yD", {u, i, v}));
+    }
+    // w-density
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        for (int v = n0; v < n; v++) {
+          GRBLinExpr row = 0;
+          for (int j = n0; j < n; j++) {
+            row += vars[LP_get_variable_index(u, i, v, j, n, n0)];
+          }
+          row -= vars[LP_get_variable_index(u, i, n, n0)];
+          LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("wD", {u, i, v}));
+        }
+      }
+    }
+    // Density
+    GRBLinExpr row = 0;
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        for (int v = n0; v < n; v++) {
+          for (int j = i + 1; j < n; j++) {
+            if (u != v) {
+              row += vars[LP_get_variable_index(u, i, v, j, n, n0)];
+            }
+          }
+        }
+      }
+    }
+    LP->addConstr(row, GRB_EQUAL, 1.0, LP_name("D", {}));
 
-    auto value = LP_solve(LP, vars, n, n0, s_index, get_solution);
-    delete LP, delete environment;
-    return value;
+    LP->set(GRB_IntParam_OutputFlag, 0);
+    LP->optimize();
+    int status = LP->get(GRB_IntAttr_Status);
+    if (status == GRB_OPTIMAL) {
+      double objective = LP->get(GRB_DoubleAttr_ObjVal);
+      std::map<std::pair<int, int>, double> solution;
+      delete LP, delete environment;
+      return std::make_tuple(objective, solution);
+    } else {
+      delete LP, delete environment;
+      throw std::domain_error("Invalid LP status: " + std::to_string(status));
+    }
   } catch (const GRBException &e) {
     throw std::domain_error(
         "LP solver exception code: " + std::to_string(e.getErrorCode())
             + ", message: " + e.getMessage());
-  } catch (const std::exception &e) {
-    delete LP, delete environment;
-    throw e;
   }
 }

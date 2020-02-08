@@ -53,29 +53,6 @@ inline void add_transitivity_constraint(
   }
 }
 
-std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
-    glp_prob *LP, const int &n, const int &n0, const int &s_index,
-    const bool get_solution = false) {
-  glp_term_out(0);
-  glp_simplex(LP, NULL);
-
-  double objective = glp_get_obj_val(LP);
-  std::map<std::pair<int, int>, double> solution;
-  if (get_solution) {
-    double s = glp_get_col_prim(LP, s_index + 1);
-    for (int i = n0; i < n; i++) {
-      for (int j = n0; j < n; j++) {
-        if (i == j) {
-          continue;
-        }
-        double y_ij = glp_get_col_prim(LP, LP_get_variable_index(i, j, n, n0) + 1);
-        solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
-      }
-    }
-  }
-  return std::make_tuple(objective, solution);
-}
-
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false) {
@@ -159,10 +136,26 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
   glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
 
   glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
-  auto value = LP_solve(LP, n, n0, s_index, get_solution);
+  glp_term_out(0);
+  glp_simplex(LP, NULL);
+
+  double objective = glp_get_obj_val(LP);
+  std::map<std::pair<int, int>, double> solution;
+  if (get_solution) {
+    double s = glp_get_col_prim(LP, s_index + 1);
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i == j) {
+          continue;
+        }
+        double y_ij = glp_get_col_prim(LP, LP_get_variable_index(i, j, n, n0) + 1);
+        solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+      }
+    }
+  }
   glp_delete_prob(LP);
   glp_free_env();
-  return value;
+  return std::make_tuple(objective, solution);
 }
 
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
@@ -224,13 +217,11 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
     for (int i = n0; i < n; i++) {
       for (int v = n0; v < n; v++) {
         for (int j = i + 1; j < n; j++) {
-          if (u != v) {
-            glp_set_row_name(LP, row, LP_name("S", {u, i, v, j}).c_str());
-            X.push_back(row), Y.push_back(LP_get_variable_index(u, i, v, j, n, n0) + 1);
-            X.push_back(row), Y.push_back(LP_get_variable_index(v, j, u, i, n, n0) + 1);
-            A.push_back(1), A.push_back(-1);
-            glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
-          }
+          glp_set_row_name(LP, row, LP_name("S", {u, i, v, j}).c_str());
+          X.push_back(row), Y.push_back(LP_get_variable_index(u, i, v, j, n, n0) + 1);
+          X.push_back(row), Y.push_back(LP_get_variable_index(v, j, u, i, n, n0) + 1);
+          A.push_back(1), A.push_back(-1);
+          glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
         }
       }
     }
@@ -278,8 +269,12 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
   glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
 
   glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
-  auto value = LP_solve(LP, n, n0, s_index, get_solution);
+  glp_term_out(0);
+  glp_simplex(LP, NULL);
+
+  double objective = glp_get_obj_val(LP);
+  std::map<std::pair<int, int>, double> solution;
   glp_delete_prob(LP);
   glp_free_env();
-  return value;
+  return std::make_tuple(objective, solution);
 }
