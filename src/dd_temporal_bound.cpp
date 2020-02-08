@@ -167,7 +167,9 @@ void LP_bound_exact(
   for (auto &s : solution) {
     s /= G_TRIES;
   }
-  print_density_precision("exact", epsilon, solution, n, n0, params, out_file);
+  print_density_precision(
+      "exact" + "-" + SHORT_FORMULATION_NAME(lp_formulation) + "-" + std::to_string(G_TRIES),
+      epsilon, solution, n, n0, params, out_file);
 }
 
 void LP_bound_approximate(
@@ -199,8 +201,9 @@ void LP_bound_approximate(
     sol /= G_TRIES;
   }
   print_density_precision(
-      SAMPLING_METHOD_NAME.find(algorithm)->second + "-" + std::to_string(G_TRIES)
-          + "-" + std::to_string(SIGMA_TRIES),
+      SAMPLING_METHOD_NAME.find(algorithm)->second
+          + "-" + SHORT_FORMULATION_NAME(lp_formulation)
+          + "-" + std::to_string(G_TRIES) + "-" + std::to_string(SIGMA_TRIES),
       epsilon, solution, n, n0, params, out_file);
 }
 
