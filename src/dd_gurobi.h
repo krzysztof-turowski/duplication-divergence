@@ -50,12 +50,6 @@ inline void add_transitivity_constraint(
   }
 }
 
-std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
-    GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
-    const int &s_index, const bool get_solution = false) {
-
-}
-
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false) {
@@ -162,7 +156,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
   }
 }
 
-std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false) {
   try {
@@ -173,6 +167,37 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     LP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
     double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
+    // Objective function
+    int var_count = pow(n - n0, 4.0) + pow(n - n0, 2.0) + 1;
+    std::vector<GRBVar> vars(var_count);
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        auto index = LP_get_variable_index(u, i, n, n0);
+        vars[index] = LP->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS, LP_name("y", {u, i}).c_str());
+      }
+    }
+    for (int u = n0; u < n; u++) {
+      for (int i = n0; i < n; i++) {
+        for (int v = n0; v < n; v++) {
+          for (int j = n0; j < n; j++) {
+            auto index = LP_get_variable_index(u, i, v, j, n, n0);
+            if (u != v && i < j) {
+              const auto &p_ij = p_uv.find(std::make_pair(u, v));
+              vars[index] =
+                  LP->addVar(
+                      0.0, 1.0, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0,
+                      GRB_CONTINUOUS, LP_name("w", {u, i, v, j}).c_str());
+            } else {
+              vars[index] =
+                  LP->addVar(0.0, 1.0, 0.0, GRB_CONTINUOUS, LP_name("w", {u, i, v, j}).c_str());
+            }
+          }
+        }
+      }
+    }
+    int s_index = var_count - 1;
+    vars[s_index] = LP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
+    
     // Identity
     for (int u = n0; u < n; u++) {
       for (int i = n0; i < n; i++) {
@@ -202,7 +227,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
         row += vars[LP_get_variable_index(u, i, n, n0)];
       }
       row -= vars[s_index];
-      LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("yD", {u, i, v}));
+      LP->addConstr(row, GRB_EQUAL, 0.0, LP_name("yD", {u}));
     }
     // w-density
     for (int u = n0; u < n; u++) {
