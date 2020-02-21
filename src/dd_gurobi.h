@@ -197,7 +197,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
     }
     int s_index = var_count - 1;
     vars[s_index] = LP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
-    
+
     // Identity
     for (int u = n0; u < n; u++) {
       for (int i = n0; i < n; i++) {

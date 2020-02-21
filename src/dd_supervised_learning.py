@@ -49,6 +49,8 @@ def plot_data(A, B, filename):
 plot_data(arxiv_p_uv_threshold_precision, arxiv_sort_by_p_uv_sum_precision, 'arxiv')
 plot_data(simplewiki_p_uv_threshold_precision, simplewiki_sort_by_p_uv_sum_precision, 'simplewiki')
 plot_data(collegemsg_p_uv_threshold_precision, collegemsg_sort_by_p_uv_sum_precision, 'collegemsg')
-plot_data(mus_musculus_p_uv_threshold_precision, mus_musculus_sort_by_p_uv_sum_precision, 'mus-musculus')
-plot_data(s_cerevisiae_p_uv_threshold_precision, s_cerevisiae_sort_by_p_uv_sum_precision, 's-cerevisiae')
+plot_data(
+    mus_musculus_p_uv_threshold_precision, mus_musculus_sort_by_p_uv_sum_precision, 'mus-musculus')
+plot_data(
+    s_cerevisiae_p_uv_threshold_precision, s_cerevisiae_sort_by_p_uv_sum_precision, 's-cerevisiae')
 plot_data(s_pombe_p_uv_threshold_precision, s_pombe_sort_by_p_uv_sum_precision, 's-pombe')
