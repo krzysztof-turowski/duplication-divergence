@@ -14,12 +14,12 @@
 
 const int64_t MAX_CONSTRAINTS = 5000000000L;
 
-std::string LP_row_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
+std::string LP_name(const std::string &prefix, const std::initializer_list<int> &vertices) {
   std::ostringstream out;
   out << prefix;
   if (vertices.size() > 0) {
     out << "_{";
-    for (auto v : vertices) {
+    for (const auto &v : vertices) {
       out << std::to_string(v) << ",";
     }
     out.seekp(-1, std::ios_base::end), out << "}";
@@ -27,12 +27,14 @@ std::string LP_row_name(const std::string &prefix, const std::initializer_list<i
   return out.str();
 }
 
-inline std::string LP_name_variable(const int &u, const int &v) {
-  return "x_{" + std::to_string(u) + "," + std::to_string(v) + "}";
-}
-
 inline int LP_get_variable_index(const int &u, const int &v, const int &n, const int &n0) {
   return (u - n0) * (n - n0) + (v - n0);
+}
+
+inline int LP_get_variable_index(
+    const int &u, const int &i, const int &v, const int &j, const int &n, const int &n0) {
+  int x = LP_get_variable_index(u, i, n, n0), y = LP_get_variable_index(v, j, n, n0);
+  return LP_get_variable_index(n, n0, n, n0) + x * (n - n0) * (n - n0) + y;
 }
 
 inline void add_transitivity_constraint(
@@ -41,7 +43,7 @@ inline void add_transitivity_constraint(
   #pragma omp critical
   {
     glp_add_rows(LP, 1);
-    glp_set_row_name(LP, row, LP_row_name("T", {i, j, k}).c_str());
+    glp_set_row_name(LP, row, LP_name("T", {i, j, k}).c_str());
     X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1);
     X.push_back(row), Y.push_back(LP_get_variable_index(j, k, n, n0) + 1);
     X.push_back(row), Y.push_back(LP_get_variable_index(i, k, n, n0) + 1);
@@ -51,7 +53,7 @@ inline void add_transitivity_constraint(
   }
 }
 
-std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
     const double &epsilon, const bool get_solution = false) {
   glp_prob *LP = glp_create_prob();
@@ -65,10 +67,10 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       auto index = LP_get_variable_index(i, j, n, n0);
-      glp_set_col_name(LP, index + 1, LP_name_variable(i, j).c_str());
+      glp_set_col_name(LP, index + 1, LP_name("y", {i, j}).c_str());
       if (i != j) {
         const auto &p_ij = p_uv.find(std::make_pair(i, j));
-        glp_set_col_bnds(LP, index + 1, GLP_DB, 0.0, 1.0);
+        glp_set_col_bnds(LP, index + 1, GLP_LO, 0.0, 1.0);
         glp_set_obj_coef(
             LP, index + 1, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0);
       }
@@ -87,7 +89,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
     for (int j = i + 1; j < n; j++) {
       #pragma omp critical
       {
-        glp_set_row_name(LP, row, LP_row_name("A", {i, j}).c_str());
+        glp_set_row_name(LP, row, LP_name("A", {i, j}).c_str());
         X.push_back(row), Y.push_back(LP_get_variable_index(i, j, n, n0) + 1), A.push_back(1);
         X.push_back(row), Y.push_back(LP_get_variable_index(j, i, n, n0) + 1), A.push_back(1);
         X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
@@ -123,7 +125,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
   }
   // Density
   glp_add_rows(LP, 1);
-  glp_set_row_name(LP, row, LP_row_name("D", {}).c_str());
+  glp_set_row_name(LP, row, LP_name("D", {}).c_str());
   for (int i = n0; i < n; i++) {
     for (int j = n0; j < n; j++) {
       if (i != j) {
@@ -151,6 +153,127 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_solve(
       }
     }
   }
+  glp_delete_prob(LP);
+  glp_free_env();
+  return std::make_tuple(objective, solution);
+}
+
+std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
+    const double &epsilon, const bool get_solution = false) {
+  (void)get_solution;
+  glp_prob *LP = glp_create_prob();
+  glp_set_prob_name(LP, ("Solve " + std::to_string(epsilon)).c_str());
+  glp_set_obj_dir(LP, GLP_MAX);
+  double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+
+  // Objective function
+  int var_count = pow(n - n0, 4.0) + pow(n - n0, 2.0) + 1;
+  glp_add_cols(LP, var_count);
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      auto index = LP_get_variable_index(u, i, n, n0);
+      glp_set_col_name(LP, index + 1, LP_name("y", {u, i}).c_str());
+      glp_set_col_bnds(LP, index + 1, GLP_LO, 0.0, 1.0);
+    }
+  }
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      for (int v = n0; v < n; v++) {
+        for (int j = n0; j < n; j++) {
+          auto index = LP_get_variable_index(u, i, v, j, n, n0);
+          glp_set_col_name(LP, index + 1, LP_name("w", {u, i, v, j}).c_str());
+          glp_set_col_bnds(LP, index + 1, GLP_LO, 0.0, 1.0);
+          if (u != v && i < j) {
+            const auto &p_ij = p_uv.find(std::make_pair(u, v));
+            glp_set_obj_coef(
+                LP, index + 1, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0);
+          }
+        }
+      }
+    }
+  }
+  int s_index = var_count - 1;
+  glp_set_col_name(LP, s_index + 1, "s");
+  glp_set_col_bnds(LP, s_index + 1, GLP_DB, 0.0, 1 / density);
+
+  std::vector<int> X, Y;
+  std::vector<double> A;
+  int row = 1;
+
+  // Identity
+  glp_add_rows(LP, (n - n0) * (n - n0));
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      glp_set_row_name(LP, row, LP_name("I", {u, i}).c_str());
+      X.push_back(row), Y.push_back(LP_get_variable_index(u, i, n, n0) + 1), A.push_back(1);
+      X.push_back(row), Y.push_back(LP_get_variable_index(u, i, u, i, n, n0) + 1), A.push_back(-1);
+      glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
+    }
+  }
+  // Symmetry
+  glp_add_rows(LP, pow(n - n0, 4.0));
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      for (int v = n0; v < n; v++) {
+        for (int j = i + 1; j < n; j++) {
+          glp_set_row_name(LP, row, LP_name("S", {u, i, v, j}).c_str());
+          X.push_back(row), Y.push_back(LP_get_variable_index(u, i, v, j, n, n0) + 1);
+          X.push_back(row), Y.push_back(LP_get_variable_index(v, j, u, i, n, n0) + 1);
+          A.push_back(1), A.push_back(-1);
+          glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
+        }
+      }
+    }
+  }
+  // y-density
+  glp_add_rows(LP, n - n0);
+  for (int u = n0; u < n; u++) {
+    glp_set_row_name(LP, row, LP_name("yD", {u}).c_str());
+    for (int i = n0; i < n; i++) {
+      X.push_back(row), Y.push_back(LP_get_variable_index(u, i, n, n0) + 1), A.push_back(1);
+    }
+    X.push_back(row), Y.push_back(s_index + 1), A.push_back(-1);
+    glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
+  }
+  // w-density
+  glp_add_rows(LP, pow(n - n0, 3.0));
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      for (int v = n0; v < n; v++) {
+        glp_set_row_name(LP, row, LP_name("wD", {u, i, v}).c_str());
+        for (int j = n0; j < n; j++) {
+            X.push_back(row), Y.push_back(LP_get_variable_index(u, i, v, j, n, n0) + 1);
+            A.push_back(1);
+        }
+        X.push_back(row), Y.push_back(LP_get_variable_index(u, i, n, n0) + 1), A.push_back(-1);
+        glp_set_row_bnds(LP, row, GLP_FX, 0.0, 0.0), row++;
+      }
+    }
+  }
+  // Density
+  glp_add_rows(LP, 1);
+  glp_set_row_name(LP, row, LP_name("D", {}).c_str());
+  for (int u = n0; u < n; u++) {
+    for (int i = n0; i < n; i++) {
+      for (int v = n0; v < n; v++) {
+        for (int j = i + 1; j < n; j++) {
+          if (u != v) {
+            X.push_back(row), Y.push_back(LP_get_variable_index(u, i, v, j, n, n0) + 1);
+            A.push_back(1);
+          }
+        }
+      }
+    }
+  }
+  glp_set_row_bnds(LP, row, GLP_FX, 1.0, 1.0), row++;
+
+  glp_load_matrix(LP, A.size(), &X[0] - 1, &Y[0] - 1, &A[0] - 1);
+  glp_term_out(0);
+  glp_simplex(LP, NULL);
+
+  double objective = glp_get_obj_val(LP);
+  std::map<std::pair<int, int>, double> solution;
   glp_delete_prob(LP);
   glp_free_env();
   return std::make_tuple(objective, solution);
