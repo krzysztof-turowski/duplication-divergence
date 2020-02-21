@@ -465,7 +465,7 @@ PairingScheme sort_by_lp_solution(
 
   std::map<VertexPair, double> x_uv;
   double solution;
-  std::tie(solution, x_uv) = LP_solve(p_uv, n, n0, epsilon, true);
+  std::tie(solution, x_uv) = LP_ordering_solve(p_uv, n, n0, epsilon, true);
 
   PairingScheme out;
   std::vector<int> S = get_reverse_permutation(G);
