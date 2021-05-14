@@ -43,7 +43,7 @@ def plot_data(A, B, filename):
         alpha, B, color = 'blue', marker = None, alpha = 0.8, linestyle = ':',
         label = r'\texttt{$p_{uv}$-threshold}, $\tau = 0.5$')
     pyplot.legend(loc = 'lower right')
-    dd_plot.plot('G-' + filename + '-SL', 'pdf')
+    dd_plot.plot('G-' + filename + '-SL', 'eps')
     pyplot.close()
 
 plot_data(arxiv_p_uv_threshold_precision, arxiv_sort_by_p_uv_sum_precision, 'arxiv')

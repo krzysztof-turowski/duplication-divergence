@@ -32,7 +32,7 @@ def read_data(data, interpolate = False):
         raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
     if interpolate:
-        # TODO: fix issues with infinity - currently we replace it with 2 * minimum
+        # TODO(kturowski): fix issues with infinity - currently we replace it with 2 * minimum
         minimum = min(value for value in z if value != -float('inf'))
         z = [value if value >= minimum else 2 * minimum for value in z]
         f = scipy.interpolate.interp2d(x, y, z, kind = 'cubic')
@@ -51,8 +51,10 @@ def read_data(data, interpolate = False):
 def plot_data(data_file, filename, export):
     dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
     x, y, data = read_data(data_file.readlines()[0])
-    image = pyplot.imshow(data, cmap = 'BuPu', interpolation = 'nearest', aspect = 'auto')
-    # pcolormesh, cmap {'YlGnBu','Pastel1'}, interpolation {'nearest','bilinear'}, aspect {'auto'}
+    image = pyplot.imshow(data, cmap = 'BuPu', aspect = 'auto')
+    # TODO(kturowski): pick some setting from
+    #    pcolormesh, cmap{'YlGnBu','Pastel1'}, interpolation{'nearest','bilinear'}, aspect{'auto'}
+    #    possibly apply norm = colors.LogNorm(vmin = 10 ** -3, vmax = 10 ** 5)
 
     labels_x = numpy.linspace(round(min(x)), round(max(x)), num = X_LABELS, endpoint = True)
     pyplot.gca().set_xticks(numpy.linspace(0, len(x) - 1, num = X_LABELS, endpoint = True))
