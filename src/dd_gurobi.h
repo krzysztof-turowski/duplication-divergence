@@ -275,3 +275,94 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
             + ", message: " + e.getMessage());
   }
 }
+
+std::tuple<double, std::map<std::pair<int, int>, double>> IP_ordering_solve(
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
+    const double &epsilon, const bool get_solution = false) {
+  try {
+    GRBEnv* environment = new GRBEnv();
+    GRBModel *IP = new GRBModel(*environment);
+    IP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
+    IP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
+    double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+
+    // Objective function
+    std::vector<GRBVar> vars((n - n0) * (n - n0) + 1);
+    int s_index = (n - n0) * (n - n0);
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        auto index = LP_get_variable_index(i, j, n, n0);
+        if (i != j) {
+          const auto &p_ij = p_uv.find(std::make_pair(i, j));
+          vars[index] =
+              IP->addVar(
+                  0.0, 1.0, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0,
+                  GRB_CONTINUOUS, LP_name("y", {i, j}));
+        } else {
+          vars[index] = IP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name("y", {i, j}));
+        }
+      }
+    }
+    vars[s_index] = IP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
+
+    // Antisymmetry
+    #pragma omp parallel for
+    for (int i = n0; i < n; i++) {
+      for (int j = i + 1; j < n; j++) {
+        #pragma omp critical
+        {
+          GRBLinExpr row =
+              vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, i, n, n0)];
+          IP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_name("A", { i, j }));
+        }
+      }
+    }
+    // Transitivity
+    #pragma omp parallel for
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        for (int k = n0; k < n; k++) {
+          if (i != j && j != k && i != k) {
+            add_transitivity_constraint(IP, vars, n, n0, s_index, i, j, k);
+          }
+        }
+      }
+    }
+    // Density
+    GRBLinExpr row = 0;
+    for (int i = n0; i < n; i++) {
+      for (int j = n0; j < n; j++) {
+        if (i != j) {
+          row += vars[LP_get_variable_index(i, j, n, n0)];
+        }
+      }
+    }
+    IP->addConstr(row, GRB_EQUAL, 1.0, LP_name("D", {}));
+
+    IP->set(GRB_IntParam_OutputFlag, 0);
+    IP->optimize();
+    int status = IP->get(GRB_IntAttr_Status);
+    if (status == GRB_OPTIMAL) {
+      double objective = IP->get(GRB_DoubleAttr_ObjVal);
+      std::map<std::pair<int, int>, double> solution;
+      if (get_solution) {
+        double s = vars[s_index].get(GRB_DoubleAttr_X);
+        for (int i = n0; i < n; i++) {
+          for (int j = n0; j < n; j++) {
+            double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
+            solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+          }
+        }
+      }
+      delete IP, delete environment;
+      return std::make_tuple(objective, solution);
+    } else {
+      delete IP, delete environment;
+      throw std::domain_error("Invalid IP status: " + std::to_string(status));
+    }
+  } catch (const GRBException &e) {
+    throw std::domain_error(
+        "IP solver exception code: " + std::to_string(e.getErrorCode())
+            + ", message: " + e.getMessage());
+  }
+}

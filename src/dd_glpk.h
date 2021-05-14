@@ -278,3 +278,10 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_binning_solve(
   glp_free_env();
   return std::make_tuple(objective, solution);
 }
+
+std::tuple<double, std::map<std::pair<int, int>, double>> IP_ordering_solve(
+    const std::map<std::pair<int, int>, long double> &p_uv, const int &n, const int &n0,
+    const double &epsilon, const bool get_solution = false) {
+  // TODO(kturowski): implement it.
+  throw std::domain_error("IP_ordering_solve not implemented");
+}
