@@ -66,6 +66,7 @@ if [ "$#" -gt 0 ]; then
         echo "nauty not present"
         cd $CURRENT_DIR/lib/nauty
         chmod +x ./configure
+        sed -i 's/\r$//' ./config*
         ./configure
         make
         INCLUDE_DIRS="$INCLUDE_DIRS:$CURRENT_DIR/lib/nauty"
