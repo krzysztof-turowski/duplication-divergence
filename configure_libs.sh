@@ -66,6 +66,7 @@ if [ "$#" -gt 0 ]; then
         echo "nauty not present"
         cd $CURRENT_DIR/lib/nauty
         chmod +x ./configure
+        sed -i 's/\r$//' ./config*
         ./configure
         make
         INCLUDE_DIRS="$INCLUDE_DIRS:$CURRENT_DIR/lib/nauty"
@@ -95,6 +96,7 @@ if [ "$#" -gt 0 ]; then
       else
         echo "SNAP not present"
         cd $CURRENT_DIR/lib/snap/snap-core
+        cd ../glib-core/ && echo -e "struct __exception {\nint retval;\n};\n" > bd2.cpp && cat bd.cpp >> bd2.cpp && mv -f bd2.cpp bd.cpp && cd ../snap-core
         make lib
         INCLUDE_DIRS="$INCLUDE_DIRS:$CURRENT_DIR/lib/snap/snap-core:$CURRENT_DIR/lib/snap/glib-core"
         LIBRARY_DIRS="$LIBRARY_DIRS:$CURRENT_DIR/lib/snap/snap-core:$CURRENT_DIR/lib/snap/glib-core"

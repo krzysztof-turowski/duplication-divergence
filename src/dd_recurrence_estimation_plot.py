@@ -22,24 +22,21 @@ def read_data(data):
         pyplot.xlabel(r'$p$')
         pyplot.ylabel(r'$r$', rotation = 0)
         if values.shape[1] == 3:
-            return values[:, 0, 0].astype(float), values[:, 0, 2].astype(float), \
-              values[:, 1, 2].astype(float), values[:, 2, 2].astype(float)
-        elif values.shape[1] == 1:
-            return values[:, 0, 0].astype(float), None, values[:, 0, 2].astype(float), None
-        else:
-            raise Exception('Unidentified shape of data: {0}'.format(values.shape))
-    elif (numpy.equal(values[0][0], None) == CHUNG_LU_PTRN).all():
+            return (values[:, 0, 0].astype(float), values[:, 0, 2].astype(float),
+                    values[:, 1, 2].astype(float), values[:, 2, 2].astype(float))
+        if values.shape[1] == 1:
+            return (values[:, 0, 0].astype(float), None, values[:, 0, 2].astype(float), None)
+        raise Exception('Unidentified shape of data: {0}'.format(values.shape))
+    if (numpy.equal(values[0][0], None) == CHUNG_LU_PTRN).all():
         pyplot.xlabel(r'$p$')
         pyplot.ylabel(r'$q$', rotation = 0)
         if values.shape[1] == 3:
-            return values[:, 0, 0].astype(float), values[:, 0, 1].astype(float), \
-              values[:, 1, 1].astype(float), values[:, 2, 1].astype(float)
-        elif values.shape[1] == 1:
-            return values[:, 0, 0].astype(float), None, values[:, 0, 1].astype(float), None
-        else:
-            raise Exception('Unidentified shape of data: {0}'.format(values.shape))
-    else:
-        raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
+            return (values[:, 0, 0].astype(float), values[:, 0, 1].astype(float),
+                    values[:, 1, 1].astype(float), values[:, 2, 1].astype(float))
+        if values.shape[1] == 1:
+            return (values[:, 0, 0].astype(float), None, values[:, 0, 1].astype(float), None)
+        raise Exception('Unidentified shape of data: {0}'.format(values.shape))
+    raise Exception('Unidentified type of data: {0}'.format(numpy.equal(values[0], None)))
 
 def plot_parameter(XY_tuple, label, color):
     (X, Y_min, Y, Y_max) = XY_tuple

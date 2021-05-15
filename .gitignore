@@ -3,7 +3,10 @@
 !*.*
 
 *.txt
+*.csv
 *.exe
 *.pdf
 *.png
+*.gephi
 lib/nauty/*
+temp/*

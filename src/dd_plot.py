@@ -22,22 +22,25 @@ def initialize_figure(plot_style, figure_size_scale):
         "axes.labelsize": 8, # LaTeX default is 10pt font.
         "font.size": 8,
         "legend.fontsize": 8, # Make the legend/label fonts a little smaller
+        "savefig.dpi": 125,
+        "text.latex.preamble": r"\usepackage{amsmath,amssymb,amsfonts}",
+        "figure.figsize": figure_size(figure_size_scale)
     }
     pyplot.style.use(plot_style)
     matplotlib.rcParams.update(publication_with_latex)
-    matplotlib.rcParams['savefig.dpi'] = 125
-    matplotlib.rcParams['text.latex.preamble'] = [r"\usepackage{amsmath,amssymb,amsfonts}"]
-    matplotlib.rcParams['figure.figsize'] = figure_size(figure_size_scale)
 
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', metavar = 'FILE', help = 'data to plot')
-    parser.add_argument('--export', choices = ['pdf', 'png'], help = 'export plot to file')
+    parser.add_argument('--export', choices = ['pdf', 'png', 'eps'], help = 'export plot to file')
     return parser
 
 def plot(name, export):
     if export == 'pdf':
         pyplot.savefig(r'{0}/{1}.pdf'.format(TEMP_FOLDER, name),
+                       bbox_inches = 'tight', pad_inches = 0.05)
+    elif export == 'eps':
+        pyplot.savefig(r'{0}/{1}.eps'.format(TEMP_FOLDER, name),
                        bbox_inches = 'tight', pad_inches = 0.05)
     elif export == 'png':
         pyplot.savefig(r'{0}/{1}.png'.format(TEMP_FOLDER, name),

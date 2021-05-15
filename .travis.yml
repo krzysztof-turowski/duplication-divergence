@@ -1,6 +1,6 @@
 language: cpp
 compiler: gcc
-dist: trusty
+dist: focal
 
 branches:
   only:
@@ -13,7 +13,7 @@ addons:
       - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
       - g++-7
-      - python-pip
+      - python3-pip
       - cppcheck
       - libgmp3-dev
       - libglpk-dev
@@ -33,6 +33,7 @@ before_script:
   - pylint --version
 
 script:
+  - make check
   - make all
 
 after_success:
