@@ -96,6 +96,7 @@ if [ "$#" -gt 0 ]; then
       else
         echo "SNAP not present"
         cd $CURRENT_DIR/lib/snap/snap-core
+        echo -e "struct __exception {\n  int retval;\n};\n$(cat ../glib-core/bd.cpp)" > ../glib-core/bd.cpp
         make lib
         INCLUDE_DIRS="$INCLUDE_DIRS:$CURRENT_DIR/lib/snap/snap-core:$CURRENT_DIR/lib/snap/glib-core"
         LIBRARY_DIRS="$LIBRARY_DIRS:$CURRENT_DIR/lib/snap/snap-core:$CURRENT_DIR/lib/snap/glib-core"
