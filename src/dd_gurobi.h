@@ -37,17 +37,62 @@ inline int LP_get_variable_index(
   return LP_get_variable_index(n, n0, n, n0) + x * (n - n0) * (n - n0) + y;
 }
 
+inline void add_asymmetry_constraint(
+    GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
+    const GRBLinExpr &s) {
+  #pragma omp parallel for
+  for (int i = n0; i < n; i++) {
+    for (int j = i + 1; j < n; j++) {
+      #pragma omp critical
+      {
+        GRBLinExpr row =
+            vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, i, n, n0)];
+        LP->addConstr(row, GRB_LESS_EQUAL, s, LP_name("A", { i, j }));
+      }
+    }
+  }
+}
+
 inline void add_transitivity_constraint(
     GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
-    const int &s_index, const int &i, const int &j, const int &k) {
+    const GRBLinExpr &s, const int &i, const int &j, const int &k) {
   #pragma omp critical
   {
     GRBLinExpr row =
         vars[LP_get_variable_index(i, j, n, n0)]
             + vars[LP_get_variable_index(j, k, n, n0)]
             - vars[LP_get_variable_index(i, k, n, n0)];
-    LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_name("T", { i, j, k }));
+    LP->addConstr(row, GRB_LESS_EQUAL, s, LP_name("T", { i, j, k }));
   }
+}
+
+inline void add_density_constraint(
+    GRBModel *LP, const std::vector<GRBVar> &vars, const int &n, const int &n0,
+    const double &density) {
+  GRBLinExpr row = 0;
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      if (i != j) {
+        row += vars[LP_get_variable_index(i, j, n, n0)];
+      }
+    }
+  }
+  LP->addConstr(row, GRB_LESS_EQUAL, density, LP_name("D", {}));
+}
+
+std::map<std::pair<int, int>, double> retrieve_solution(
+    GRBModel *LP, const int &n, const int &n0, const double &s) {
+  std::map<std::pair<int, int>, double> solution;
+  for (int i = n0; i < n; i++) {
+    for (int j = n0; j < n; j++) {
+      if (i == j) {
+        continue;
+      }
+      double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
+      solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
+    }
+  }
+  return solution;
 }
 
 std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
@@ -80,17 +125,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
     vars[s_index] = LP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
 
     // Antisymmetry
-    #pragma omp parallel for
-    for (int i = n0; i < n; i++) {
-      for (int j = i + 1; j < n; j++) {
-        #pragma omp critical
-        {
-          GRBLinExpr row =
-              vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, i, n, n0)];
-          LP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_name("A", { i, j }));
-        }
-      }
-    }
+    add_asymmetry_constraint(LP, vars, n, n0, vars[s_index]);
     // Transitivity
     if (MAX_CONSTRAINTS >= pow(n - n0, 3.0)) {
       #pragma omp parallel for
@@ -98,7 +133,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
         for (int j = n0; j < n; j++) {
           for (int k = n0; k < n; k++) {
             if (i != j && j != k && i != k) {
-              add_transitivity_constraint(LP, vars, n, n0, s_index, i, j, k);
+              add_transitivity_constraint(LP, vars, n, n0, vars[s_index], i, j, k);
             }
           }
         }
@@ -114,19 +149,11 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
         if (i == j || j == k || i == k) {
           continue;
         }
-        add_transitivity_constraint(LP, vars, n, n0, s_index, i, j, k);
+        add_transitivity_constraint(LP, vars, n, n0, vars[s_index], i, j, k);
       }
     }
     // Density
-    GRBLinExpr row = 0;
-    for (int i = n0; i < n; i++) {
-      for (int j = n0; j < n; j++) {
-        if (i != j) {
-          row += vars[LP_get_variable_index(i, j, n, n0)];
-        }
-      }
-    }
-    LP->addConstr(row, GRB_EQUAL, 1.0, LP_name("D", {}));
+    add_density_constraint(LP, vars, n, n0, 1.0);
 
     LP->set(GRB_IntParam_OutputFlag, 0);
     LP->optimize();
@@ -136,12 +163,7 @@ std::tuple<double, std::map<std::pair<int, int>, double>> LP_ordering_solve(
       std::map<std::pair<int, int>, double> solution;
       if (get_solution) {
         double s = vars[s_index].get(GRB_DoubleAttr_X);
-        for (int i = n0; i < n; i++) {
-          for (int j = n0; j < n; j++) {
-            double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
-            solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
-          }
-        }
+        solution = retrieve_solution(LP, n, n0, s);
       }
       delete LP, delete environment;
       return std::make_tuple(objective, solution);
@@ -284,11 +306,10 @@ std::tuple<double, std::map<std::pair<int, int>, double>> IP_ordering_solve(
     GRBModel *IP = new GRBModel(*environment);
     IP->set(GRB_StringAttr_ModelName, "Solve " + std::to_string(epsilon));
     IP->set(GRB_IntAttr_ModelSense, GRB_MAXIMIZE);
-    double density = epsilon * (n - n0) * (n - n0 - 1) / 2;
+    int density = epsilon * (n - n0) * (n - n0 - 1) / 2;
 
     // Objective function
-    std::vector<GRBVar> vars((n - n0) * (n - n0) + 1);
-    int s_index = (n - n0) * (n - n0);
+    std::vector<GRBVar> vars((n - n0) * (n - n0));
     for (int i = n0; i < n; i++) {
       for (int j = n0; j < n; j++) {
         auto index = LP_get_variable_index(i, j, n, n0);
@@ -297,62 +318,37 @@ std::tuple<double, std::map<std::pair<int, int>, double>> IP_ordering_solve(
           vars[index] =
               IP->addVar(
                   0.0, 1.0, (p_ij != p_uv.end()) ? static_cast<double>(p_ij->second) : 0.0,
-                  GRB_CONTINUOUS, LP_name("y", {i, j}));
+                  GRB_BINARY, LP_name("y", {i, j}));
         } else {
-          vars[index] = IP->addVar(0.0, 0.0, 0.0, GRB_CONTINUOUS, LP_name("y", {i, j}));
+          vars[index] = IP->addVar(0.0, 0.0, 0.0, GRB_INTEGER, LP_name("y", {i, j}));
         }
       }
     }
-    vars[s_index] = IP->addVar(0.0, 1 / density, 0.0, GRB_CONTINUOUS, "s");
 
     // Antisymmetry
-    #pragma omp parallel for
-    for (int i = n0; i < n; i++) {
-      for (int j = i + 1; j < n; j++) {
-        #pragma omp critical
-        {
-          GRBLinExpr row =
-              vars[LP_get_variable_index(i, j, n, n0)] + vars[LP_get_variable_index(j, i, n, n0)];
-          IP->addConstr(row, GRB_LESS_EQUAL, vars[s_index], LP_name("A", { i, j }));
-        }
-      }
-    }
+    add_asymmetry_constraint(IP, vars, n, n0, 1.0);
     // Transitivity
     #pragma omp parallel for
     for (int i = n0; i < n; i++) {
       for (int j = n0; j < n; j++) {
         for (int k = n0; k < n; k++) {
           if (i != j && j != k && i != k) {
-            add_transitivity_constraint(IP, vars, n, n0, s_index, i, j, k);
+            add_transitivity_constraint(IP, vars, n, n0, 1.0, i, j, k);
           }
         }
       }
     }
     // Density
-    GRBLinExpr row = 0;
-    for (int i = n0; i < n; i++) {
-      for (int j = n0; j < n; j++) {
-        if (i != j) {
-          row += vars[LP_get_variable_index(i, j, n, n0)];
-        }
-      }
-    }
-    IP->addConstr(row, GRB_EQUAL, 1.0, LP_name("D", {}));
+    add_density_constraint(IP, vars, n, n0, density);
 
     IP->set(GRB_IntParam_OutputFlag, 0);
     IP->optimize();
     int status = IP->get(GRB_IntAttr_Status);
     if (status == GRB_OPTIMAL) {
-      double objective = IP->get(GRB_DoubleAttr_ObjVal);
+      double objective = IP->get(GRB_DoubleAttr_ObjVal) / density;
       std::map<std::pair<int, int>, double> solution;
       if (get_solution) {
-        double s = vars[s_index].get(GRB_DoubleAttr_X);
-        for (int i = n0; i < n; i++) {
-          for (int j = n0; j < n; j++) {
-            double y_ij = vars[LP_get_variable_index(i, j, n, n0)].get(GRB_DoubleAttr_X);
-            solution.insert(std::make_pair(std::make_pair(i, j), y_ij / s));
-          }
-        }
+        solution = retrieve_solution(IP, n, n0, 1);
       }
       delete IP, delete environment;
       return std::make_tuple(objective, solution);
