@@ -13,7 +13,7 @@ addons:
       - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
       - g++-7
-      - python-pip
+      - python3-pip
       - cppcheck
       - libgmp3-dev
       - libglpk-dev
