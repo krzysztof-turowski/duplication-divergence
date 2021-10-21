@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+using Graph = std::vector<std::set<unsigned>>;
+
 const std::string FILES_FOLDER = "files/", TEMP_FOLDER = "temp/";
 const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
@@ -172,13 +174,13 @@ inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
-std::vector<std::set<unsigned>> generate_sticky_graph(
+Graph generate_sticky_graph(
     const Parameters &params, std::uniform_real_distribution<double> distribution) {
-  return std::vector<std::set<unsigned>>();
+  return Graph();
 }
 
-std::vector<std::set<unsigned>> generate_seed_simple(const int &n0, const double &p0) {
-  std::vector<std::set<unsigned>> G(n0);
+Graph generate_seed_simple(const int &n0, const double &p0) {
+  Graph G(n0);
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -193,8 +195,7 @@ std::vector<std::set<unsigned>> generate_seed_simple(const int &n0, const double
   return G;
 }
 
-std::vector<std::set<unsigned>> generate_graph_simple(
-    std::vector<std::set<unsigned>> &G, const int &n, const Parameters &params) {
+Graph generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -253,12 +254,12 @@ std::vector<std::set<unsigned>> generate_graph_simple(
   return G;
 }
 
-std::vector<std::set<unsigned>> read_graph_simple(const std::string &graph_name) {
+Graph read_graph_simple(const std::string &graph_name) {
   std::ifstream graph_file(graph_name);
   if (graph_file.fail()) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
-  std::vector<std::set<unsigned>> G;
+  Graph G;
   unsigned u, v;
   while (graph_file >> u >> v) {
     if (v >= G.size()) {
