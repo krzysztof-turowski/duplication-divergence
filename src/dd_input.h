@@ -10,30 +10,28 @@ TEnv prepare_environment(int argc, char **argv) {
   return TEnv(argc, argv, TNotify::StdNotify);
 }
 
-inline int read_int(
-    TEnv &environment, const std::string &prefix, const int &default_value,
+inline int read_int(TEnv &environment, const std::string &prefix, const int &default_value,
     const std::string &description) {
   return environment.GetIfArgPrefixInt(
       TStr(prefix.c_str()), default_value, TStr(description.c_str()));
 }
 
-inline double read_double(
-    TEnv &environment, const std::string &prefix, const double &default_value,
+inline double read_double(TEnv &environment, const std::string &prefix, const double &default_value,
     const std::string &description) {
   return environment.GetIfArgPrefixFlt(
       TStr(prefix.c_str()), default_value, TStr(description.c_str()));
 }
 
-inline std::string read_string(
-    TEnv &environment, const std::string &prefix, const std::string &default_value,
-    const std::string &description) {
-  return environment.GetIfArgPrefixStr(
-      TStr(prefix.c_str()), TStr(default_value.c_str()), TStr(description.c_str())).CStr();
+inline std::string read_string(TEnv &environment, const std::string &prefix,
+    const std::string &default_value, const std::string &description) {
+  return environment
+      .GetIfArgPrefixStr(
+          TStr(prefix.c_str()), TStr(default_value.c_str()), TStr(description.c_str()))
+      .CStr();
 }
 
 inline std::string read_action(TEnv &environment) {
-  return read_string(
-      environment, "-action:", "synthetic", "Actions: {synthetic, real_data}");
+  return read_string(environment, "-action:", "synthetic", "Actions: {synthetic, real_data}");
 }
 
 inline int read_n(TEnv &environment) {
@@ -49,8 +47,9 @@ inline double read_p0(TEnv &environment) {
 }
 
 inline std::string read_mode(TEnv &environment) {
-  return read_string(
-      environment, "-mode:", "pure_duplication",
+  return read_string(environment,
+      "-mode:",
+      "pure_duplication",
       "Mode: {pure_duplication, pastor_satorras, chung_lu}");
 }
 

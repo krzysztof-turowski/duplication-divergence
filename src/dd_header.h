@@ -8,14 +8,21 @@
 #include <random>
 #include <regex>
 #include <set>
-#include <string>
 #include <sstream>
+#include <string>
 #include <vector>
 
 const std::string FILES_FOLDER = "files/", TEMP_FOLDER = "temp/";
 const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
-enum Mode { INVALID, PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS, STICKY };
+enum Mode {
+  INVALID,
+  PURE_DUPLICATION,
+  PURE_DUPLICATION_CONNECTED,
+  CHUNG_LU,
+  PASTOR_SATORRAS,
+  STICKY
+};
 
 const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::PURE_DUPLICATION, "PD" },
@@ -100,8 +107,8 @@ class Parameters {
       out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R)
-          << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r
+          << " ";
     }
     return out.str();
   }
@@ -116,8 +123,8 @@ class Parameters {
       out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
-      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R)
-          << this->r << " ";
+      out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r
+          << " ";
     }
     return out.str();
   }
@@ -151,21 +158,22 @@ class Parameters {
 
 inline std::string get_synthetic_filename(
     const int &n, const int &n0, const Parameters &params, const std::string &suffix) {
-  return "synthetic-" + std::to_string(n) + "-"  + std::to_string(n0)
-      + "-" + params.to_filename() + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
+  return "synthetic-" + std::to_string(n) + "-" + std::to_string(n0) + "-" + params.to_filename()
+         + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
 }
 
 inline std::string get_real_filename(
     const std::string &graph_name, const Mode &mode, const std::string &suffix) {
-  return graph_name.substr(0, graph_name.find_last_of(".")) + "-"
-      + SHORT_NAME.find(mode)->second + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
+  return graph_name.substr(0, graph_name.find_last_of(".")) + "-" + SHORT_NAME.find(mode)->second
+         + (suffix.length() > 0 ? "-" + suffix : "") + ".txt";
 }
 
 inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
-std::vector<std::set<unsigned>> generate_sticky_graph(const Parameters &params, std::uniform_real_distribution<double> distribution) {
+std::vector<std::set<unsigned>> generate_sticky_graph(
+    const Parameters &params, std::uniform_real_distribution<double> distribution) {
   return std::vector<std::set<unsigned>>();
 }
 
@@ -192,7 +200,7 @@ std::vector<std::set<unsigned>> generate_graph_simple(
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
   if (params.mode == Mode::STICKY) {
-      return generate_sticky_graph(params, edge_distribution);
+    return generate_sticky_graph(params, edge_distribution);
   }
 
   for (int i = G.size(); i < n; i++) {

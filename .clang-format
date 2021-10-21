@@ -1,0 +1,18 @@
+---
+BasedOnStyle: LLVM
+ColumnLimit: 100
+IndentWidth: 2
+
+AlignAfterOpenBracket: DontAlign
+AllowShortFunctionsOnASingleLine: Empty
+AllowAllParametersOfDeclarationOnNextLine: true
+AccessModifierOffset: -1
+Cpp11BracedListStyle: false
+SpaceInEmptyBlock: true
+BinPackArguments: false
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+BreakBeforeBinaryOperators: NonAssignment
+ReflowComments: false
+---
+
