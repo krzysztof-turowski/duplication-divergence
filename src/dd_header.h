@@ -15,13 +15,14 @@
 const std::string FILES_FOLDER = "files/", TEMP_FOLDER = "temp/";
 const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
-enum Mode { INVALID, PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS };
+enum Mode { INVALID, PURE_DUPLICATION, PURE_DUPLICATION_CONNECTED, CHUNG_LU, PASTOR_SATORRAS, STICKY };
 
 const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::PURE_DUPLICATION, "PD" },
   { Mode::PURE_DUPLICATION_CONNECTED, "PDC" },
   { Mode::CHUNG_LU, "CL" },
   { Mode::PASTOR_SATORRAS, "PS" },
+  { Mode::STICKY, "STICKY" },
 };
 
 const std::map<Mode, std::string> LONG_NAME = {
@@ -29,6 +30,7 @@ const std::map<Mode, std::string> LONG_NAME = {
   { Mode::PURE_DUPLICATION_CONNECTED, "Pure duplication without isolated vertices" },
   { Mode::CHUNG_LU, "Chung-Lu" },
   { Mode::PASTOR_SATORRAS, "Pastor-Satorras" },
+  { Mode::STICKY, "STICKY" },
 };
 
 const std::map<std::string, Mode> REVERSE_NAME = {
@@ -36,12 +38,14 @@ const std::map<std::string, Mode> REVERSE_NAME = {
   { "pure_duplication_connected", Mode::PURE_DUPLICATION_CONNECTED },
   { "chung_lu", Mode::CHUNG_LU },
   { "pastor_satorras", Mode::PASTOR_SATORRAS },
+  { "sticky", Mode::STICKY },
 };
 
 class Parameters {
  public:
   Mode mode;
   double p, q, r;
+  std::vector<int> degrees;
 
   Parameters() : mode(Mode::INVALID), p(nan("")), q(nan("")), r(nan("")) { }
 
@@ -79,6 +83,13 @@ class Parameters {
     this->mode = Mode::PASTOR_SATORRAS;
     this->p = p_v, this->r = r_v;
     this->q = nan("");
+  }
+
+  void initialize_sticky(std::vector<int> &&_degrees) {
+    this->mode = Mode::STICKY;
+    degrees = _degrees;
+
+    this->p = this->r = this->q = nan("");
   }
 
   std::string to_string() const {
@@ -154,6 +165,10 @@ inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
+std::vector<std::set<unsigned>> generate_sticky_graph(const Parameters &params, std::uniform_real_distribution<double> distribution) {
+  return std::vector<std::set<unsigned>>();
+}
+
 std::vector<std::set<unsigned>> generate_seed_simple(const int &n0, const double &p0) {
   std::vector<std::set<unsigned>> G(n0);
   std::random_device device;
@@ -175,6 +190,10 @@ std::vector<std::set<unsigned>> generate_graph_simple(
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+
+  if (params.mode == Mode::STICKY) {
+      return generate_sticky_graph(params, edge_distribution);
+  }
 
   for (int i = G.size(); i < n; i++) {
     std::uniform_int_distribution<int> parent_distribution(0, i - 1);

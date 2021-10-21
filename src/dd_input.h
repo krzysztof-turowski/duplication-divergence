@@ -67,6 +67,13 @@ inline Parameters read_parameters(TEnv &environment) {
     double r = read_double(
         environment, "-r:", 0.0, "Probability r/n for connection to all other vertices");
     params.initialize_pastor_satorras(p, r);
+  } else if (mode == "sticky") {
+    int n = read_n(environment);
+    std::vector<int> degrees(n);
+    for (int i = 0; i < n; i++) {
+      std::cin >> degrees[i];
+    }
+    params.initialize_sticky(std::move(degrees));
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }
