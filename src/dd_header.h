@@ -96,7 +96,7 @@ class Parameters {
 
   void initialize_sticky(std::vector<int> &&_degrees) {
     this->mode = Mode::STICKY;
-    degrees = _degrees;
+    degrees = std::move(_degrees);
 
     this->p = this->r = this->q = nan("");
   }
@@ -267,7 +267,7 @@ Graph generate_graph_simple(Graph &&G, const int &n, const Parameters &params) {
       throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
     }
   }
-  return G;
+  return std::move(G);
 }
 
 Graph read_graph_simple(const std::string &graph_name) {
