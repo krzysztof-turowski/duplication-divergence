@@ -37,9 +37,9 @@ void export_graph(const std::string &name, const Graph &G) {
 }
 
 void generate_graph(const int &n, const int &n0, const double &p0, const Parameters &params) {
-  Graph G0 = generate_seed_simple(n0, p0);
-  export_graph(FILES_FOLDER + "G0-" + name(n, n0, params) + ".txt", G0);
-  Graph G = generate_graph_simple(std::move(G0), n, params);
+  Graph G = generate_seed_simple(n0, p0);
+  export_graph(FILES_FOLDER + "G0-" + name(n, n0, params) + ".txt", G);
+  generate_graph_simple(G, n, params);
   export_graph(FILES_FOLDER + "G-" + name(n, n0, params) + ".txt", G);
 }
 

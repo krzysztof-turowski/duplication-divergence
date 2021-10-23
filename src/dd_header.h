@@ -278,16 +278,18 @@ Graph generate_seed_simple(const int &n0, const double &p0) {
   return G;
 }
 
-Graph generate_graph_simple(Graph &&G, const int &n, const Parameters &params) {
+void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
 
   if (params.mode == Mode::STICKY) {
-    return generate_sticky_graph(params, edge_distribution, generator);
+    G = generate_sticky_graph(params, edge_distribution, generator);
+    return;
   }
   if (params.mode == Mode::BA) {
-    return generate_ba_graph(std::move(G), n, params);
+    G = generate_ba_graph(std::move(G), n, params);
+    return;
   }
 
   for (int i = G.size(); i < n; i++) {
@@ -337,7 +339,7 @@ Graph generate_graph_simple(Graph &&G, const int &n, const Parameters &params) {
       throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
     }
   }
-  return std::move(G);
+  return;
 }
 
 Graph read_graph_simple(const std::string &graph_name) {
