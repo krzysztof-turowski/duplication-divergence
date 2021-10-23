@@ -73,6 +73,10 @@ inline Parameters read_parameters(TEnv &environment) {
       std::cin >> degrees[i];
     }
     params.initialize_sticky(std::move(degrees));
+  } else if (mode == "ba") {
+    int m =
+        read_int(environment, "-m:", 0, "Parameter m for number of new connections in each step");
+    params.initialize_ba(m);
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }

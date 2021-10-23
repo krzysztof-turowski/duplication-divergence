@@ -23,7 +23,8 @@ enum Mode {
   PURE_DUPLICATION_CONNECTED,
   CHUNG_LU,
   PASTOR_SATORRAS,
-  STICKY
+  STICKY,
+  BA
 };
 
 const std::map<Mode, std::string> SHORT_NAME = {
@@ -32,6 +33,7 @@ const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::CHUNG_LU, "CL" },
   { Mode::PASTOR_SATORRAS, "PS" },
   { Mode::STICKY, "STICKY" },
+  { Mode::BA, "BA" },
 };
 
 const std::map<Mode, std::string> LONG_NAME = {
@@ -40,6 +42,7 @@ const std::map<Mode, std::string> LONG_NAME = {
   { Mode::CHUNG_LU, "Chung-Lu" },
   { Mode::PASTOR_SATORRAS, "Pastor-Satorras" },
   { Mode::STICKY, "STICKY" },
+  { Mode::BA, "Barabasi-Albert" },
 };
 
 const std::map<std::string, Mode> REVERSE_NAME = {
@@ -48,6 +51,7 @@ const std::map<std::string, Mode> REVERSE_NAME = {
   { "chung_lu", Mode::CHUNG_LU },
   { "pastor_satorras", Mode::PASTOR_SATORRAS },
   { "sticky", Mode::STICKY },
+  { "ba", Mode::BA },
 };
 
 class Parameters {
@@ -55,6 +59,7 @@ class Parameters {
   Mode mode;
   double p, q, r;
   std::vector<int> degrees;
+  int m;
 
   Parameters() : mode(Mode::INVALID), p(nan("")), q(nan("")), r(nan("")) { }
 
@@ -74,24 +79,28 @@ class Parameters {
     this->mode = Mode::PURE_DUPLICATION;
     this->p = p_v;
     this->q = this->r = nan("");
+    this->m = -1;
   }
 
   void initialize_pure_duplication_connected(const double &p_v) {
     this->mode = Mode::PURE_DUPLICATION_CONNECTED;
     this->p = p_v;
     this->q = this->r = nan("");
+    this->m = -1;
   }
 
   void initialize_chung_lu(const double &p_v, const double &q_v) {
     this->mode = Mode::CHUNG_LU;
     this->p = p_v, this->q = q_v;
     this->r = nan("");
+    this->m = -1;
   }
 
   void initialize_pastor_satorras(const double &p_v, const double &r_v) {
     this->mode = Mode::PASTOR_SATORRAS;
     this->p = p_v, this->r = r_v;
     this->q = nan("");
+    this->m = -1;
   }
 
   void initialize_sticky(std::vector<int> &&_degrees) {
@@ -99,18 +108,30 @@ class Parameters {
     degrees = std::move(_degrees);
 
     this->p = this->r = this->q = nan("");
+    this->m = -1;
+  }
+
+  void initialize_ba(int const &_m) {
+    this->mode = Mode::BA;
+    this->p = this->r = this->q = nan("");
+    this->m = _m;
   }
 
   std::string to_string() const {
     std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
-    out << "p = " << std::fixed << std::setprecision(PRECISION_P) << this->p << " ";
+    if (!std::isnan(this->p)) {
+      out << "p = " << std::fixed << std::setprecision(PRECISION_P) << this->p << " ";
+    }
     if (!std::isnan(this->q)) {
       out << "q = " << std::fixed << std::setprecision(PRECISION_Q) << this->q << " ";
     }
     if (!std::isnan(this->r)) {
       out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r
           << " ";
+    }
+    if (this->m != -1) {
+      out << "m = " << this->m << " ";
     }
     return out.str();
   }
@@ -133,26 +154,38 @@ class Parameters {
 
   std::string to_filename() const {
     std::stringstream out;
-    out << SHORT_NAME.find(this->mode)->second << "-";
-    out << std::fixed << std::setprecision(PRECISION_P) << this->p;
+    out << SHORT_NAME.find(this->mode)->second;
+    if (!std::isnan(this->p)) {
+      out << "-" << std::fixed << std::setprecision(PRECISION_P) << this->p;
+    }
     if (!std::isnan(this->q)) {
       out << "-" << std::fixed << std::setprecision(PRECISION_Q) << this->q;
     }
     if (!std::isnan(this->r)) {
       out << "-" << std::fixed << std::setprecision(PRECISION_R) << this->r;
     }
+    if (this->m != -1) {
+      out << "-" << this->m << " ";
+    }
     return out.str();
   }
 
   std::string to_csv() const {
     std::stringstream out;
-    out << this->p << ",";
+    if (!std::isnan(this->p)) {
+      out << this->p;
+    }
+    out << ",";
     if (!std::isnan(this->q)) {
       out << this->q;
     }
     out << ",";
     if (!std::isnan(this->r)) {
       out << this->r;
+    }
+    out << ",";
+    if (!std::isnan(this->m)) {
+      out << this->m;
     }
     return out.str();
   }
@@ -195,6 +228,10 @@ Graph generate_sticky_graph(const Parameters &params,
   return G;
 }
 
+Graph generate_ba_graph(Graph &&G, const int &n, const Parameters &params) {
+  return Graph();
+}
+
 Graph generate_seed_simple(const int &n0, const double &p0) {
   Graph G(n0);
   std::random_device device;
@@ -218,6 +255,9 @@ Graph generate_graph_simple(Graph &&G, const int &n, const Parameters &params) {
 
   if (params.mode == Mode::STICKY) {
     return generate_sticky_graph(params, edge_distribution, generator);
+  }
+  if (params.mode == Mode::BA) {
+    return generate_ba_graph(std::move(G), n, params);
   }
 
   for (int i = G.size(); i < n; i++) {
