@@ -2,8 +2,11 @@
 
 #include "dd_header.h"
 
-Graph generate_sticky_graph(const Parameters &params,
-    std::uniform_real_distribution<double> &distribution, std::mt19937 &generator) {
+Graph generate_sticky_graph(const Parameters &params) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> distribution(0.0, 1.0);
+
   const auto &degrees = params.degrees;
   Graph G(degrees.size());
   int64_t degree_sum = 0;
@@ -73,66 +76,120 @@ Graph generate_seed_simple(const int &n0, const double &p0) {
   return G;
 }
 
-void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
+void generate_pure_dd_graph(Graph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-
-  if (params.mode == Mode::STICKY) {
-    G = generate_sticky_graph(params, edge_distribution, generator);
-    return;
-  }
-  if (params.mode == Mode::BA) {
-    G = generate_ba_graph(std::move(G), n, params);
-    return;
-  }
 
   for (int i = G.size(); i < n; i++) {
     std::uniform_int_distribution<int> parent_distribution(0, i - 1);
     int parent = parent_distribution(generator);
     G.resize(i + 1);
-    if (params.mode == Mode::PURE_DUPLICATION) {
-      for (auto j : G[parent]) {
-        if (edge_distribution(generator) <= params.p) {
-          G[i].insert(j), G[j].insert(i);
-        }
+
+    for (auto j : G[parent]) {
+      if (edge_distribution(generator) <= params.p) {
+        G[i].insert(j), G[j].insert(i);
       }
-    } else if (params.mode == Mode::PURE_DUPLICATION_CONNECTED) {
-      while (true) {
-        for (auto j : G[parent]) {
-          if (edge_distribution(generator) <= params.p) {
-            G[i].insert(j), G[j].insert(i);
-          }
-        }
-        if (!G[i].empty()) {
-          break;
-        }
-        parent = parent_distribution(generator);
-      }
-    } else if (params.mode == Mode::CHUNG_LU) {
-      for (auto j : G[parent]) {
-        if (edge_distribution(generator) <= params.p) {
-          G[i].insert(j), G[j].insert(i);
-        }
-      }
-      if (edge_distribution(generator) <= params.q) {
-        G[i].insert(parent), G[parent].insert(i);
-      }
-    } else if (params.mode == Mode::PASTOR_SATORRAS) {
-      for (int j = 0; j < i; j++) {
-        if (G[parent].count(j)) {
-          if (edge_distribution(generator) <= params.p) {
-            G[i].insert(j), G[j].insert(i);
-          }
-        } else {
-          if (edge_distribution(generator) <= params.r / i) {
-            G[i].insert(j), G[j].insert(i);
-          }
-        }
-      }
-    } else {
-      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
     }
   }
-  return;
+}
+
+void generate_pure_dd_connected_graph(Graph &G, const int &n, const Parameters &params) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+
+  for (int i = G.size(); i < n; i++) {
+    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
+    int parent = parent_distribution(generator);
+    G.resize(i + 1);
+
+    while (true) {
+      for (auto j : G[parent]) {
+        if (edge_distribution(generator) <= params.p) {
+          G[i].insert(j), G[j].insert(i);
+        }
+      }
+      if (!G[i].empty()) {
+        break;
+      }
+      parent = parent_distribution(generator);
+    }
+  }
+}
+
+void generate_chung_lu_graph(Graph &G, const int &n, const Parameters &params) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+
+  for (int i = G.size(); i < n; i++) {
+    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
+    int parent = parent_distribution(generator);
+    G.resize(i + 1);
+
+    for (auto j : G[parent]) {
+      if (edge_distribution(generator) <= params.p) {
+        G[i].insert(j), G[j].insert(i);
+      }
+    }
+    if (edge_distribution(generator) <= params.q) {
+      G[i].insert(parent), G[parent].insert(i);
+    }
+  }
+}
+
+void generate_pastor_satorras_graph(Graph &G, const int &n, const Parameters &params) {
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
+
+  for (int i = G.size(); i < n; i++) {
+    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
+    int parent = parent_distribution(generator);
+    G.resize(i + 1);
+
+    for (int j = 0; j < i; j++) {
+      if (G[parent].count(j)) {
+        if (edge_distribution(generator) <= params.p) {
+          G[i].insert(j), G[j].insert(i);
+        }
+      } else {
+        if (edge_distribution(generator) <= params.r / i) {
+          G[i].insert(j), G[j].insert(i);
+        }
+      }
+    }
+  }
+}
+
+void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
+  switch (params.mode) {
+    case Mode::STICKY:
+      G = generate_sticky_graph(params);
+      break;
+
+    case Mode::BA:
+      G = generate_ba_graph(std::move(G), n, params);
+      break;
+
+    case Mode::PURE_DUPLICATION:
+      generate_pure_dd_graph(G, n, params);
+      break;
+
+    case Mode::PURE_DUPLICATION_CONNECTED:
+      generate_pure_dd_connected_graph(G, n, params);
+      break;
+
+    case Mode::CHUNG_LU:
+      generate_chung_lu_graph(G, n, params);
+      break;
+
+    case Mode::PASTOR_SATORRAS:
+      generate_pastor_satorras_graph(G, n, params);
+      break;
+
+    default:
+      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
+  }
 }
