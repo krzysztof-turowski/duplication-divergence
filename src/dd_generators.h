@@ -26,7 +26,7 @@ Graph generate_sticky_graph(const Parameters &params) {
   return G;
 }
 
-Graph generate_ba_graph(Graph &&G, const int &n, const Parameters &params) {
+void generate_ba_graph(Graph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
 
@@ -57,7 +57,6 @@ Graph generate_ba_graph(Graph &&G, const int &n, const Parameters &params) {
       G[new_edge].insert(i);
     }
   }
-  return std::move(G);
 }
 
 Graph generate_seed_simple(const int &n0, const double &p0) {
@@ -170,7 +169,7 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
       break;
 
     case Mode::BA:
-      G = generate_ba_graph(std::move(G), n, params);
+      generate_ba_graph(G, n, params);
       break;
 
     case Mode::PURE_DUPLICATION:
