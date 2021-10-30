@@ -406,8 +406,8 @@ int main(int argc, char **argv) {
     if (action == "synthetic") {
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
-      Parameters params = read_parameters(Env);
-      synthetic_data(n, n0, p0, params);
+      std::unique_ptr<Parameters> params = read_parameters(Env);
+      synthetic_data(n, n0, p0, *params);
     } else if (action == "real_data") {
       std::string graph_name = read_graph_name(Env);
       std::string mode = read_mode(Env);

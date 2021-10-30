@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
     Env = prepare_environment(argc, argv);
     const int n = read_n(Env), n0 = read_n0(Env);
     const double p0 = read_p0(Env);
-    const Parameters params = read_parameters(Env);
-    generate_graph(n, n0, p0, params);
+    const std::unique_ptr<Parameters> params = read_parameters(Env);
+    generate_graph(n, n0, p0, *params);
   } catch (const std::exception &e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
   }

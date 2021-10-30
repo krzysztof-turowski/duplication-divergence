@@ -245,13 +245,13 @@ int main(int argc, char **argv) {
       AVG_TRIES = read_int(Env, "-gt:", 1, "Number of tries");
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
-      Parameters params = read_parameters(Env);
-      synthetic_data(n, n0, p0, params);
+      std::unique_ptr<Parameters> params = read_parameters(Env);
+      synthetic_data(n, n0, p0, *params);
     } else if (action == "real_seed") {
       PVAL_TRIES = read_int(Env, "-gt:", 1, "p-value tries");
       std::string graph_name = read_graph_name(Env);
-      Parameters params = read_parameters(Env);
-      log_automorphisms_p_value(graph_name, get_seed_name(graph_name), params);
+      std::unique_ptr<Parameters> params = read_parameters(Env);
+      log_automorphisms_p_value(graph_name, get_seed_name(graph_name), *params);
     } else if (action == "real_graph") {
       std::string graph_name = read_graph_name(Env);
       log_automorphisms(graph_name);

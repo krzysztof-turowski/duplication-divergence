@@ -230,8 +230,8 @@ int main(int argc, char **argv) {
         read_string(Env, "-program:", "ordering", "IP/LP formulation to run");
     const int n = read_n(Env), n0 = read_n0(Env);
     const double p0 = read_p0(Env);
-    Parameters params = read_parameters(Env);
-    std::string name(TEMP_FOLDER + get_synthetic_filename(n, n0, params, "TC"));
+    std::unique_ptr<Parameters> params = read_parameters(Env);
+    std::string name(TEMP_FOLDER + get_synthetic_filename(n, n0, *params, "TC"));
     if (!REVERSE_FORMULATION_NAME.count(ilp_formulation)) {
       throw std::invalid_argument("Invalid IP/LP formulation: " + ilp_formulation);
     }

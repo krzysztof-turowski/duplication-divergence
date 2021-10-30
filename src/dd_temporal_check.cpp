@@ -313,17 +313,17 @@ int main(int argc, char **argv) {
     std::string action = read_action(Env);
     const int n = read_n(Env), n0 = read_n0(Env);
     const double p0 = read_p0(Env);
-    const Parameters params = read_parameters(Env);
+    const std::unique_ptr<Parameters> params = read_parameters(Env);
     if (action == "convergence") {
       MIN_SIGMA_TRIES = read_int(Env, "-gt:", 1, "MIN_SIGMA_TRIES");
       MAX_SIGMA_TRIES = read_int(Env, "-gt:", 1, "MAX_SIGMA_TRIES");
-      check_convergence(n, n0, p0, params);
+      check_convergence(n, n0, p0, *params);
     } else if (action == "permutations") {
       SIGMA_TRIES = read_int(Env, "-st:", 1, "SIGMA_TRIES");
-      check_permutations(n, n0, p0, params);
+      check_permutations(n, n0, p0, *params);
     } else if (action == "random_walk") {
       SIGMA_TRIES = read_int(Env, "-st:", 1, "SIGMA_TRIES");
-      check_random_walk(n, n0, p0, params);
+      check_random_walk(n, n0, p0, *params);
     } else {
       throw std::invalid_argument("Invalid action: " + action);
     }

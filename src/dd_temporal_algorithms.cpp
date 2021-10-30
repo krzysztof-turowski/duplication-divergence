@@ -778,30 +778,30 @@ int main(int argc, char **argv) {
     if (action == "synthetic") {
       const int n = read_n(Env), n0 = read_n0(Env);
       const double p0 = read_p0(Env);
-      Parameters params_0 = read_parameters(Env);
+      std::unique_ptr<Parameters> params_0 = read_parameters(Env);
 
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
-          synthetic_data(n, n0, params_0, p0, algorithm.second, settings);
+          synthetic_data(n, n0, *params_0, p0, algorithm.second, settings);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         synthetic_data(
-            n, n0, params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, settings);
+            n, n0, *params_0, p0, REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, settings);
       } else {
         throw std::invalid_argument("Invalid algorithm: " + algorithm_name);
       }
     } else if (action == "real_data") {
       std::string graph_name = read_graph_name(Env);
-      Parameters params = read_parameters(Env);
+      std::unique_ptr<Parameters> params = read_parameters(Env);
       if (algorithm_name == "all") {
         for (const auto &algorithm : REVERSE_ALGORITHM_NAME) {
           real_world_data(
-              graph_name, get_age_name(graph_name), algorithm.second, params, settings);
+              graph_name, get_age_name(graph_name), algorithm.second, *params, settings);
         }
       } else if (REVERSE_ALGORITHM_NAME.count(algorithm_name)) {
         real_world_data(
             graph_name, get_age_name(graph_name),
-            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, params, settings);
+            REVERSE_ALGORITHM_NAME.find(algorithm_name)->second, *params, settings);
       } else {
         throw std::invalid_argument("Invalid algorithm: " + algorithm_name);
       }
