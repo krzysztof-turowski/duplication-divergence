@@ -14,7 +14,7 @@ Example runs:
   ./dd_generate -n:100 -n0:10 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6
 */
 
-#include "./dd_header.h"
+#include "./dd_generators.h"
 #include "./dd_input.h"
 
 #include <exception>

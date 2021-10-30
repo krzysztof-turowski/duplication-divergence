@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./dd_header.h"
+#include "./dd_generators.h"
 
 typedef std::vector<std::set<unsigned>> Graph;
 

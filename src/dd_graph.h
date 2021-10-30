@@ -1,6 +1,6 @@
 #pragma once
 
-#include "./dd_header.h"
+#include "./dd_generators.h"
 
 #if defined(koala)
   #pragma GCC diagnostic push
