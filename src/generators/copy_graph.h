@@ -1,15 +1,47 @@
 #include "../dd_header.h"
 
+const int PRECISION_C = 3;
+
 class CopyGraphParameters : public Parameters {
  public:
   int a;
   int b;
   double c;
 
-  CopyGraphParameters(const int &a, const int &b, const double &c) : a(a), b(b), c(c) { }
+  CopyGraphParameters(const int &_a, const int &_b, const double &_c) : a(_a), b(_b), c(_c) {
+    this->mode = Mode::COPY_GRAPH;
+  }
+
+  std::string to_string() const {
+    std::stringstream out;
+    out << LONG_NAME.find(this->mode)->second << " ";
+    out << "a = " << this->a << " ";
+    out << "b = " << this->b << " ";
+    out << "c = " << std::fixed << std::setprecision(PRECISION_C) << this->c << " ";
+    return out.str();
+  }
+
+  std::string to_filename() const {
+    std::stringstream out;
+    out << SHORT_NAME.find(this->mode)->second;
+    out << "-" << this->a;
+    out << "-" << this->b;
+    out << "-" << std::fixed << std::setprecision(PRECISION_C) << this->c;
+    return out.str();
+  }
+
+  std::string to_csv() const {
+    std::stringstream out;
+    out << this->a;
+    out << ",";
+    out << this->b;
+    out << ",";
+    out << this->c;
+    return out.str();
+  }
 };
 
-void generate_ba_graph(Graph &G, const int &n, const CopyGraphParameters &params) {
+void generate_copy_graph(Graph &G, const int &n, const CopyGraphParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -32,7 +64,7 @@ void generate_ba_graph(Graph &G, const int &n, const CopyGraphParameters &params
 
     const auto &b_param = std::min(params.b, i - 1);
     std::set<int> copy_sources;
-    while (copy_sources.size() < b_param) {
+    while (copy_sources.size() < static_cast<size_t>(b_param)) {
       const int new_copy_source = parent_distribution(generator);
       if (copy_sources.find(new_copy_source) != copy_sources.end()) {
         continue;

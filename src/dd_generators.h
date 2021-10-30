@@ -189,6 +189,10 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
       generate_pastor_satorras_graph(G, n, params);
       break;
 
+    case Mode::COPY_GRAPH:
+      generate_copy_graph(G, n, static_cast<const CopyGraphParameters &>(params));
+      break;
+
     default:
       throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
   }

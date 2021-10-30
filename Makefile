@@ -35,7 +35,7 @@ endif
 SRC_DIR = src
 BUILD_DIR = .
 
-CPP_HDRS := $(wildcard $(SRC_DIR)/*.h)
+CPP_HDRS := $(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/**/*.h)
 CPP_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 PY_SRCS := $(wildcard $(SRC_DIR)/*.py)
 EXEC := $(patsubst $(SRC_DIR)/%.cpp,%,$(CPP_SRCS))

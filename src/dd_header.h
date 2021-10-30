@@ -24,7 +24,8 @@ enum Mode {
   CHUNG_LU,
   PASTOR_SATORRAS,
   STICKY,
-  BA
+  BA,
+  COPY_GRAPH
 };
 
 const std::map<Mode, std::string> SHORT_NAME = {
@@ -34,6 +35,7 @@ const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::PASTOR_SATORRAS, "PS" },
   { Mode::STICKY, "STICKY" },
   { Mode::BA, "BA" },
+  { Mode::COPY_GRAPH, "COPY" },
 };
 
 const std::map<Mode, std::string> LONG_NAME = {
@@ -43,6 +45,7 @@ const std::map<Mode, std::string> LONG_NAME = {
   { Mode::PASTOR_SATORRAS, "Pastor-Satorras" },
   { Mode::STICKY, "STICKY" },
   { Mode::BA, "Barabasi-Albert" },
+  { Mode::COPY_GRAPH, "Copy graph" },
 };
 
 const std::map<std::string, Mode> REVERSE_NAME = {
@@ -52,6 +55,7 @@ const std::map<std::string, Mode> REVERSE_NAME = {
   { "pastor_satorras", Mode::PASTOR_SATORRAS },
   { "sticky", Mode::STICKY },
   { "ba", Mode::BA },
+  { "copy_graph", Mode::COPY_GRAPH },
 };
 
 class Parameters {
@@ -117,7 +121,7 @@ class Parameters {
     this->m = _m;
   }
 
-  std::string to_string() const {
+  virtual std::string to_string() const {
     std::stringstream out;
     out << LONG_NAME.find(this->mode)->second << " ";
     if (!std::isnan(this->p)) {
@@ -152,7 +156,7 @@ class Parameters {
     return out.str();
   }
 
-  std::string to_filename() const {
+  virtual std::string to_filename() const {
     std::stringstream out;
     out << SHORT_NAME.find(this->mode)->second;
     if (!std::isnan(this->p)) {
@@ -170,7 +174,7 @@ class Parameters {
     return out.str();
   }
 
-  std::string to_csv() const {
+  virtual std::string to_csv() const {
     std::stringstream out;
     if (!std::isnan(this->p)) {
       out << this->p;

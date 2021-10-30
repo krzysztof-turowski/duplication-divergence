@@ -77,6 +77,11 @@ inline Parameters read_parameters(TEnv &environment) {
     int m =
         read_int(environment, "-m:", 0, "Parameter m for number of new connections in each step");
     params.initialize_ba(m);
+  } else if (mode == "copy") {
+    int a = read_int(environment, "-a:", 0, "Parameter a for copy graphs");
+    int b = read_int(environment, "-b:", 0, "Parameter b for copy graphs");
+    double c = read_double(environment, "-c:", 0.0, "Parameter c for copy graphs");
+    return CopyGraphParameters(a, b, c);
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }
