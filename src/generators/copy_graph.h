@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../dd_header.h"
 
 const int PRECISION_C = 3;
