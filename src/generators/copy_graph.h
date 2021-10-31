@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../dd_header.h"
+#include "parameters.h"
+#include <random>
 
 const int PRECISION_C = 3;
 

@@ -2,6 +2,7 @@
 
 #include "dd_header.h"
 #include "generators/copy_graph.h"
+#include <random>
 
 Graph generate_sticky_graph(const Parameters &params) {
   std::random_device device;

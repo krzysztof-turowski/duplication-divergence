@@ -1,11 +1,13 @@
 #pragma once
 
 extern "C" {
-  #include <nauty.h>
-  #include <nausparse.h>
-  #include <traces.h>
+#include <nausparse.h>
+#include <nauty.h>
+#include <traces.h>
 }
 
+#include <algorithm>
+#include <cmath>
 #include <set>
 #include <stack>
 #include <vector>
@@ -122,5 +124,5 @@ std::vector<int> connectivity(const Graph &G) {
 
 int isolated_nodes(const Graph &G) {
   return std::count_if(
-      G.begin(), G.end(), [](const std::set<unsigned> &v){ return v.size() == 0; });
+      G.begin(), G.end(), [](const std::set<unsigned> &v) { return v.size() == 0; });
 }
