@@ -72,7 +72,7 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
     for (int i = 0; i < n; i++) {
       std::cin >> degrees[i];
     }
-    params->initialize_sticky(std::move(degrees));
+    return std::make_unique<StickyParameters>(std::move(degrees));
   } else if (mode == "ba") {
     int m =
         read_int(environment, "-m:", 0, "Parameter m for number of new connections in each step");

@@ -34,7 +34,6 @@ class Parameters {
  public:
   Mode mode;
   double p, q, r;
-  std::vector<int> degrees;
 
   Parameters();
 
@@ -47,8 +46,6 @@ class Parameters {
   void initialize_chung_lu(const double &p_v, const double &q_v);
 
   void initialize_pastor_satorras(const double &p_v, const double &r_v);
-
-  void initialize_sticky(std::vector<int> &&_degrees);
 
   virtual std::string to_string() const;
 

@@ -3,31 +3,8 @@
 #include "dd_header.h"
 #include "generators/barabasi_albert.h"
 #include "generators/copy_graph.h"
+#include "generators/sticky.h"
 #include <random>
-
-Graph generate_sticky_graph(const Parameters &params) {
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> distribution(0.0, 1.0);
-
-  const auto &degrees = params.degrees;
-  Graph G(degrees.size());
-  int64_t degree_sum = 0;
-  for (auto &&deg : params.degrees) {
-    degree_sum += deg;
-  }
-
-  for (size_t i = 0; i < G.size(); i++) {
-    for (size_t j = 0; j < G.size(); j++) {
-      if (distribution(generator) * degree_sum * degree_sum
-          <= static_cast<double>(degrees[i]) * degrees[j]) {
-        G[i].insert(j), G[j].insert(i);
-      }
-    }
-  }
-
-  return G;
-}
 
 Graph generate_seed_simple(const int &n0, const double &p0) {
   Graph G(n0);
@@ -135,7 +112,7 @@ void generate_pastor_satorras_graph(Graph &G, const int &n, const Parameters &pa
 void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
   switch (params.mode) {
     case Mode::STICKY:
-      G = generate_sticky_graph(params);
+      G = generate_sticky_graph(static_cast<const StickyParameters &>(params));
       break;
 
     case Mode::BA:

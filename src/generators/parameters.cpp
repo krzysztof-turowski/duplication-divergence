@@ -72,13 +72,6 @@ void Parameters::initialize_pastor_satorras(const double &p_v, const double &r_v
   this->q = nan("");
 }
 
-void Parameters::initialize_sticky(std::vector<int> &&_degrees) {
-  this->mode = Mode::STICKY;
-  degrees = std::move(_degrees);
-
-  this->p = this->r = this->q = nan("");
-}
-
 std::string Parameters::to_string() const {
   std::stringstream out;
   out << LONG_NAME.find(this->mode)->second << " ";
