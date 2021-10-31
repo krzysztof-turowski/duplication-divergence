@@ -10,5 +10,6 @@
 *.gephi
 lib/nauty/*
 temp/*
+*.o
 
 .vscode

@@ -35,8 +35,9 @@ endif
 SRC_DIR = src
 BUILD_DIR = .
 
-CPP_HDRS := $(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/**/*.h)
+CPP_HDRS := $(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/*/*.h)
 CPP_SRCS := $(wildcard $(SRC_DIR)/*.cpp)
+OBJ_FILES := $(patsubst %.cpp,%.o,$(wildcard $(SRC_DIR)/*/*.cpp))
 PY_SRCS := $(wildcard $(SRC_DIR)/*.py)
 EXEC := $(patsubst $(SRC_DIR)/%.cpp,%,$(CPP_SRCS))
 
@@ -51,14 +52,17 @@ clang++: $(EXEC)
 debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
 debug: $(EXEC)
 
-%: $(SRC_DIR)/%.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
+%: $(SRC_DIR)/%.cpp $(CPP_HDRS) $(OBJ_FILES)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
 
-dd_automorphisms: $(SRC_DIR)/dd_automorphisms.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(NAUTY_LIB) -o $(BUILD_DIR)/$@
+%.o: %.cpp
+	@$(CC) -c $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
 
-dd_temporal_%: $(SRC_DIR)/dd_temporal_%.cpp $(CPP_HDRS)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
+dd_automorphisms: $(SRC_DIR)/dd_automorphisms.cpp $(CPP_HDRS) $(OBJ_FILES)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(NAUTY_LIB) -o $(BUILD_DIR)/$@
+
+dd_temporal_%: $(SRC_DIR)/dd_temporal_%.cpp $(CPP_HDRS) $(OBJ_FILES)
+	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/include,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
