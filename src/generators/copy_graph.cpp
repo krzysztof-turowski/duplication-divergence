@@ -9,7 +9,7 @@ CopyGraphParameters::CopyGraphParameters(const int &_a, const int &_b, const dou
 
 std::string CopyGraphParameters::to_string() const {
   std::stringstream out;
-  out << LONG_NAME.find(this->mode)->second << " ";
+  out << this->long_name() << " ";
   out << "a = " << this->a << " ";
   out << "b = " << this->b << " ";
   out << "c = " << std::fixed << std::setprecision(PRECISION_C) << this->c << " ";
@@ -18,7 +18,7 @@ std::string CopyGraphParameters::to_string() const {
 
 std::string CopyGraphParameters::to_filename() const {
   std::stringstream out;
-  out << SHORT_NAME.find(this->mode)->second;
+  out << this->short_name();
   out << "-" << this->a;
   out << "-" << this->b;
   out << "-" << std::fixed << std::setprecision(PRECISION_C) << this->c;

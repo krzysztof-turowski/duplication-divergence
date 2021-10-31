@@ -7,12 +7,12 @@ StickyParameters::StickyParameters(std::vector<int> &&_degrees) {
 
 std::string StickyParameters::to_string() const {
   std::stringstream out;
-  return LONG_NAME.find(this->mode)->second;
+  return this->long_name();
 }
 
 std::string StickyParameters::to_filename() const {
   std::stringstream out;
-  return SHORT_NAME.find(this->mode)->second;
+  return this->short_name();
 }
 
 std::string StickyParameters::to_csv() const {

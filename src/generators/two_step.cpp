@@ -7,7 +7,7 @@ TwoStepParameters::TwoStepParameters(const double &_alpha, const size_t &_target
 
 std::string TwoStepParameters::to_string() const {
   std::stringstream out;
-  out << LONG_NAME.find(this->mode)->second << " ";
+  out << this->long_name() << " ";
   out << "α = " << this->alpha << " ";
   out << "m = " << this->target_edges << " ";
   return out.str();
@@ -15,7 +15,7 @@ std::string TwoStepParameters::to_string() const {
 
 std::string TwoStepParameters::to_filename() const {
   std::stringstream out;
-  out << SHORT_NAME.find(this->mode)->second;
+  out << this->short_name();
   out << "-" << this->alpha;
   out << "-" << this->target_edges;
   return out.str();

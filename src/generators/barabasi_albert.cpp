@@ -6,14 +6,14 @@ BarabasiAlbertParameters::BarabasiAlbertParameters(int const &_m) : m(_m) {
 
 std::string BarabasiAlbertParameters::to_string() const {
   std::stringstream out;
-  out << LONG_NAME.find(this->mode)->second << " ";
+  out << this->long_name() << " ";
   out << "a = " << this->m << " ";
   return out.str();
 }
 
 std::string BarabasiAlbertParameters::to_filename() const {
   std::stringstream out;
-  out << SHORT_NAME.find(this->mode)->second;
+  out << this->short_name();
   out << "-" << this->m;
   return out.str();
 }

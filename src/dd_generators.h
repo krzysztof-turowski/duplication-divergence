@@ -145,6 +145,6 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
       break;
 
     default:
-      throw std::invalid_argument("Invalid mode: " + LONG_NAME.find(params.mode)->second);
+      throw std::invalid_argument("Invalid mode: " + params.long_name());
   }
 }

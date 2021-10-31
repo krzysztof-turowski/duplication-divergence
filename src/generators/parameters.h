@@ -55,4 +55,8 @@ class Parameters {
   virtual std::string to_filename() const;
 
   virtual std::string to_csv() const;
+
+  virtual std::string short_name() const;
+
+  virtual std::string long_name() const;
 };

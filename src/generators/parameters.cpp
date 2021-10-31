@@ -137,3 +137,11 @@ std::string Parameters::to_csv() const {
   }
   return out.str();
 }
+
+std::string Parameters::short_name() const {
+  return SHORT_NAME.find(this->mode)->second;
+}
+
+std::string Parameters::long_name() const {
+  return LONG_NAME.find(this->mode)->second;
+}
