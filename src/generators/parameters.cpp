@@ -52,28 +52,24 @@ void Parameters::initialize_pure_duplication(const double &p_v) {
   this->mode = Mode::PURE_DUPLICATION;
   this->p = p_v;
   this->q = this->r = nan("");
-  this->m = -1;
 }
 
 void Parameters::initialize_pure_duplication_connected(const double &p_v) {
   this->mode = Mode::PURE_DUPLICATION_CONNECTED;
   this->p = p_v;
   this->q = this->r = nan("");
-  this->m = -1;
 }
 
 void Parameters::initialize_chung_lu(const double &p_v, const double &q_v) {
   this->mode = Mode::CHUNG_LU;
   this->p = p_v, this->q = q_v;
   this->r = nan("");
-  this->m = -1;
 }
 
 void Parameters::initialize_pastor_satorras(const double &p_v, const double &r_v) {
   this->mode = Mode::PASTOR_SATORRAS;
   this->p = p_v, this->r = r_v;
   this->q = nan("");
-  this->m = -1;
 }
 
 void Parameters::initialize_sticky(std::vector<int> &&_degrees) {
@@ -81,13 +77,6 @@ void Parameters::initialize_sticky(std::vector<int> &&_degrees) {
   degrees = std::move(_degrees);
 
   this->p = this->r = this->q = nan("");
-  this->m = -1;
-}
-
-void Parameters::initialize_ba(int const &_m) {
-  this->mode = Mode::BA;
-  this->p = this->r = this->q = nan("");
-  this->m = _m;
 }
 
 std::string Parameters::to_string() const {
@@ -102,9 +91,6 @@ std::string Parameters::to_string() const {
   if (!std::isnan(this->r)) {
     out << "r = " << std::fixed << std::setw(WIDTH_R) << std::setprecision(PRECISION_R) << this->r
         << " ";
-  }
-  if (this->m != -1) {
-    out << "m = " << this->m << " ";
   }
   return out.str();
 }
@@ -137,9 +123,6 @@ std::string Parameters::to_filename() const {
   if (!std::isnan(this->r)) {
     out << "-" << std::fixed << std::setprecision(PRECISION_R) << this->r;
   }
-  if (this->m != -1) {
-    out << "-" << this->m << " ";
-  }
   return out.str();
 }
 
@@ -155,10 +138,6 @@ std::string Parameters::to_csv() const {
   out << ",";
   if (!std::isnan(this->r)) {
     out << this->r;
-  }
-  out << ",";
-  if (!std::isnan(this->m)) {
-    out << this->m;
   }
   return out.str();
 }

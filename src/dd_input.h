@@ -76,7 +76,7 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
   } else if (mode == "ba") {
     int m =
         read_int(environment, "-m:", 0, "Parameter m for number of new connections in each step");
-    params->initialize_ba(m);
+    return std::make_unique<BarabasiAlbertParameters>(m);
   } else if (mode == "copy") {
     int a = read_int(environment, "-a:", 0, "Parameter a for copy graphs");
     int b = read_int(environment, "-b:", 0, "Parameter b for copy graphs");

@@ -35,7 +35,6 @@ class Parameters {
   Mode mode;
   double p, q, r;
   std::vector<int> degrees;
-  int m;
 
   Parameters();
 
@@ -50,8 +49,6 @@ class Parameters {
   void initialize_pastor_satorras(const double &p_v, const double &r_v);
 
   void initialize_sticky(std::vector<int> &&_degrees);
-
-  void initialize_ba(int const &_m);
 
   virtual std::string to_string() const;
 
