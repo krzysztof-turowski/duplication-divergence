@@ -1,7 +1,5 @@
 #include "parameters.h"
 
-using Graph = std::vector<std::set<unsigned>>;
-
 const int PRECISION_P = 3, PRECISION_Q = 3, PRECISION_R = 2, WIDTH_R = 6;
 
 const std::map<Mode, std::string> SHORT_NAME = {
