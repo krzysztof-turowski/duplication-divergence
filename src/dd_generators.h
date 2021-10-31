@@ -4,6 +4,7 @@
 #include "generators/barabasi_albert.h"
 #include "generators/copy_graph.h"
 #include "generators/sticky.h"
+#include "generators/two_step.h"
 #include <random>
 
 Graph generate_seed_simple(const int &n0, const double &p0) {
@@ -137,6 +138,10 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
 
     case Mode::COPY_GRAPH:
       generate_copy_graph(G, n, static_cast<const CopyGraphParameters &>(params));
+      break;
+
+    case Mode::TWO_STEP:
+      G = generate_two_step_graph(n, static_cast<const TwoStepParameters &>(params));
       break;
 
     default:

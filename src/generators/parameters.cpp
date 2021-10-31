@@ -12,6 +12,7 @@ const std::map<Mode, std::string> SHORT_NAME = {
   { Mode::STICKY, "STICKY" },
   { Mode::BA, "BA" },
   { Mode::COPY_GRAPH, "COPY" },
+  { Mode::TWO_STEP, "2STEP" },
 };
 
 const std::map<Mode, std::string> LONG_NAME = {
@@ -22,6 +23,7 @@ const std::map<Mode, std::string> LONG_NAME = {
   { Mode::STICKY, "STICKY" },
   { Mode::BA, "Barabasi-Albert" },
   { Mode::COPY_GRAPH, "Copy graph" },
+  { Mode::TWO_STEP, "Two step" },
 };
 
 const std::map<std::string, Mode> REVERSE_NAME = {
@@ -32,6 +34,7 @@ const std::map<std::string, Mode> REVERSE_NAME = {
   { "sticky", Mode::STICKY },
   { "ba", Mode::BA },
   { "copy_graph", Mode::COPY_GRAPH },
+  { "two_step", Mode::TWO_STEP },
 };
 
 Parameters::Parameters() : mode(Mode::INVALID), p(nan("")), q(nan("")), r(nan("")) { }

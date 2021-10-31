@@ -21,7 +21,8 @@ enum Mode {
   PASTOR_SATORRAS,
   STICKY,
   BA,
-  COPY_GRAPH
+  COPY_GRAPH,
+  TWO_STEP
 };
 
 extern const std::map<Mode, std::string> SHORT_NAME;

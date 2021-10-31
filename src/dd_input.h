@@ -82,6 +82,10 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
     int b = read_int(environment, "-b:", 0, "Parameter b for copy graphs");
     double c = read_double(environment, "-c:", 0.0, "Parameter c for copy graphs");
     return std::make_unique<CopyGraphParameters>(a, b, c);
+  } else if (mode == "two_step") {
+    double a = read_double(environment, "-a:", 0.0, "Parameter alpha for two-step graphs");
+    int m = read_int(environment, "-m:", 0, "Target number of edges for two-step graphs");
+    return std::make_unique<TwoStepParameters>(a, m);
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }
