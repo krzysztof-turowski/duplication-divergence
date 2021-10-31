@@ -7,7 +7,7 @@ class BarabasiAlbertParameters : public Parameters {
  public:
   int m;
 
-  BarabasiAlbertParameters(const int &_m);
+  explicit BarabasiAlbertParameters(const int &_m);
 
   std::string to_string() const;
 

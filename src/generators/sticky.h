@@ -7,7 +7,7 @@ class StickyParameters : public Parameters {
  public:
   std::vector<int> degrees;
 
-  StickyParameters(std::vector<int> &&_degrees);
+  explicit StickyParameters(std::vector<int> &&_degrees);
 
   std::string to_string() const;
 
