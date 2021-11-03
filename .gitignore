@@ -8,7 +8,6 @@
 *.pdf
 *.png
 *.gephi
-lib/nauty/*
 temp/*
 *.o
 

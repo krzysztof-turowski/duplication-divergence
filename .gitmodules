@@ -5,3 +5,7 @@
 [submodule "lib/networkit"]
 	path = lib/networkit
 	url = https://github.com/kit-parco/networkit.git
+[submodule "lib/nauty"]
+	path = lib/nauty
+	url = https://github.com/lonnen/nauty.git
+	ignore = dirty
