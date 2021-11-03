@@ -22,7 +22,8 @@ enum Mode {
   STICKY,
   BA,
   COPY_GRAPH,
-  TWO_STEP
+  TWO_STEP,
+  BERG
 };
 
 extern const std::map<Mode, std::string> SHORT_NAME;

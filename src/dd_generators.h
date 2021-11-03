@@ -2,6 +2,7 @@
 
 #include "dd_header.h"
 #include "generators/barabasi_albert.h"
+#include "generators/berg.h"
 #include "generators/chung_lu.h"
 #include "generators/copy_graph.h"
 #include "generators/pastor_satorras.h"
@@ -59,6 +60,10 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
 
     case Mode::TWO_STEP:
       G = generate_two_step_graph(n, static_cast<const TwoStepParameters &>(params));
+      break;
+
+    case Mode::BERG:
+      generate_berg_graph(G, static_cast<const BergParameters &>(params));
       break;
 
     default:

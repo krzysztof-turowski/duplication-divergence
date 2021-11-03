@@ -86,6 +86,19 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
     double a = read_double(environment, "-a:", 0.0, "Parameter alpha for two-step graphs");
     int m = read_int(environment, "-m:", 0, "Target number of edges for two-step graphs");
     return std::make_unique<TwoStepParameters>(a, m);
+  } else if (mode == "berg") {
+    double tu =
+        read_double(environment, "-tu:", 0.0, "Parameter time unit for berg graphs (resolution)");
+    double ed =
+        read_double(environment, "-ed:", 0.0, "Parameter evolution duration for berg graphs");
+    double ac =
+        read_double(environment, "-ac:", 0.0, "Parameter average connectivity for berg graphs");
+    double dr = read_double(environment, "-dr:", 0.0, "Parameter duplication rate for berg graphs");
+    double lar =
+        read_double(environment, "-lar:", 0.0, "Parameter link addition rate for berg graphs");
+    double ldr =
+        read_double(environment, "-ldr:", 0.0, "Parameter link detachment rate for berg graphs");
+    return std::make_unique<BergParameters>(tu, ed, ac, dr, lar, ldr);
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }
