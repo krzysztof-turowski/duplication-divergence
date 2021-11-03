@@ -2,7 +2,11 @@
 
 #include "dd_header.h"
 #include "generators/barabasi_albert.h"
+#include "generators/chung_lu.h"
 #include "generators/copy_graph.h"
+#include "generators/pastor_satorras.h"
+#include "generators/pure_dd.h"
+#include "generators/pure_dd_connected.h"
 #include "generators/sticky.h"
 #include "generators/two_step.h"
 #include <random>
@@ -21,93 +25,6 @@ Graph generate_seed_simple(const int &n0, const double &p0) {
     }
   }
   return G;
-}
-
-void generate_pure_dd_graph(Graph &G, const int &n, const Parameters &params) {
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-
-  for (int i = G.size(); i < n; i++) {
-    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
-    int parent = parent_distribution(generator);
-    G.resize(i + 1);
-
-    for (auto j : G[parent]) {
-      if (edge_distribution(generator) <= params.p) {
-        G[i].insert(j), G[j].insert(i);
-      }
-    }
-  }
-}
-
-void generate_pure_dd_connected_graph(Graph &G, const int &n, const Parameters &params) {
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-
-  for (int i = G.size(); i < n; i++) {
-    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
-    int parent = parent_distribution(generator);
-    G.resize(i + 1);
-
-    while (true) {
-      for (auto j : G[parent]) {
-        if (edge_distribution(generator) <= params.p) {
-          G[i].insert(j), G[j].insert(i);
-        }
-      }
-      if (!G[i].empty()) {
-        break;
-      }
-      parent = parent_distribution(generator);
-    }
-  }
-}
-
-void generate_chung_lu_graph(Graph &G, const int &n, const Parameters &params) {
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-
-  for (int i = G.size(); i < n; i++) {
-    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
-    int parent = parent_distribution(generator);
-    G.resize(i + 1);
-
-    for (auto j : G[parent]) {
-      if (edge_distribution(generator) <= params.p) {
-        G[i].insert(j), G[j].insert(i);
-      }
-    }
-    if (edge_distribution(generator) <= params.q) {
-      G[i].insert(parent), G[parent].insert(i);
-    }
-  }
-}
-
-void generate_pastor_satorras_graph(Graph &G, const int &n, const Parameters &params) {
-  std::random_device device;
-  std::mt19937 generator(device());
-  std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
-
-  for (int i = G.size(); i < n; i++) {
-    std::uniform_int_distribution<int> parent_distribution(0, i - 1);
-    int parent = parent_distribution(generator);
-    G.resize(i + 1);
-
-    for (int j = 0; j < i; j++) {
-      if (G[parent].count(j)) {
-        if (edge_distribution(generator) <= params.p) {
-          G[i].insert(j), G[j].insert(i);
-        }
-      } else {
-        if (edge_distribution(generator) <= params.r / i) {
-          G[i].insert(j), G[j].insert(i);
-        }
-      }
-    }
-  }
 }
 
 void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
