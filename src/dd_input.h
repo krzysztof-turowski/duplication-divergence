@@ -99,6 +99,11 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
     double ldr =
         read_double(environment, "-ldr:", 0.0, "Parameter link detachment rate for berg graphs");
     return std::make_unique<BergParameters>(tu, ed, ac, dr, lar, ldr);
+  } else if (mode == "kumar_linear") {
+    double a =
+        read_double(environment, "-alpha:", 0.0, "Copy factor alpha for kumar linear graphs");
+    int d = read_int(environment, "-d:", 0, "Target degree of vertices in kumar linear graphs");
+    return std::make_unique<KumarLinearParameters>(d, a);
   } else {
     throw std::invalid_argument("Invalid mode: " + mode);
   }

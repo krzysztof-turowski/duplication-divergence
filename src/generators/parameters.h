@@ -23,7 +23,8 @@ enum Mode {
   BA,
   COPY_GRAPH,
   TWO_STEP,
-  BERG
+  BERG,
+  KUMAR_LINEAR,
 };
 
 extern const std::map<Mode, std::string> SHORT_NAME;

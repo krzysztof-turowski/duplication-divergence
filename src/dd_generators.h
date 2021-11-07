@@ -5,6 +5,7 @@
 #include "generators/berg.h"
 #include "generators/chung_lu.h"
 #include "generators/copy_graph.h"
+#include "generators/kumar_linear.h"
 #include "generators/pastor_satorras.h"
 #include "generators/pure_dd.h"
 #include "generators/pure_dd_connected.h"
@@ -64,6 +65,10 @@ void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
 
     case Mode::BERG:
       generate_berg_graph(G, static_cast<const BergParameters &>(params));
+      break;
+
+    case Mode::KUMAR_LINEAR:
+      generate_kumar_linear_graph(G, n, static_cast<const KumarLinearParameters &>(params));
       break;
 
     default:
