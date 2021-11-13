@@ -6,7 +6,7 @@ extern "C" {
 #include <traces.h>
 }
 
-#include "../graph/graph.h"
+#include "common.h"
 #include <algorithm>
 #include <cmath>
 #include <set>
