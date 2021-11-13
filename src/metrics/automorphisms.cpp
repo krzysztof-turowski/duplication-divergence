@@ -1,18 +1,4 @@
-#pragma once
-
-extern "C" {
-#include <nausparse.h>
-#include <nauty.h>
-#include <traces.h>
-}
-
-#include <algorithm>
-#include <cmath>
-#include <set>
-#include <stack>
-#include <vector>
-
-typedef std::vector<std::set<unsigned>> Graph;
+#include "automorphisms.h"
 
 double log_automorphisms_dense(const Graph &G) {
   statsblk stats;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../graph/graph.h"
 #include <algorithm>
 #include <cmath>
 #include <iomanip>
@@ -8,8 +9,6 @@
 #include <set>
 #include <string>
 #include <vector>
-
-using Graph = std::vector<std::set<unsigned>>;
 
 extern const int PRECISION_P, PRECISION_Q, PRECISION_R, WIDTH_R;
 

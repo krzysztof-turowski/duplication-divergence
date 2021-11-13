@@ -22,7 +22,7 @@ Example runs:
   ./dd_automorphisms -action:synthetic -n:200 -n0:20 -mode:pastor_satorras -p:0.5 -r:2.0 -p0:0.6 -gt:100
 */
 
-#include "./dd_automorphisms.h"
+#include "./metrics/automorphisms.h"
 #include "./dd_generators.h"
 #include "./dd_input.h"
 
