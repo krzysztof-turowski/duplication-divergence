@@ -1,8 +1,10 @@
 #include "closeness.h"
 
 std::vector<double> closeness(const Graph &G) {
-  auto shortest_paths = floyd_warshall(G);
+  return closeness(G, floyd_warshall(G));
+}
 
+std::vector<double> closeness(const Graph &G, const FWResults &shortest_paths) {
   auto result = std::vector<double>(G.size(), 0.0);
   for (size_t v = 0; v < G.size(); v++) {
     int64_t distance_sum = 0;

@@ -9,4 +9,6 @@ struct FWResult {
   int64_t number_of_paths;
 };
 
-std::vector<std::vector<FWResult>> floyd_warshall(const Graph &G);
+using FWResults = std::vector<std::vector<FWResult>>;
+
+FWResults floyd_warshall(const Graph &G);

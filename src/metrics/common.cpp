@@ -1,7 +1,7 @@
 #include "common.h"
 
-std::vector<std::vector<FWResult>> floyd_warshall(const Graph &G) {
-  auto result = std::vector<std::vector<FWResult>>(
+FWResults floyd_warshall(const Graph &G) {
+  auto result = FWResults(
       G.size(), std::vector<FWResult>(G.size(), { std::numeric_limits<int32_t>::max() / 2, 0 }));
 
   for (size_t i = 0; i < G.size(); i++) {
