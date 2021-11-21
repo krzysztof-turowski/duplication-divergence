@@ -40,13 +40,13 @@ const std::array<const Graph, 29> GRAPHLETS = {
   G{ E{ 1, 2, 3, 4 }, E{ 0, 2, 3, 4 }, E{ 0, 1, 3, 4 }, E{ 0, 1, 2, 4 }, E{ 0, 1, 2, 3 } },
 };
 
-size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet);
-
 size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
   if (graphlet == GRAPHLETS[0]) {
     return count_open_triangles(graph);
   } else if (graphlet == GRAPHLETS[1]) {
     return count_triangles(graph);
+  } else if (graphlet == GRAPHLETS[2]) {
+    return count_four_paths(graph);
   }
   return count_graphlets_naive(graph, graphlet);
 }
@@ -77,6 +77,29 @@ size_t count_triangles(const Graph &graph) {
     }
   }
   return result / 3;
+}
+
+size_t count_four_paths(const Graph &graph) {
+  size_t result = 0;
+  for (auto v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (!graph[*it].count(*jt)) {
+          for (auto &&k : graph[*it]) {
+            if (!v.count(k) && !graph[*jt].count(k)) {
+              result++;
+            }
+          }
+          for (auto &&k : graph[*jt]) {
+            if (!v.count(k) && !graph[*it].count(k)) {
+              result++;
+            }
+          }
+        }
+      }
+    }
+  }
+  return result / 2;
 }
 
 bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {
