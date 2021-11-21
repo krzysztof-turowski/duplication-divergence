@@ -57,7 +57,7 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
 
 size_t count_open_triangles(const Graph &graph) {
   size_t result = 0;
-  for (auto v : graph) {
+  for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
@@ -71,7 +71,7 @@ size_t count_open_triangles(const Graph &graph) {
 
 size_t count_triangles(const Graph &graph) {
   size_t result = 0;
-  for (auto v : graph) {
+  for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
         if (graph[*it].count(*jt)) {
@@ -85,7 +85,7 @@ size_t count_triangles(const Graph &graph) {
 
 size_t count_four_paths(const Graph &graph) {
   size_t result = 0;
-  for (auto v : graph) {
+  for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
@@ -108,7 +108,7 @@ size_t count_four_paths(const Graph &graph) {
 
 size_t count_three_stars(const Graph &graph) {
   size_t result = 0;
-  for (auto v : graph) {
+  for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
         for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
