@@ -57,6 +57,8 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
     return count_four_almost_cliques(graph);
   } else if (graphlet == GRAPHLETS[7]) {
     return count_four_cliques(graph);
+  } else if (graphlet == GRAPHLETS[8]) {
+    return count_five_paths(graph);
   }
   return count_graphlets_naive(graph, graphlet);
 }
@@ -193,6 +195,34 @@ size_t count_four_cliques(const Graph &graph) {
     }
   }
   return result / 4;
+}
+
+size_t count_five_paths(const Graph &graph) {
+  size_t result = 0;
+  for (const auto &v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (!graph[*it].count(*jt)) {
+          std::vector<unsigned> ks;
+          for (auto &&k : graph[*it]) {
+            if (!v.count(k) && !graph[*jt].count(k)) {
+              ks.push_back(k);
+            }
+          }
+          for (auto &&l : graph[*jt]) {
+            if (!v.count(l) && !graph[*it].count(l)) {
+              for (auto &&k : ks) {
+                if (!graph[l].count(k)) {
+                  result++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
 }
 
 bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {
