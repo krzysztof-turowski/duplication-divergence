@@ -49,6 +49,8 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
     return count_four_paths(graph);
   } else if (graphlet == GRAPHLETS[3]) {
     return count_three_stars(graph);
+  } else if (graphlet == GRAPHLETS[4]) {
+    return count_squares(graph);
   }
   return count_graphlets_naive(graph, graphlet);
 }
@@ -118,6 +120,25 @@ size_t count_three_stars(const Graph &graph) {
     }
   }
   return result;
+}
+
+size_t count_squares(const Graph &graph) {
+  size_t result = 0;
+  for (size_t i = 0; i < graph.size(); i++) {
+    const auto &v = graph[i];
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (!graph[*it].count(*jt)) {
+          for (auto &&k : graph[*it]) {
+            if (i != k && !v.count(k) && graph[*jt].count(k)) {
+              result++;
+            }
+          }
+        }
+      }
+    }
+  }
+  return result / 4;
 }
 
 bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {

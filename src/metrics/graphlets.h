@@ -13,5 +13,6 @@ size_t count_open_triangles(const Graph &G);
 size_t count_triangles(const Graph &G);
 size_t count_four_paths(const Graph &graph);
 size_t count_three_stars(const Graph &graph);
+size_t count_squares(const Graph &graph);
 
 size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet);
