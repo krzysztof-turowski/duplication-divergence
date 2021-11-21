@@ -61,6 +61,8 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
     return count_five_paths(graph);
   } else if (graphlet == GRAPHLETS[9]) {
     return count_three_stars_with_antenna(graph);
+  } else if (graphlet == GRAPHLETS[10]) {
+    return count_four_stars(graph);
   }
   return count_graphlets_naive(graph, graphlet);
 }
@@ -250,6 +252,25 @@ size_t count_three_stars_with_antenna(const Graph &graph) {
               if (!v.count(l) && !graph[*it].count(l) && !graph[*jt].count(l)) {
                 result++;
               }
+            }
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+size_t count_four_stars(const Graph &graph) {
+  size_t result = 0;
+  for (const auto &v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+          for (auto lt = next(kt, 1); lt != v.end(); ++lt) {
+            if (!graph[*it].count(*jt) && !graph[*jt].count(*kt) && !graph[*kt].count(*lt)
+                && !graph[*lt].count(*it) && !graph[*it].count(*kt) && !graph[*jt].count(*lt)) {
+              result++;
             }
           }
         }
