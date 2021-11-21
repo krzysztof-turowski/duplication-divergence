@@ -187,8 +187,9 @@ size_t count_four_almost_cliques(const Graph &graph) {
 
 size_t count_four_cliques(const Graph &graph) {
   size_t result = 0;
-  for (const auto &v : graph) {
-    for (auto it = v.begin(); it != v.end(); ++it) {
+  for (size_t i = 0; i < graph.size(); i++) {
+    const auto &v = graph[i];
+    for (auto it = v.upper_bound(i); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
         for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
           if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 3) {
@@ -198,7 +199,7 @@ size_t count_four_cliques(const Graph &graph) {
       }
     }
   }
-  return result / 4;
+  return result;
 }
 
 size_t count_five_paths(const Graph &graph) {
