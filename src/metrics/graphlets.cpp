@@ -43,7 +43,40 @@ const std::array<const Graph, 29> GRAPHLETS = {
 size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet);
 
 size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
+  if (graphlet == GRAPHLETS[0]) {
+    return count_open_triangles(graph);
+  } else if (graphlet == GRAPHLETS[1]) {
+    return count_triangles(graph);
+  }
   return count_graphlets_naive(graph, graphlet);
+}
+
+size_t count_open_triangles(const Graph &graph) {
+  size_t result = 0;
+  for (auto v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (!graph[*it].count(*jt)) {
+          result++;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+size_t count_triangles(const Graph &graph) {
+  size_t result = 0;
+  for (auto v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (graph[*it].count(*jt)) {
+          result++;
+        }
+      }
+    }
+  }
+  return result / 3;
 }
 
 bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {
