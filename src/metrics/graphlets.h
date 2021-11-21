@@ -18,5 +18,6 @@ size_t count_triangles_with_antenna(const Graph &graph);
 size_t count_four_almost_cliques(const Graph &graph);
 size_t count_four_cliques(const Graph &graph);
 size_t count_five_paths(const Graph &graph);
+size_t count_three_stars_with_antenna(const Graph &graph);
 
 size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet);
