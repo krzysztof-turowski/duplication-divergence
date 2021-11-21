@@ -235,8 +235,11 @@ size_t count_three_stars_with_antenna(const Graph &graph) {
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (graph[*it].count(*jt)) {
+          continue;
+        }
         for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
-          if (!graph[*it].count(*jt) && !graph[*jt].count(*kt) && !graph[*kt].count(*it)) {
+          if (!graph[*jt].count(*kt) && !graph[*kt].count(*it)) {
             for (auto &&l : graph[*it]) {
               if (!v.count(l) && !graph[*jt].count(l) && !graph[*kt].count(l)) {
                 result++;
@@ -267,10 +270,16 @@ size_t count_four_stars(const Graph &graph) {
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        if (graph[*it].count(*jt)) {
+          continue;
+        }
         for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+          if (graph[*jt].count(*kt) || graph[*it].count(*kt)) {
+            continue;
+          }
+
           for (auto lt = next(kt, 1); lt != v.end(); ++lt) {
-            if (!graph[*it].count(*jt) && !graph[*jt].count(*kt) && !graph[*kt].count(*lt)
-                && !graph[*lt].count(*it) && !graph[*it].count(*kt) && !graph[*jt].count(*lt)) {
+            if (!graph[*kt].count(*lt) && !graph[*lt].count(*it) && !graph[*jt].count(*lt)) {
               result++;
             }
           }
