@@ -53,6 +53,10 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
     return count_squares(graph);
   } else if (graphlet == GRAPHLETS[5]) {
     return count_triangles_with_antenna(graph);
+  } else if (graphlet == GRAPHLETS[6]) {
+    return count_four_almost_cliques(graph);
+  } else if (graphlet == GRAPHLETS[7]) {
+    return count_four_cliques(graph);
   }
   return count_graphlets_naive(graph, graphlet);
 }
@@ -157,6 +161,38 @@ size_t count_triangles_with_antenna(const Graph &graph) {
     }
   }
   return result;
+}
+
+size_t count_four_almost_cliques(const Graph &graph) {
+  size_t result = 0;
+  for (const auto &v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+          if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 2) {
+            result++;
+          }
+        }
+      }
+    }
+  }
+  return result / 2;
+}
+
+size_t count_four_cliques(const Graph &graph) {
+  size_t result = 0;
+  for (const auto &v : graph) {
+    for (auto it = v.begin(); it != v.end(); ++it) {
+      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+          if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 3) {
+            result++;
+          }
+        }
+      }
+    }
+  }
+  return result / 4;
 }
 
 bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {
