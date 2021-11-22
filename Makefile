@@ -9,6 +9,7 @@ else
   COMPILER_FLAGS += -fopenmp
 endif
 
+INC = -isystem lib/nauty -Llib/nauty
 GRAPH_LIB = snap
 NAUTY_LIB = -l:nauty.a -Wno-unused-variable -DTHREADS=1
 LP_SOLVER = glpk
@@ -18,8 +19,10 @@ INPUT_FLAGS = -lsnap -Wno-error -fpermissive
 GRAPH_FLAGS = -D$(GRAPH_LIB) -DNDEBUG
 ifeq ($(GRAPH_LIB),snap)
 	GRAPH_FLAGS += -lsnap -Wno-error -fpermissive
+	INC += -isystem lib/snap/snap-core -isystem lib/snap/glib-core -Llib/snap/snap-core -Llib/snap/glib-core 
 else ifeq ($(GRAPH_LIB),networkit)
 	GRAPH_FLAGS += -lnetworkit
+	INC += -isystem lib/networkit/networkit/cpp -Llib/networkit/build_lib
 endif
 
 MATH_FLAGS = -lgmp -lgmpxx
@@ -53,16 +56,16 @@ debug: COMPILER_FLAGS += -ggdb -fsanitize=thread,undefined
 debug: $(EXEC)
 
 %: $(SRC_DIR)/%.cpp $(CPP_HDRS) $(OBJ_FILES)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
+	@$(CC) $(INC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(NAUTY_LIB) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
 
 %.o: %.cpp
-	@$(CC) -c $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
+	@$(CC) -c $(INC) $(FLAGS) $(COMPILER_FLAGS) $< $(INPUT_FLAGS) $(GRAPH_FLAGS) -o $(BUILD_DIR)/$@
 
 dd_automorphisms: $(SRC_DIR)/dd_automorphisms.cpp $(CPP_HDRS) $(OBJ_FILES)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(NAUTY_LIB) -o $(BUILD_DIR)/$@
+	@$(CC) $(INC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(NAUTY_LIB) -o $(BUILD_DIR)/$@
 
 dd_temporal_%: $(SRC_DIR)/dd_temporal_%.cpp $(CPP_HDRS) $(OBJ_FILES)
-	@$(CC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
+	@$(CC) $(INC) $(FLAGS) $(COMPILER_FLAGS) $< $(OBJ_FILES) $(INPUT_FLAGS) $(GRAPH_FLAGS) $(LP_FLAGS) $(MATH_FLAGS) -o $(BUILD_DIR)/$@
 
 check:
 	cpplint --linelength=100 --extensions=cpp,h --filter=-legal/copyright,-build/c++11,-build/include,-build/namespaces,-runtime/references,-runtime/string $(CPP_SRCS) $(CPP_HDRS)
