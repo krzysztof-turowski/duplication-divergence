@@ -3,6 +3,7 @@
 #include "../graph/graph.h"
 #include <cstdlib>
 #include <limits>
+#include <queue>
 
 struct FWResult {
   int32_t distance;
@@ -12,3 +13,5 @@ struct FWResult {
 using FWResults = std::vector<std::vector<FWResult>>;
 
 FWResults floyd_warshall(const Graph &G);
+
+FWResults repeated_bfs(const Graph &G);
