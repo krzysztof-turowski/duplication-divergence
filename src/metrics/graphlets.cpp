@@ -40,7 +40,7 @@ const std::array<const Graph, 29> GRAPHLETS = {
   G{ E{ 1, 2, 3, 4 }, E{ 0, 2, 3, 4 }, E{ 0, 1, 3, 4 }, E{ 0, 1, 2, 4 }, E{ 0, 1, 2, 3 } },
 };
 
-size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
+uint64_t count_graphlets(const Graph &graph, const Graph &graphlet) {
   if (graphlet == GRAPHLETS[0]) {
     return count_open_triangles(graph);
   } else if (graphlet == GRAPHLETS[1]) {
@@ -67,11 +67,11 @@ size_t count_graphlets(const Graph &graph, const Graph &graphlet) {
   return count_graphlets_naive(graph, graphlet);
 }
 
-size_t count_open_triangles(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_open_triangles(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
           result++;
         }
@@ -81,11 +81,11 @@ size_t count_open_triangles(const Graph &graph) {
   return result;
 }
 
-size_t count_triangles(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_triangles(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (graph[*it].count(*jt)) {
           result++;
         }
@@ -95,11 +95,11 @@ size_t count_triangles(const Graph &graph) {
   return result / 3;
 }
 
-size_t count_four_paths(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_four_paths(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
           for (auto &&k : graph[*it]) {
             if (!v.count(k) && !graph[*jt].count(k)) {
@@ -118,12 +118,12 @@ size_t count_four_paths(const Graph &graph) {
   return result / 2;
 }
 
-size_t count_three_stars(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_three_stars(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (!graph[*it].count(*jt) && !graph[*jt].count(*kt) && !graph[*kt].count(*it)) {
             result++;
           }
@@ -134,12 +134,12 @@ size_t count_three_stars(const Graph &graph) {
   return result;
 }
 
-size_t count_squares(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_squares(const Graph &graph) {
+  uint64_t result = 0;
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
           for (auto &&k : graph[*it]) {
             if (i != k && !v.count(k) && graph[*jt].count(k)) {
@@ -153,12 +153,12 @@ size_t count_squares(const Graph &graph) {
   return result / 4;
 }
 
-size_t count_triangles_with_antenna(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_triangles_with_antenna(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 1) {
             result++;
           }
@@ -169,12 +169,12 @@ size_t count_triangles_with_antenna(const Graph &graph) {
   return result;
 }
 
-size_t count_four_almost_cliques(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_four_almost_cliques(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 2) {
             result++;
           }
@@ -185,13 +185,13 @@ size_t count_four_almost_cliques(const Graph &graph) {
   return result / 2;
 }
 
-size_t count_four_cliques(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_four_cliques(const Graph &graph) {
+  uint64_t result = 0;
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.upper_bound(i); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (graph[*it].count(*jt) + graph[*jt].count(*kt) + graph[*kt].count(*it) == 3) {
             result++;
           }
@@ -202,11 +202,11 @@ size_t count_four_cliques(const Graph &graph) {
   return result;
 }
 
-size_t count_five_paths(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_five_paths(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (!graph[*it].count(*jt)) {
           std::vector<unsigned> ks;
           for (auto &&k : graph[*it]) {
@@ -230,15 +230,15 @@ size_t count_five_paths(const Graph &graph) {
   return result;
 }
 
-size_t count_three_stars_with_antenna(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_three_stars_with_antenna(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (graph[*it].count(*jt)) {
           continue;
         }
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (!graph[*jt].count(*kt) && !graph[*kt].count(*it)) {
             for (auto &&l : graph[*it]) {
               if (!v.count(l) && !graph[*jt].count(l) && !graph[*kt].count(l)) {
@@ -265,20 +265,20 @@ size_t count_three_stars_with_antenna(const Graph &graph) {
   return result;
 }
 
-size_t count_four_stars(const Graph &graph) {
-  size_t result = 0;
+uint64_t count_four_stars(const Graph &graph) {
+  uint64_t result = 0;
   for (const auto &v : graph) {
     for (auto it = v.begin(); it != v.end(); ++it) {
-      for (auto jt = next(it, 1); jt != v.end(); ++jt) {
+      for (auto jt = std::next(it); jt != v.end(); ++jt) {
         if (graph[*it].count(*jt)) {
           continue;
         }
-        for (auto kt = next(jt, 1); kt != v.end(); ++kt) {
+        for (auto kt = std::next(jt); kt != v.end(); ++kt) {
           if (graph[*jt].count(*kt) || graph[*it].count(*kt)) {
             continue;
           }
 
-          for (auto lt = next(kt, 1); lt != v.end(); ++lt) {
+          for (auto lt = std::next(kt); lt != v.end(); ++lt) {
             if (!graph[*kt].count(*lt) && !graph[*lt].count(*it) && !graph[*jt].count(*lt)) {
               result++;
             }
@@ -301,12 +301,12 @@ bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsign
     }
 
     return true;
-  next_perm:;
+  next_perm : { }
   } while (std::next_permutation(combination.begin(), combination.end()));
   return false;
 }
 
-size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet) {
+uint64_t count_graphlets_naive(const Graph &graph, const Graph &graphlet) {
   std::vector<unsigned> combination(graphlet.size());
   for (size_t i = 0; i < combination.size(); i++) {
     combination[i] = i;
@@ -327,7 +327,7 @@ size_t count_graphlets_naive(const Graph &graph, const Graph &graphlet) {
     return combination.front() <= graph.size() - combination.size();
   };
 
-  size_t result = 0;
+  uint64_t result = 0;
   do {
     if (is_isomorphic(graph, graphlet, combination)) {
       result++;
