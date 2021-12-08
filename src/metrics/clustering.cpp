@@ -3,7 +3,7 @@
 std::pair<int64_t, int64_t> count_triangles(const Graph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
-  for (auto v : G) {
+  for (auto &&v : G) {
     result.second += v.size() * (v.size() - 1) / 2;
 
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -28,7 +28,7 @@ double clustering_coefficient_two(const Graph &graph) {
 std::pair<int64_t, int64_t> count_four_cliques(const Graph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
-  for (auto v : G) {
+  for (auto &&v : G) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = std::next(it, 1); jt != v.end(); ++jt) {
         if (!G[*it].count(*jt)) {
@@ -58,7 +58,7 @@ double clustering_coefficient_three(const Graph &graph) {
 std::pair<int64_t, int64_t> count_five_cliques(const Graph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
-  for (auto v : G) {
+  for (auto &&v : G) {
     for (auto it = v.begin(); it != v.end(); ++it) {
       for (auto jt = std::next(it, 1); jt != v.end(); ++jt) {
         if (!G[*it].count(*jt)) {
