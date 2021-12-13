@@ -6,12 +6,16 @@ double get_average_shortest_path(const Graph &G) {
 
 double get_average_shortest_path(const Graph &G, const FWResults &shortest_paths) {
   double result = 0;
+  int64_t paths = 0;
 
   for (size_t i = 0; i < G.size(); i++) {
     for (size_t j = i + 1; j < G.size(); j++) {
-      result += shortest_paths[i][j].distance;
+      if (shortest_paths[i][j].distance != INF) {
+        result += shortest_paths[i][j].distance;
+        paths++;
+      }
     }
   }
 
-  return result / (G.size() * (G.size() - 1) / 2);
+  return paths > 0 ? result / paths : 0;
 }

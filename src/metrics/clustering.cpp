@@ -22,7 +22,7 @@ std::pair<int64_t, int64_t> count_triangles(const Graph &G) {
 
 double clustering_coefficient_two(const Graph &graph) {
   auto triangles = count_triangles(graph);
-  return static_cast<double>(6 * triangles.first) / triangles.second;
+  return triangles.second > 0 ? static_cast<double>(6 * triangles.first) / triangles.second : 0;
 }
 
 std::pair<int64_t, int64_t> count_four_cliques(const Graph &G) {
@@ -52,7 +52,9 @@ std::pair<int64_t, int64_t> count_four_cliques(const Graph &G) {
 
 double clustering_coefficient_three(const Graph &graph) {
   auto four_cliques = count_four_cliques(graph);
-  return static_cast<double>(3 * (3 + 1) * four_cliques.first) / four_cliques.second;
+  return four_cliques.second > 0
+             ? static_cast<double>(3 * (3 + 1) * four_cliques.first) / four_cliques.second
+             : 0;
 }
 
 std::pair<int64_t, int64_t> count_five_cliques(const Graph &G) {
@@ -88,5 +90,7 @@ std::pair<int64_t, int64_t> count_five_cliques(const Graph &G) {
 
 double clustering_coefficient_four(const Graph &graph) {
   auto five_cliques = count_five_cliques(graph);
-  return static_cast<double>(5 * (5 + 1) * five_cliques.first) / five_cliques.second;
+  return five_cliques.second > 0
+             ? static_cast<double>(5 * (5 + 1) * five_cliques.first) / five_cliques.second
+             : 0;
 }

@@ -1,7 +1,5 @@
 #include "common.h"
 
-auto constexpr INF = std::numeric_limits<int32_t>::max() / 2;
-
 FWResults floyd_warshall(const Graph &G) {
   auto result = FWResults(G.size(), std::vector<FWResult>(G.size(), { INF, 0 }));
 

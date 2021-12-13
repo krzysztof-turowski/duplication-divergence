@@ -9,7 +9,9 @@ int64_t get_diameter(const Graph &G, const FWResults &shortest_paths) {
 
   for (size_t i = 0; i < G.size(); i++) {
     for (size_t j = i + 1; j < G.size(); j++) {
-      result = std::max(result, shortest_paths[i][j].distance);
+      if (shortest_paths[i][j].distance != INF) {
+        result = std::max(result, shortest_paths[i][j].distance);
+      }
     }
   }
 

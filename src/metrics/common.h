@@ -5,6 +5,8 @@
 #include <limits>
 #include <queue>
 
+auto constexpr INF = std::numeric_limits<int32_t>::max() / 2;
+
 struct FWResult {
   int32_t distance;
   int64_t number_of_paths;
