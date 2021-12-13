@@ -51,8 +51,7 @@ Graph generate_sticky_graph(const StickyParameters &params) {
 
   for (size_t i = 0; i < G.size(); i++) {
     for (size_t j = 0; j < G.size(); j++) {
-      if (distribution(generator) * degree_sum * degree_sum
-          <= static_cast<double>(degrees[i]) * degrees[j]) {
+      if (distribution(generator) * degree_sum <= static_cast<double>(degrees[i]) * degrees[j]) {
         G[i].insert(j), G[j].insert(i);
       }
     }
