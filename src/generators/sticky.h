@@ -8,6 +8,7 @@ class StickyParameters : public Parameters {
   std::vector<int> degrees;
 
   explicit StickyParameters(std::vector<int> &&_degrees);
+  StickyParameters(const size_t &n, const double &gamma);
 
   std::string to_string() const;
 

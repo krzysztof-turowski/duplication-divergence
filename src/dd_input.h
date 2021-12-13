@@ -68,11 +68,21 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
     params->initialize_pastor_satorras(p, r);
   } else if (mode == "sticky") {
     int n = read_n(environment);
-    std::vector<int> degrees(n);
-    for (int i = 0; i < n; i++) {
-      std::cin >> degrees[i];
+    double gamma = read_double(environment,
+        "-gamma:",
+        std::numeric_limits<double>::quiet_NaN(),
+        "Parameter gamma generating scale free degrees distribution");
+
+    if (std::isnan(gamma)) {
+
+      std::vector<int> degrees(n);
+      for (int i = 0; i < n; i++) {
+        std::cin >> degrees[i];
+      }
+      return std::make_unique<StickyParameters>(std::move(degrees));
+    } else {
+      return std::make_unique<StickyParameters>(n, gamma);
     }
-    return std::make_unique<StickyParameters>(std::move(degrees));
   } else if (mode == "ba") {
     int m =
         read_int(environment, "-m:", 0, "Parameter m for number of new connections in each step");

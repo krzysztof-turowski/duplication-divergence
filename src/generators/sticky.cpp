@@ -5,6 +5,24 @@ StickyParameters::StickyParameters(std::vector<int> &&_degrees) {
   degrees = std::move(_degrees);
 }
 
+StickyParameters::StickyParameters(const size_t &n, const double &gamma) {
+  this->mode = Mode::STICKY;
+
+  std::vector<double> weights(n);
+  for (size_t i = 0; i < weights.size(); i++) {
+    weights[i] = i == 0 ? 0 : std::pow(static_cast<double>(i), -gamma);
+  }
+
+  std::random_device device;
+  std::mt19937 generator(device());
+  std::discrete_distribution<int> degree_distribution(weights.begin(), weights.end());
+
+  degrees.resize(n);
+  for (size_t i = 0; i < degrees.size(); i++) {
+    degrees[i] = degree_distribution(generator);
+  }
+}
+
 std::string StickyParameters::to_string() const {
   std::stringstream out;
   return this->long_name();
