@@ -80,30 +80,20 @@ void count_graph_statistics(Graph const &G, std::ostream &out) {
   out << std::endl;
 }
 
-int main() {
+int main(int argc, char const *argv[]) {
+  if (argc < 2) {
+    return 1;
+  }
   const std::string RESULTS_FOLDER = "results/";
-  const std::vector<std::string> GRAPH_NAMES = {
-    "G-a-thaliana.txt",
-    "G-c-elegans.txt",
-    "G-college-msg.txt",
-    "G-d-melanogaster.txt",
-    "G-dynamic-simplewiki-10k.txt",
-    "G-hep-th-citations-scc.txt",
-    "G-homo-sapiens.txt",
-    "G-mus-musculus.txt",
-    "G-s-cerevisiae.txt",
-    "G-s-pombe.txt",
-  };
+  std::string graph_name = argv[1];
 
   std::ofstream result;
   result.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-  for (auto &&graph_name : GRAPH_NAMES) {
-    Graph G(read_graph_simple(FILES_FOLDER + graph_name));
-    result.open(RESULTS_FOLDER + graph_name);
-    count_graph_statistics(G, result);
-    result.close();
-  }
+  Graph G(read_graph_simple(FILES_FOLDER + graph_name));
+  result.open(RESULTS_FOLDER + graph_name);
+  count_graph_statistics(G, result);
+  result.close();
 
   return 0;
 }
