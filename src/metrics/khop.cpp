@@ -36,6 +36,8 @@ std::vector<double> khop_reachability(
   for (size_t i = 0; i < result.size(); i++) {
     if (degree_size[i] > 0) {
       result[i] /= degree_size[i];
+    } else {
+      result[i] = i;
     }
   }
 
