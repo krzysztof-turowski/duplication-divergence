@@ -929,3 +929,18 @@ uint64_t count_graphlets_naive(const Graph &graph, const Graph &graphlet) {
   } while (next_combination());
   return result;
 }
+
+std::array<double, GRAPHLETS.size()> relative_graphlet_frequency(
+    std::array<uint64_t, GRAPHLETS.size()> const &small_graphlets) {
+  uint64_t all_graphlets = 0;
+  for (auto &&graphlet : small_graphlets) {
+    all_graphlets += graphlet;
+  }
+
+  std::array<double, GRAPHLETS.size()> rgf;
+  for (size_t i = 0; i < rgf.size(); i++) {
+    rgf[i] = -std::log(static_cast<double>(small_graphlets[i]) / all_graphlets);
+  }
+
+  return rgf;
+}

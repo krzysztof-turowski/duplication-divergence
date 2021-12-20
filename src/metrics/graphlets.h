@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <functional>
 #include <vector>
@@ -12,6 +13,9 @@ extern const std::array<const Graph, 29> GRAPHLETS;
 using AdjMatrixFn = std::function<bool(const unsigned &, const unsigned &)>;
 
 std::array<uint64_t, GRAPHLETS.size()> count_small_graphlets(const Graph &graph);
+
+std::array<double, GRAPHLETS.size()> relative_graphlet_frequency(
+    std::array<uint64_t, GRAPHLETS.size()> const &small_graphlets);
 
 uint64_t count_graphlets(const Graph &graph, const Graph &graphlet,
     std::function<bool(const unsigned &, const unsigned &)> *edge_exists = nullptr);
