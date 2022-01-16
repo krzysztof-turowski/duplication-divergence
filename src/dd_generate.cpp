@@ -36,11 +36,16 @@ void export_graph(const std::string &name, const Graph &G) {
   G_out_file.close();
 }
 
-void generate_graph(const int &n, const int &n0, const double &p0, const Parameters &params) {
-  Graph G = generate_seed_simple(n0, p0);
-  export_graph(FILES_FOLDER + "G0-" + name(n, n0, params) + ".txt", G);
+void generate_graph(const int &n, const int &n0, const double &p0, const Parameters &params,
+    const std::string &g0, const std::string &prefix) {
+  Graph G = g0.empty() ? generate_seed_simple(n0, p0) : read_graph_simple(g0);
+  if (g0.empty()) {
+    export_graph(FILES_FOLDER + prefix + "G0-" + name(n, n0, params) + ".txt", G);
+  }
   generate_graph_simple(G, n, params);
-  export_graph(FILES_FOLDER + "G-" + name(n, n0, params) + ".txt", G);
+  const auto output_file = prefix + "G-" + name(n, n0, params) + ".txt";
+  export_graph(FILES_FOLDER + output_file, G);
+  std::cout << "Generated file: " << output_file << std::endl;
 }
 
 int main(int argc, char **argv) {
@@ -48,8 +53,10 @@ int main(int argc, char **argv) {
     Env = prepare_environment(argc, argv);
     const int n = read_n(Env), n0 = read_n0(Env);
     const double p0 = read_p0(Env);
+    const auto g0 = read_g0(Env);
+    const auto prefix = read_prefix(Env);
     const std::unique_ptr<Parameters> params = read_parameters(Env);
-    generate_graph(n, n0, p0, *params);
+    generate_graph(n, n0, p0, *params, g0, prefix);
   } catch (const std::exception &e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
   }

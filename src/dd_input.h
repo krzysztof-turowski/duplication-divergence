@@ -30,6 +30,14 @@ inline std::string read_string(TEnv &environment, const std::string &prefix,
       .CStr();
 }
 
+inline std::string read_g0(TEnv &environment) {
+  return read_string(environment, "-g0:", "", "Seed graph name");
+}
+
+inline std::string read_prefix(TEnv &environment) {
+  return read_string(environment, "-prefix:", "", "Prefix for output file");
+}
+
 inline std::string read_action(TEnv &environment) {
   return read_string(environment, "-action:", "synthetic", "Actions: {synthetic, real_data}");
 }
