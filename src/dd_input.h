@@ -74,7 +74,6 @@ inline std::unique_ptr<Parameters> read_parameters(TEnv &environment) {
         "Parameter gamma generating scale free degrees distribution");
 
     if (std::isnan(gamma)) {
-
       std::vector<int> degrees(n);
       for (int i = 0; i < n; i++) {
         std::cin >> degrees[i];

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cstdint>
 #include <functional>
+#include <stdexcept>
 #include <vector>
 
 extern const std::array<const Graph, 29> GRAPHLETS;

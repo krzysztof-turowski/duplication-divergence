@@ -101,12 +101,18 @@ uint64_t count_graphlets(const Graph &graph, const Graph &graphlet, AdjMatrixFn 
     return count_subdivided_crosses(graph, func);
   } else if (graphlet == GRAPHLETS[27]) {
     return count_five_almost_cliques(graph, func);
+  } else if (graphlet == GRAPHLETS[28]) {
+    return count_five_cliques(graph, func);
   }
+
+  throw std::invalid_argument("Not recognized graphlet.");
   return count_graphlets_naive(graph, graphlet);
 }
 
 uint64_t count_open_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -122,6 +128,8 @@ uint64_t count_open_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -137,6 +145,8 @@ uint64_t count_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_four_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -161,6 +171,8 @@ uint64_t count_four_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_three_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -178,6 +190,8 @@ uint64_t count_three_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_squares(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -197,6 +211,8 @@ uint64_t count_squares(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_triangles_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -214,6 +230,8 @@ uint64_t count_triangles_with_antenna(const Graph &graph, AdjMatrixFn const &adj
 
 uint64_t count_four_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -231,6 +249,8 @@ uint64_t count_four_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_ma
 
 uint64_t count_four_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.upper_bound(i); it != v.end(); ++it) {
@@ -248,6 +268,8 @@ uint64_t count_four_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_five_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -277,6 +299,8 @@ uint64_t count_five_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_three_stars_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -313,6 +337,8 @@ uint64_t count_three_stars_with_antenna(const Graph &graph, AdjMatrixFn const &a
 
 uint64_t count_four_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -339,6 +365,8 @@ uint64_t count_four_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_triangles_with_two_antennas(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -366,6 +394,8 @@ uint64_t count_triangles_with_two_antennas(const Graph &graph, AdjMatrixFn const
 
 uint64_t count_triangles_with_long_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -403,6 +433,8 @@ uint64_t count_triangles_with_long_antenna(const Graph &graph, AdjMatrixFn const
 
 uint64_t count_four_stars_with_edge(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -424,6 +456,8 @@ uint64_t count_four_stars_with_edge(const Graph &graph, AdjMatrixFn const &adj_m
 
 uint64_t count_polygons(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto &&j : v) {
@@ -449,6 +483,8 @@ uint64_t count_polygons(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_squares_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -473,6 +509,8 @@ uint64_t count_squares_with_antenna(const Graph &graph, AdjMatrixFn const &adj_m
 
 uint64_t count_almost_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -497,6 +535,8 @@ uint64_t count_almost_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn 
 
 uint64_t count_bowties(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -524,6 +564,8 @@ uint64_t count_bowties(const Graph &graph, AdjMatrixFn const &adj_mat) {
 uint64_t count_almost_four_cliques_with_antenna_alt(
     const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -548,6 +590,8 @@ uint64_t count_almost_four_cliques_with_antenna_alt(
 
 uint64_t count_clique_two_three(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -576,6 +620,8 @@ uint64_t count_clique_two_three(const Graph &graph, AdjMatrixFn const &adj_mat) 
 
 uint64_t count_houses(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -603,6 +649,8 @@ uint64_t count_houses(const Graph &graph, AdjMatrixFn const &adj_mat) {
 
 uint64_t count_clique_three_one_one(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -631,6 +679,8 @@ uint64_t count_clique_three_one_one(const Graph &graph, AdjMatrixFn const &adj_m
 
 uint64_t count_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.upper_bound(i); it != v.end(); ++it) {
@@ -677,6 +727,7 @@ uint64_t count_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &
 uint64_t count_three_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -702,6 +753,7 @@ uint64_t count_three_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
 uint64_t count_squares_with_three_cross(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -742,6 +794,8 @@ uint64_t count_squares_with_three_cross(const Graph &graph, AdjMatrixFn const &a
 
 uint64_t count_four_cliques_with_flag(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
+
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.upper_bound(i); it != v.end(); ++it) {
@@ -788,6 +842,7 @@ uint64_t count_four_cliques_with_flag(const Graph &graph, AdjMatrixFn const &adj
 uint64_t count_subdivided_crosses(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -812,6 +867,7 @@ uint64_t count_subdivided_crosses(const Graph &graph, AdjMatrixFn const &adj_mat
 uint64_t count_five_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
@@ -836,6 +892,7 @@ uint64_t count_five_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_ma
 uint64_t count_five_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
+#pragma omp parallel for
   for (size_t i = 0; i < graph.size(); i++) {
     const auto &v = graph[i];
     for (auto it = v.begin(); it != v.end(); ++it) {
