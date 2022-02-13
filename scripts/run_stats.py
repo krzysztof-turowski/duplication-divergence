@@ -2,16 +2,7 @@
 
 import subprocess
 import itertools
-
-REAL_GRAPHS = [
-    ("G-a-thaliana.txt", "G0-a-thaliana.txt", 9444, 44387),
-    ("G-c-elegans.txt", "G0-c-elegans.txt", 3868, 11684),
-    ("G-d-melanogaster.txt", "G0-d-melanogaster.txt", 9204, 69560),
-    ("G-homo-sapiens.txt", "G0-homo-sapiens.txt", 17294, 313932),
-    ("G-mus-musculus.txt", "G0-mus-musculus.txt", 6869, 25269),
-    ("G-s-cerevisiae.txt", "G0-s-cerevisiae.txt", 6151, 537552),
-    ("G-s-pombe.txt", "G0-s-pombe.txt", 4202, 62313),
-]
+import common
 
 
 def float_range(start, end, values=10):
@@ -41,8 +32,6 @@ GENERATORS = [
     ("kumar_linear", [("d", range(1, 10)), ("alpha", range(1, 10))]),
 ]
 
-SEEDS = [""]
-
 
 def generate_graph(mode, stable_params, variable_params):
     generated = []
@@ -67,21 +56,28 @@ def generate_graph(mode, stable_params, variable_params):
     return generated
 
 
+def get_stable_params(graph, n, seed, model, m):
+    stable_params = [
+        f"-prefix:{graph.replace('.txt', '_')}",
+        f"-n:{n}",
+        f"-g0:./files/{seed}",
+    ]
+    if model == "berg":
+        stable_params.append("-tu:0.01")
+        stable_params.append("-ed:2e4")
+    elif model == "two_step":
+        stable_params.append(f"-m:{m}")
+    return stable_params
+
+
 def generate_graphs():
     generated = []
-    for graph, seed, n, m in REAL_GRAPHS:
+    for graph, seed, n, m in common.REAL_GRAPHS:
         for model, variable_params in GENERATORS:
             print(f"Generating graph using {model} with params from {graph}.")
-            stable_params = [
-                f"-prefix:{graph.replace('.txt', '_')}",
-                f"-n:{n}",
-                f"-g0:./files/{seed}",
-            ]
-            if model == "berg":
-                stable_params.append("-tu:0.01")
-                stable_params.append("-ed:2e4")
-            elif model == "two_step":
-                stable_params.append(f"-m:{m}")
+
+            stable_params = get_stable_params(graph, n, seed, model, m)
+
             generated.extend(
                 generate_graph(model, stable_params, variable_params)
             )
@@ -89,6 +85,5 @@ def generate_graphs():
 
 
 generated = generate_graphs()
-for graph in itertools.chain((g[0] for g in REAL_GRAPHS), generated):
-    print(f"Calculating stats for graph {graph}.")
-    subprocess.run(["./dd_calculate_real_graph_characteristics", graph])
+for graph in generated:
+    common.calculate_stats(graph)
