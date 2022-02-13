@@ -4,6 +4,7 @@ import subprocess
 import itertools
 import common
 import sys
+import asyncio
 
 
 def float_range(start, end, values=10):
@@ -34,21 +35,32 @@ GENERATORS = [
 ]
 
 
-def generate_graph(mode, stable_params, variable_params):
-    generated = []
+async def generate_graph(mode, stable_params, variable_params, prefix):
+    promises = []
     for param_values in itertools.product(
         *(prange for _, prange in variable_params)
     ):
         args = [
             f"-mode:{mode}",
+            prefix,
             *stable_params,
             *(
                 f"-{name}:{value}"
                 for (name, _), value in zip(variable_params, param_values)
             ),
         ]
-        result = subprocess.run(["./dd_generate", *args], capture_output=True)
-        output = str(result.stdout)
+        promises.append(
+            asyncio.create_subprocess_exec(
+                "./dd_generate",
+                *args,
+                stdout=asyncio.subprocess.PIPE,
+            )
+        )
+
+    generated = []
+    for promise in await asyncio.gather(*promises):
+        output, _ = await promise.communicate()
+        output = str(output)
         generated.append(
             output[
                 output.find("Generated file: ") + len("Generated file: ") : -3
@@ -59,7 +71,6 @@ def generate_graph(mode, stable_params, variable_params):
 
 def get_stable_params(n, seed, model, m):
     stable_params = [
-        "",
         f"-n:{n}",
         f"-g0:./files/{seed}",
     ]
@@ -71,28 +82,33 @@ def get_stable_params(n, seed, model, m):
     return stable_params
 
 
-def generate_graphs(iters):
-    generated = []
+async def generate_graphs(iters):
+    promises = []
     for graph, seed, n, m in common.REAL_GRAPHS:
         for model, variable_params in GENERATORS:
-            print(f"Generating graph using {model} with params from {graph}.")
-
             stable_params = get_stable_params(n, seed, model, m)
             common_prefix = f"-prefix:{graph.replace('.txt', '')}_"
             for i in range(iters):
-                stable_params[0] = f"{common_prefix}{i}_"
-                generated.extend(
+                promises.append(
                     generate_graph(
                         model,
                         stable_params,
                         variable_params,
+                        f"{common_prefix}{i}_",
                     )
                 )
+
+    generated = [item for sublist in promises for item in await sublist]
+
     return generated
 
 
-iters = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+async def main():
+    iters = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 
-generated = generate_graphs(iters)
-for graph in generated:
-    common.calculate_stats(graph)
+    generated = await generate_graphs(iters)
+    for graph in generated:
+        await common.calculate_stats(graph)
+
+
+asyncio.run(main())
