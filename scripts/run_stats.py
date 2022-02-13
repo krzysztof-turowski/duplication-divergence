@@ -3,6 +3,7 @@
 import subprocess
 import itertools
 import common
+import sys
 
 
 def float_range(start, end, values=10):
@@ -56,9 +57,9 @@ def generate_graph(mode, stable_params, variable_params):
     return generated
 
 
-def get_stable_params(graph, n, seed, model, m):
+def get_stable_params(n, seed, model, m):
     stable_params = [
-        f"-prefix:{graph.replace('.txt', '_')}",
+        "",
         f"-n:{n}",
         f"-g0:./files/{seed}",
     ]
@@ -70,20 +71,28 @@ def get_stable_params(graph, n, seed, model, m):
     return stable_params
 
 
-def generate_graphs():
+def generate_graphs(iters):
     generated = []
     for graph, seed, n, m in common.REAL_GRAPHS:
         for model, variable_params in GENERATORS:
             print(f"Generating graph using {model} with params from {graph}.")
 
-            stable_params = get_stable_params(graph, n, seed, model, m)
-
-            generated.extend(
-                generate_graph(model, stable_params, variable_params)
-            )
+            stable_params = get_stable_params(n, seed, model, m)
+            common_prefix = f"-prefix:{graph.replace('.txt', '')}_"
+            for i in range(iters):
+                stable_params[0] = f"{common_prefix}{i}_"
+                generated.extend(
+                    generate_graph(
+                        model,
+                        stable_params,
+                        variable_params,
+                    )
+                )
     return generated
 
 
-generated = generate_graphs()
+iters = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+
+generated = generate_graphs(iters)
 for graph in generated:
     common.calculate_stats(graph)
