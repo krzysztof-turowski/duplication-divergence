@@ -7,31 +7,39 @@ import sys
 import asyncio
 
 
-def float_range(start, end, values=10):
-    return [float(start + i * (end - start) / 10) for i in range(1, values)]
+def int_range(start, end, values=3):
+    return range(start, end, (end - start + 1) // values)
+
+
+def float_range(start, end, values=4):
+    return [float(start + i * (end - start) / (values + 1))
+            for i in range(1, values + 1)]
 
 
 GENERATORS = [
-    ("pure_duplication", [("p", float_range(0, 1))]),
-    ("chung_lu", [("p", float_range(0, 1)), ("q", float_range(0, 1))]),
-    ("pastor_satorras", [("p", float_range(0, 1)), ("r", float_range(0, 1))]),
-    ("sticky", [("gamma", float_range(2, 3))]),
-    ("ba", [("m", range(1, 10))]),
+    ("pure_duplication", [("p", float_range(0, 1, 100))]),
+    ("chung_lu", [("p", float_range(0, 1, 10)), ("q", float_range(0, 1, 10))]),
+    ("pastor_satorras", [("p", float_range(0, 1, 10)),
+     ("r", float_range(0, 1, 10))]),
+    ("sticky", [("gamma", float_range(2, 3, 100))]),
+    ("ba", [("m", int_range(1, 10, 10))]),
     (
         "copy",
-        [("a", range(1, 10)), ("b", range(1, 10)), ("c", float_range(0, 1))],
+        [("a", int_range(1, 10, 4)), ("b", int_range(
+            1, 10, 4)), ("c", float_range(0, 1, 4))],
     ),
-    ("two_step", [("a", float_range(1, 3))]),
+    # ("two_step", [("a", float_range(1, 3, 100))]),
     (
         "berg",
         [
-            ("ac", float_range(5, 7)),
-            ("dr", float_range(0, 1)),
-            ("lar", float_range(0, 1)),
-            ("ldr", float_range(0, 1)),
+            ("ac", float_range(5, 7, 3)),
+            ("dr", float_range(0, 2e-4, 3)),
+            ("lar", float_range(0, 1e-1, 3)),
+            ("ldr", float_range(0, 1e-1, 3)),
         ],
     ),
-    ("kumar_linear", [("d", range(1, 10)), ("alpha", range(1, 10))]),
+    ("kumar_linear", [("d", int_range(1, 10, 10)),
+     ("alpha", int_range(1, 10, 10))]),
 ]
 
 
@@ -63,7 +71,7 @@ async def generate_graph(mode, stable_params, variable_params, prefix):
         output = str(output)
         generated.append(
             output[
-                output.find("Generated file: ") + len("Generated file: ") : -3
+                output.find("Generated file: ") + len("Generated file: "): -3
             ]
         )
     return generated
@@ -75,7 +83,7 @@ def get_stable_params(n, seed, model, m):
         f"-g0:./files/{seed}",
     ]
     if model == "berg":
-        stable_params.append("-tu:0.01")
+        stable_params.append("-tu:0.1")
         stable_params.append("-ed:2e4")
     elif model == "two_step":
         stable_params.append(f"-m:{m}")
@@ -107,8 +115,9 @@ async def main():
     iters = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 
     generated = await generate_graphs(iters)
-    for graph in generated:
-        await common.calculate_stats(graph)
+    processess = await asyncio.gather(*(common.calculate_stats(graph) for graph in generated))
+    for process in processess:
+        _ = await process.communicate()
 
 
 asyncio.run(main())

@@ -60,25 +60,23 @@ Graph generate_two_step_graph(const int &n, const TwoStepParameters &params) {
     if (G[i].size() <= 0) {
       continue;
     }
-    std::uniform_int_distribution<int> edge_distribution(0, G[i].size() - 1);
-    const int j_index = edge_distribution(generator);
+
+    std::vector<float> weights(G[i].size());
     auto it = G[i].begin();
+
+    for (size_t w = 0; w < weights.size(); w++, it++) {
+      const auto &j = G[*it];
+      weights[w] = j.size() > 1 ? std::pow(static_cast<float>(j.size()), -params.alpha) : 0;
+    }
+    std::discrete_distribution<int> edge_distribution(weights.begin(), weights.end());
+
+    const int j_index = edge_distribution(generator);
+    it = G[i].begin();
     std::advance(it, j_index);
     const int j = *it;
-    if (G[j].size() <= 1) {
-      continue;
-    }
-    double p_j = std::pow(G[j].size(), -params.alpha);
-    double N_i = 0;
-    for (auto &&edge : G[i]) {
-      N_i += std::pow(G[edge].size(), -params.alpha);
-    }
-
-    if (distribution(generator) <= p_j / N_i) {
-      G[i].erase(j);
-      G[j].erase(i);
-      number_of_edges--;
-    }
+    G[i].erase(j);
+    G[j].erase(i);
+    number_of_edges--;
   }
 
   while (number_of_edges < static_cast<int>(params.target_edges)) {
