@@ -64,7 +64,7 @@ std::string BergParameters::long_name() const {
   return "Berg";
 }
 
-void generate_berg_graph(Graph &G, const BergParameters &params) {
+void generate_berg_graph(SimpleGraph &G, const BergParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> distribution(0.0, 1.0);

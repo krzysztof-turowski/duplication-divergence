@@ -16,4 +16,4 @@ class BarabasiAlbertParameters : public Parameters {
   std::string to_csv() const;
 };
 
-void generate_ba_graph(Graph &G, const int &n, const BarabasiAlbertParameters &params);
+void generate_ba_graph(SimpleGraph &G, const int &n, const BarabasiAlbertParameters &params);

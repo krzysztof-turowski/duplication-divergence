@@ -17,4 +17,4 @@ class TwoStepParameters : public Parameters {
   std::string to_csv() const;
 };
 
-Graph generate_two_step_graph(const int &n, const TwoStepParameters &params);
+SimpleGraph generate_two_step_graph(const int &n, const TwoStepParameters &params);

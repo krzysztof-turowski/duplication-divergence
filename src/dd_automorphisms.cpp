@@ -39,7 +39,7 @@ enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
 const AutomorphismsDetection ALGORITHM = AutomorphismsDetection::NAUTY_DENSE;
 
-double log_automorphisms(const Graph &G) {
+double log_automorphisms(const SimpleGraph &G) {
   switch (ALGORITHM) {
     case NAUTY_DENSE:
       return log_automorphisms_dense(G);
@@ -74,11 +74,11 @@ double log_automorphisms(const Graph &G) {
   }
 }
 
-double log_automorphisms_from_isolated_nodes(const Graph &G) {
+double log_automorphisms_from_isolated_nodes(const SimpleGraph &G) {
   return lgamma(isolated_nodes(G) + 1);
 }
 
-double log_automorphisms_from_cherries(const Graph &G) {
+double log_automorphisms_from_cherries(const SimpleGraph &G) {
   std::vector<int> V(G.size());
   for (size_t i = 0; i < G.size(); i++) {
     if (G[i].size() == 1) {
@@ -92,7 +92,7 @@ double log_automorphisms_from_cherries(const Graph &G) {
   return out;
 }
 
-double log_automorphisms_from_copies(const Graph &G) {
+double log_automorphisms_from_copies(const SimpleGraph &G) {
   std::vector<bool> V(G.size(), false);
   double out = 0, count;
   for (size_t i = 0; i < G.size(); i++) {
@@ -110,21 +110,21 @@ double log_automorphisms_from_copies(const Graph &G) {
   return out;
 }
 
-AutomorphismsInfo log_automorphisms_single(const Graph &G) {
+AutomorphismsInfo log_automorphisms_single(const SimpleGraph &G) {
   return AutomorphismsInfo(
       log_automorphisms(G), log_automorphisms_from_isolated_nodes(G),
       log_automorphisms_from_cherries(G), log_automorphisms_from_copies(G));
 }
 
 AutomorphismsInfo log_automorphisms_single(
-    const Graph &G0, const int &n, const Parameters &params) {
-  Graph H(G0);
+    const SimpleGraph &G0, const int &n, const Parameters &params) {
+  SimpleGraph H(G0);
   generate_graph_simple(H, n, params);
   return log_automorphisms_single(H);
 }
 
 std::vector<AutomorphismsInfo> log_automorphisms(
-    const Graph &G0, const int &n, const Parameters &params, const int &tries) {
+    const SimpleGraph &G0, const int &n, const Parameters &params, const int &tries) {
   std::vector<AutomorphismsInfo> log_aut_H(tries);
   #pragma omp parallel for num_threads(THREADS)
   for (int i = 0; i < tries; i++) {
@@ -204,8 +204,8 @@ PValuesInfo get_p_value(
 
 void log_automorphisms_p_value(
     const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
-  Graph G = read_graph_simple(FILES_FOLDER + graph_name);
-  Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
+  SimpleGraph G = read_graph_simple(FILES_FOLDER + graph_name);
+  SimpleGraph G0 = read_graph_simple(FILES_FOLDER + seed_name);
   AutomorphismsInfo log_aut_G = log_automorphisms_single(G);
   std::vector<AutomorphismsInfo> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
 
@@ -217,12 +217,12 @@ void log_automorphisms_p_value(
 }
 
 void log_automorphisms(const std::string &graph_name) {
-  Graph G(read_graph_simple(FILES_FOLDER + graph_name));
+  SimpleGraph G(read_graph_simple(FILES_FOLDER + graph_name));
   print(graph_name, log_automorphisms_single(G), false);
 }
 
 void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
-  Graph G0(generate_seed_simple(n0, p0));
+  SimpleGraph G0(generate_seed_simple(n0, p0));
   switch (params.mode) {
     case PASTOR_SATORRAS: {
       std::vector<AutomorphismsInfo> log_aut_G = log_automorphisms(G0, n, params, AVG_TRIES);

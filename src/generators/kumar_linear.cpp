@@ -40,7 +40,8 @@ std::string KumarLinearParameters::long_name() const {
   return "Kumar linear copy";
 }
 
-void generate_kumar_linear_graph(Graph &G, const int &n, const KumarLinearParameters &params) {
+void generate_kumar_linear_graph(
+    SimpleGraph &G, const int &n, const KumarLinearParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);

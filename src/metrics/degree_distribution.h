@@ -2,4 +2,4 @@
 
 #include "common.h"
 
-std::vector<size_t> get_degree_distribution(const Graph &G);
+std::vector<size_t> get_degree_distribution(const SimpleGraph &G);

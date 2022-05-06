@@ -35,7 +35,7 @@ std::string CopyGraphParameters::to_csv() const {
   return out.str();
 }
 
-void generate_copy_graph(Graph &G, const int &n, const CopyGraphParameters &params) {
+void generate_copy_graph(SimpleGraph &G, const int &n, const CopyGraphParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);

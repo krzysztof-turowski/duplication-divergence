@@ -1,10 +1,10 @@
 #include "average_shortest_path.h"
 
-double get_average_shortest_path(const Graph &G) {
+double get_average_shortest_path(const SimpleGraph &G) {
   return get_average_shortest_path(G, repeated_bfs(G));
 }
 
-double get_average_shortest_path(const Graph &G, const FWResults &shortest_paths) {
+double get_average_shortest_path(const SimpleGraph &G, const FWResults &shortest_paths) {
   double result = 0;
   int64_t paths = 0;
 

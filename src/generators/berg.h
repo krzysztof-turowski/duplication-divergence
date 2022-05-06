@@ -25,4 +25,4 @@ class BergParameters : public Parameters {
   std::string long_name() const;
 };
 
-void generate_berg_graph(Graph &G, const BergParameters &params);
+void generate_berg_graph(SimpleGraph &G, const BergParameters &params);

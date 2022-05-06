@@ -1,6 +1,6 @@
 #include "clustering.h"
 
-std::pair<int64_t, int64_t> count_triangles(const Graph &G) {
+std::pair<int64_t, int64_t> count_triangles(const SimpleGraph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
   for (auto &&v : G) {
@@ -20,12 +20,12 @@ std::pair<int64_t, int64_t> count_triangles(const Graph &G) {
   return result;
 }
 
-double clustering_coefficient_two(const Graph &graph) {
+double clustering_coefficient_two(const SimpleGraph &graph) {
   auto triangles = count_triangles(graph);
   return triangles.second > 0 ? static_cast<double>(6 * triangles.first) / triangles.second : 0;
 }
 
-std::pair<int64_t, int64_t> count_four_cliques(const Graph &G) {
+std::pair<int64_t, int64_t> count_four_cliques(const SimpleGraph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
   for (auto &&v : G) {
@@ -50,14 +50,14 @@ std::pair<int64_t, int64_t> count_four_cliques(const Graph &G) {
   return result;
 }
 
-double clustering_coefficient_three(const Graph &graph) {
+double clustering_coefficient_three(const SimpleGraph &graph) {
   auto four_cliques = count_four_cliques(graph);
   return four_cliques.second > 0
              ? static_cast<double>(3 * (3 + 1) * four_cliques.first) / four_cliques.second
              : 0;
 }
 
-std::pair<int64_t, int64_t> count_five_cliques(const Graph &G) {
+std::pair<int64_t, int64_t> count_five_cliques(const SimpleGraph &G) {
   std::pair<int64_t, int64_t> result{ 0, 0 };
 
   for (auto &&v : G) {
@@ -88,7 +88,7 @@ std::pair<int64_t, int64_t> count_five_cliques(const Graph &G) {
   return result;
 }
 
-double clustering_coefficient_four(const Graph &graph) {
+double clustering_coefficient_four(const SimpleGraph &graph) {
   auto five_cliques = count_five_cliques(graph);
   return five_cliques.second > 0
              ? static_cast<double>(5 * (5 + 1) * five_cliques.first) / five_cliques.second

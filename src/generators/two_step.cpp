@@ -29,7 +29,7 @@ std::string TwoStepParameters::to_csv() const {
   return out.str();
 }
 
-static int count_common_neighbors(const Graph &G, const int &i, const int &j) {
+static int count_common_neighbors(const SimpleGraph &G, const int &i, const int &j) {
   int result = 0;
   for (auto &&neighbor : G[i]) {
     if (G[j].find(neighbor) != G[j].end()) {
@@ -39,13 +39,13 @@ static int count_common_neighbors(const Graph &G, const int &i, const int &j) {
   return result;
 }
 
-Graph generate_two_step_graph(const int &n, const TwoStepParameters &params) {
+SimpleGraph generate_two_step_graph(const int &n, const TwoStepParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
   std::uniform_int_distribution<int> vertex_distribution(0, n - 1);
 
-  auto G = Graph(n);
+  auto G = SimpleGraph(n);
   for (int i = 0; i < n; i++) {
     for (int j = i + 1; j < n; j++) {
       G[i].insert(j);

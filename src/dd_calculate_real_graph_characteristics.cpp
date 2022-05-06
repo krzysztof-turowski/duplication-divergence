@@ -15,7 +15,7 @@
 #include <chrono>
 #include <string>
 
-void count_graph_statistics(Graph const &G, std::ostream &out) {
+void count_graph_statistics(SimpleGraph const &G, std::ostream &out) {
   const auto shortest_paths = repeated_bfs(G);
 
   out << "log_automorphisms_sparse: " << log_automorphisms_sparse(G) << std::endl;
@@ -90,7 +90,7 @@ int main(int argc, char const *argv[]) {
   std::ofstream result;
   result.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
-  Graph G(read_graph_simple(FILES_FOLDER + graph_name));
+  SimpleGraph G(read_graph_simple(FILES_FOLDER + graph_name));
   result.open(RESULTS_FOLDER + graph_name);
   count_graph_statistics(G, result);
   result.close();

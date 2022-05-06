@@ -1,11 +1,11 @@
 #include "graphlets.h"
 
 using E = std::set<unsigned>;
-using G = Graph;
+using G = SimpleGraph;
 
 // Corresponds to Figure 1 of "Modeling interactome: scale-free or geometric?"
 // by  N. Pržulj & D. G. Corneil & I. Jurisica
-const std::array<const Graph, 29> GRAPHLETS = {
+const std::array<const SimpleGraph, 29> GRAPHLETS = {
   // 3-node
   G{ E{ 1 }, E{ 0, 2 }, E{ 1 } },
   G{ E{ 1, 2 }, E{ 0, 2 }, E{ 0, 1 } },
@@ -40,7 +40,8 @@ const std::array<const Graph, 29> GRAPHLETS = {
   G{ E{ 1, 2, 3, 4 }, E{ 0, 2, 3, 4 }, E{ 0, 1, 3, 4 }, E{ 0, 1, 2, 4 }, E{ 0, 1, 2, 3 } },
 };
 
-uint64_t count_graphlets(const Graph &graph, const Graph &graphlet, AdjMatrixFn *edge_exists) {
+uint64_t count_graphlets(
+    const SimpleGraph &graph, const SimpleGraph &graphlet, AdjMatrixFn *edge_exists) {
   auto const &func =
       edge_exists == nullptr ? [&](auto u, auto v) -> bool { return graph[u].count(v); }
                              : *edge_exists;
@@ -109,7 +110,7 @@ uint64_t count_graphlets(const Graph &graph, const Graph &graphlet, AdjMatrixFn 
   return count_graphlets_naive(graph, graphlet);
 }
 
-uint64_t count_open_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_open_triangles(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -126,7 +127,7 @@ uint64_t count_open_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_triangles(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -143,7 +144,7 @@ uint64_t count_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result / 3;
 }
 
-uint64_t count_four_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_paths(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -169,7 +170,7 @@ uint64_t count_four_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result / 2;
 }
 
-uint64_t count_three_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_three_stars(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -188,7 +189,7 @@ uint64_t count_three_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_squares(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_squares(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -209,7 +210,7 @@ uint64_t count_squares(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result / 4;
 }
 
-uint64_t count_triangles_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_triangles_with_antenna(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -228,7 +229,7 @@ uint64_t count_triangles_with_antenna(const Graph &graph, AdjMatrixFn const &adj
   return result;
 }
 
-uint64_t count_four_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_almost_cliques(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -247,7 +248,7 @@ uint64_t count_four_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_ma
   return result / 2;
 }
 
-uint64_t count_four_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_cliques(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -266,7 +267,7 @@ uint64_t count_four_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_five_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_five_paths(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -297,7 +298,7 @@ uint64_t count_five_paths(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_three_stars_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_three_stars_with_antenna(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -335,7 +336,7 @@ uint64_t count_three_stars_with_antenna(const Graph &graph, AdjMatrixFn const &a
   return result;
 }
 
-uint64_t count_four_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_stars(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -363,7 +364,7 @@ uint64_t count_four_stars(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_triangles_with_two_antennas(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_triangles_with_two_antennas(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -392,7 +393,7 @@ uint64_t count_triangles_with_two_antennas(const Graph &graph, AdjMatrixFn const
   return result;
 }
 
-uint64_t count_triangles_with_long_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_triangles_with_long_antenna(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -431,7 +432,7 @@ uint64_t count_triangles_with_long_antenna(const Graph &graph, AdjMatrixFn const
   return result;
 }
 
-uint64_t count_four_stars_with_edge(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_stars_with_edge(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -454,7 +455,7 @@ uint64_t count_four_stars_with_edge(const Graph &graph, AdjMatrixFn const &adj_m
   return result;
 }
 
-uint64_t count_polygons(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_polygons(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -481,7 +482,7 @@ uint64_t count_polygons(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result / 10;
 }
 
-uint64_t count_squares_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_squares_with_antenna(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -507,7 +508,8 @@ uint64_t count_squares_with_antenna(const Graph &graph, AdjMatrixFn const &adj_m
   return result;
 }
 
-uint64_t count_almost_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_almost_four_cliques_with_antenna(
+    const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -533,7 +535,7 @@ uint64_t count_almost_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn 
   return result;
 }
 
-uint64_t count_bowties(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_bowties(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -562,7 +564,7 @@ uint64_t count_bowties(const Graph &graph, AdjMatrixFn const &adj_mat) {
 }
 
 uint64_t count_almost_four_cliques_with_antenna_alt(
-    const Graph &graph, AdjMatrixFn const &adj_mat) {
+    const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -588,7 +590,7 @@ uint64_t count_almost_four_cliques_with_antenna_alt(
   return result;
 }
 
-uint64_t count_clique_two_three(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_clique_two_three(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -618,7 +620,7 @@ uint64_t count_clique_two_three(const Graph &graph, AdjMatrixFn const &adj_mat) 
   return result;
 }
 
-uint64_t count_houses(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_houses(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -647,7 +649,7 @@ uint64_t count_houses(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_clique_three_one_one(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_clique_three_one_one(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -677,7 +679,7 @@ uint64_t count_clique_three_one_one(const Graph &graph, AdjMatrixFn const &adj_m
   return result;
 }
 
-uint64_t count_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_cliques_with_antenna(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -724,7 +726,7 @@ uint64_t count_four_cliques_with_antenna(const Graph &graph, AdjMatrixFn const &
   return result;
 }
 
-uint64_t count_three_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_three_triangles(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -750,7 +752,7 @@ uint64_t count_three_triangles(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result;
 }
 
-uint64_t count_squares_with_three_cross(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_squares_with_three_cross(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -792,7 +794,7 @@ uint64_t count_squares_with_three_cross(const Graph &graph, AdjMatrixFn const &a
   return result;
 }
 
-uint64_t count_four_cliques_with_flag(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_four_cliques_with_flag(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -839,7 +841,7 @@ uint64_t count_four_cliques_with_flag(const Graph &graph, AdjMatrixFn const &adj
   return result / 2;
 }
 
-uint64_t count_subdivided_crosses(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_subdivided_crosses(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -864,7 +866,7 @@ uint64_t count_subdivided_crosses(const Graph &graph, AdjMatrixFn const &adj_mat
   return result;
 }
 
-uint64_t count_five_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_five_almost_cliques(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -889,7 +891,7 @@ uint64_t count_five_almost_cliques(const Graph &graph, AdjMatrixFn const &adj_ma
   return result / 3;
 }
 
-uint64_t count_five_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
+uint64_t count_five_cliques(const SimpleGraph &graph, AdjMatrixFn const &adj_mat) {
   uint64_t result = 0;
 
 #pragma omp parallel for
@@ -919,7 +921,7 @@ uint64_t count_five_cliques(const Graph &graph, AdjMatrixFn const &adj_mat) {
   return result / 3;
 }
 
-std::array<uint64_t, GRAPHLETS.size()> count_small_graphlets(const Graph &graph) {
+std::array<uint64_t, GRAPHLETS.size()> count_small_graphlets(const SimpleGraph &graph) {
   std::array<uint64_t, GRAPHLETS.size()> result;
   result.fill(0);
 
@@ -941,7 +943,8 @@ std::array<uint64_t, GRAPHLETS.size()> count_small_graphlets(const Graph &graph)
   return result;
 }
 
-bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsigned> combination) {
+bool is_isomorphic(
+    const SimpleGraph &graph, const SimpleGraph &graphlet, std::vector<unsigned> combination) {
   do {
     for (size_t i = 0; i < combination.size() - 1; i++) {
       for (size_t j = i + 1; j < combination.size(); j++) {
@@ -957,7 +960,7 @@ bool is_isomorphic(const Graph &graph, const Graph &graphlet, std::vector<unsign
   return false;
 }
 
-uint64_t count_graphlets_naive(const Graph &graph, const Graph &graphlet) {
+uint64_t count_graphlets_naive(const SimpleGraph &graph, const SimpleGraph &graphlet) {
   std::vector<unsigned> combination(graphlet.size());
   for (size_t i = 0; i < combination.size(); i++) {
     combination[i] = i;

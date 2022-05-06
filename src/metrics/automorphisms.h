@@ -13,12 +13,12 @@ extern "C" {
 #include <stack>
 #include <vector>
 
-double log_automorphisms_dense(const Graph &G);
+double log_automorphisms_dense(const SimpleGraph &G);
 
-double log_automorphisms_sparse(const Graph &G);
+double log_automorphisms_sparse(const SimpleGraph &G);
 
-double log_automorphisms_traces(const Graph &G);
+double log_automorphisms_traces(const SimpleGraph &G);
 
-std::vector<int> connectivity(const Graph &G);
+std::vector<int> connectivity(const SimpleGraph &G);
 
-int isolated_nodes(const Graph &G);
+int isolated_nodes(const SimpleGraph &G);

@@ -1,10 +1,10 @@
 #include "diameter.h"
 
-int64_t get_diameter(const Graph &G) {
+int64_t get_diameter(const SimpleGraph &G) {
   return get_diameter(G, repeated_bfs(G));
 }
 
-int64_t get_diameter(const Graph &G, const FWResults &shortest_paths) {
+int64_t get_diameter(const SimpleGraph &G, const FWResults &shortest_paths) {
   auto result = 0;
 
   for (size_t i = 0; i < G.size(); i++) {

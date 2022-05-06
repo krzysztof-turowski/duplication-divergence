@@ -1,10 +1,10 @@
 #include "betweenness.h"
 
-std::vector<double> betweenness_centrality(const Graph &G) {
+std::vector<double> betweenness_centrality(const SimpleGraph &G) {
   return betweenness_centrality(G, floyd_warshall(G));
 }
 
-std::vector<double> betweenness_centrality(const Graph &G, const FWResults &shortest_paths) {
+std::vector<double> betweenness_centrality(const SimpleGraph &G, const FWResults &shortest_paths) {
   auto result = std::vector<double>(G.size(), 0.0);
   for (size_t v = 0; v < G.size(); v++) {
     for (size_t i = 0; i < G.size(); i++) {

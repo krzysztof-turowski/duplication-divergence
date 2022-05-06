@@ -17,4 +17,4 @@ class StickyParameters : public Parameters {
   std::string to_csv() const;
 };
 
-Graph generate_sticky_graph(const StickyParameters &params);
+SimpleGraph generate_sticky_graph(const StickyParameters &params);

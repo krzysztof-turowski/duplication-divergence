@@ -20,4 +20,4 @@ class CopyGraphParameters : public Parameters {
   std::string to_csv() const;
 };
 
-void generate_copy_graph(Graph &G, const int &n, const CopyGraphParameters &params);
+void generate_copy_graph(SimpleGraph &G, const int &n, const CopyGraphParameters &params);

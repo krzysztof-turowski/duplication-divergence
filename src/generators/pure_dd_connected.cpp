@@ -1,6 +1,6 @@
 #include "pure_dd_connected.h"
 
-void generate_pure_dd_connected_graph(Graph &G, const int &n, const Parameters &params) {
+void generate_pure_dd_connected_graph(SimpleGraph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);

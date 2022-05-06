@@ -14,6 +14,6 @@ struct FWResult {
 
 using FWResults = std::vector<std::vector<FWResult>>;
 
-FWResults floyd_warshall(const Graph &G);
+FWResults floyd_warshall(const SimpleGraph &G);
 
-FWResults repeated_bfs(const Graph &G);
+FWResults repeated_bfs(const SimpleGraph &G);

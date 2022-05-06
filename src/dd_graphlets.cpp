@@ -70,7 +70,7 @@ void print(const PValuesInfo &pvalues) {
 }
 
 void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
-  Graph G0 = generate_seed_simple(n0, p0);
+  SimpleGraph G0 = generate_seed_simple(n0, p0);
   std::vector<DataObject> graphlets(TRIES);
   #pragma omp parallel for
   for (int i = 0; i < TRIES; i++) {
@@ -85,8 +85,8 @@ void synthetic_data(const int &n, const int &n0, const double &p0, const Paramet
 
 void real_seed_data(
     const std::string &graph_name, const std::string &seed_name, const Parameters &params) {
-  Graph G = read_graph_simple(FILES_FOLDER + graph_name);
-  Graph G0 = read_graph_simple(FILES_FOLDER + seed_name);
+  SimpleGraph G = read_graph_simple(FILES_FOLDER + graph_name);
+  SimpleGraph G0 = read_graph_simple(FILES_FOLDER + seed_name);
   DataObject graphlets_G = get_params_for_graph(G);
   std::vector<DataObject> graphlets_H(TRIES);
   #pragma omp parallel for

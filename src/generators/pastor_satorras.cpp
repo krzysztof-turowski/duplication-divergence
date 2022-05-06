@@ -1,6 +1,6 @@
 #include "pastor_satorras.h"
 
-void generate_pastor_satorras_graph(Graph &G, const int &n, const Parameters &params) {
+void generate_pastor_satorras_graph(SimpleGraph &G, const int &n, const Parameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);

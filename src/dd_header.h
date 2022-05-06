@@ -26,12 +26,12 @@ inline std::string get_seed_name(const std::string &graph_name) {
   return std::regex_replace(graph_name, std::regex("^G"), "G0");
 }
 
-Graph read_graph_simple(const std::string &graph_name) {
+SimpleGraph read_graph_simple(const std::string &graph_name) {
   std::ifstream graph_file(graph_name);
   if (graph_file.fail()) {
     throw std::invalid_argument("Missing " + graph_name + " file");
   }
-  Graph G;
+  SimpleGraph G;
   unsigned u, v;
   while (graph_file >> u >> v) {
     if (v >= G.size()) {

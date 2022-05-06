@@ -37,13 +37,13 @@ std::string StickyParameters::to_csv() const {
   return "";
 }
 
-Graph generate_sticky_graph(const StickyParameters &params) {
+SimpleGraph generate_sticky_graph(const StickyParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> distribution(0.0, 1.0);
 
   const auto &degrees = params.degrees;
-  Graph G(degrees.size());
+  SimpleGraph G(degrees.size());
   int64_t degree_sum = 0;
   for (auto &&deg : params.degrees) {
     degree_sum += deg;

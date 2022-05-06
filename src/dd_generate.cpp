@@ -23,7 +23,7 @@ inline std::string name(const int &n, const int &n0, const Parameters &params) {
   return std::to_string(n) + "-" + std::to_string(n0) + "-" + params.to_filename();
 }
 
-void export_graph(const std::string &name, const Graph &G) {
+void export_graph(const std::string &name, const SimpleGraph &G) {
   std::ofstream G_out_file(name);
   for (std::size_t i = 0; i < G.size(); i++) {
     G_out_file << i << " " << i << std::endl;
@@ -38,7 +38,7 @@ void export_graph(const std::string &name, const Graph &G) {
 
 void generate_graph(const int &n, const int &n0, const double &p0, const Parameters &params,
     const std::string &g0, const std::string &prefix) {
-  Graph G = g0.empty() ? generate_seed_simple(n0, p0) : read_graph_simple(g0);
+  SimpleGraph G = g0.empty() ? generate_seed_simple(n0, p0) : read_graph_simple(g0);
   if (g0.empty()) {
     export_graph(FILES_FOLDER + prefix + "G0-" + name(n, n0, params) + ".txt", G);
   }

@@ -22,4 +22,4 @@ class KumarLinearParameters : public Parameters {
   std::string long_name() const;
 };
 
-void generate_kumar_linear_graph(Graph &G, const int &n, const KumarLinearParameters &params);
+void generate_kumar_linear_graph(SimpleGraph &G, const int &n, const KumarLinearParameters &params);

@@ -13,8 +13,8 @@
 #include "generators/two_step.h"
 #include <random>
 
-Graph generate_seed_simple(const int &n0, const double &p0) {
-  Graph G(n0);
+SimpleGraph generate_seed_simple(const int &n0, const double &p0) {
+  SimpleGraph G(n0);
   std::random_device device;
   std::mt19937 generator(device());
   std::uniform_real_distribution<double> edge_distribution(0.0, 1.0);
@@ -29,7 +29,7 @@ Graph generate_seed_simple(const int &n0, const double &p0) {
   return G;
 }
 
-void generate_graph_simple(Graph &G, const int &n, const Parameters &params) {
+void generate_graph_simple(SimpleGraph &G, const int &n, const Parameters &params) {
   switch (params.mode) {
     case Mode::STICKY:
       G = generate_sticky_graph(static_cast<const StickyParameters &>(params));

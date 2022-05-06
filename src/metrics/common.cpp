@@ -1,6 +1,6 @@
 #include "common.h"
 
-FWResults floyd_warshall(const Graph &G) {
+FWResults floyd_warshall(const SimpleGraph &G) {
   auto result = FWResults(G.size(), std::vector<FWResult>(G.size(), { INF, 0 }));
 
   for (size_t i = 0; i < G.size(); i++) {
@@ -32,7 +32,7 @@ FWResults floyd_warshall(const Graph &G) {
   return result;
 }
 
-void bfs(const Graph &graph, const unsigned &start, FWResults &results) {
+void bfs(const SimpleGraph &graph, const unsigned &start, FWResults &results) {
   std::queue<unsigned> to_process;
   to_process.push(start);
   results[start][start].distance = 0;
@@ -52,7 +52,7 @@ void bfs(const Graph &graph, const unsigned &start, FWResults &results) {
   }
 }
 
-FWResults repeated_bfs(const Graph &graph) {
+FWResults repeated_bfs(const SimpleGraph &graph) {
   auto result = FWResults(graph.size(), std::vector<FWResult>(graph.size(), { INF, 0 }));
   for (size_t i = 0; i < graph.size(); i++) {
     bfs(graph, i, result);

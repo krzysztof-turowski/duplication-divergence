@@ -1,6 +1,6 @@
 #include "degree_distribution.h"
 
-std::vector<size_t> get_degree_distribution(const Graph &G) {
+std::vector<size_t> get_degree_distribution(const SimpleGraph &G) {
   std::vector<size_t> result(G.size(), 0);
   size_t max_degree = 0;
   for (auto &&v : G) {

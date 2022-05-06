@@ -1,6 +1,6 @@
 #include "khop.h"
 
-std::vector<int> khop_degree(const Graph &G, const int &k, const FWResults &shortest_paths) {
+std::vector<int> khop_degree(const SimpleGraph &G, const int &k, const FWResults &shortest_paths) {
   auto result = std::vector<int>(G.size(), 0);
   for (size_t v = 0; v < G.size(); v++) {
     for (size_t i = 0; i < G.size(); i++) {
@@ -13,12 +13,12 @@ std::vector<int> khop_degree(const Graph &G, const int &k, const FWResults &shor
   return result;
 }
 
-std::vector<double> khop_reachability(const Graph &G, const int &k) {
+std::vector<double> khop_reachability(const SimpleGraph &G, const int &k) {
   return khop_reachability(G, k, floyd_warshall(G));
 }
 
 std::vector<double> khop_reachability(
-    const Graph &G, const int &k, const FWResults &shortest_paths) {
+    const SimpleGraph &G, const int &k, const FWResults &shortest_paths) {
   auto khop_degrees = khop_degree(G, k, shortest_paths);
 
   auto result = std::vector<double>(G.size(), 0.0);

@@ -24,7 +24,7 @@ std::string BarabasiAlbertParameters::to_csv() const {
   return out.str();
 }
 
-void generate_ba_graph(Graph &G, const int &n, const BarabasiAlbertParameters &params) {
+void generate_ba_graph(SimpleGraph &G, const int &n, const BarabasiAlbertParameters &params) {
   std::random_device device;
   std::mt19937 generator(device());
 
