@@ -1,6 +1,7 @@
 import asyncio
 import os
 
+CUTOFF_SIZE = 10 * 2**20  # 10 MiB
 
 REAL_GRAPHS = [
     # ("G-a-thaliana.txt", "G0-a-thaliana.txt", 9444, 44387),
@@ -18,12 +19,19 @@ def prelude():
 
 
 def calculate_stats(graph):
-    print(f"Starting job for graph {graph}.")
-    return asyncio.create_subprocess_exec(
-        "./dd_calculate_real_graph_characteristics",
-        graph,
-        stdout=asyncio.subprocess.PIPE,
-    )
+    size = os.path.getsize("files/" + graph)
+    if size <= CUTOFF_SIZE:
+        print(f"Starting job for graph {graph}.")
+        return asyncio.create_subprocess_exec(
+            "./dd_calculate_real_graph_characteristics",
+            graph,
+            stdout=asyncio.subprocess.PIPE,
+        )
+    else:
+        with open(f"results/{graph}", "w") as f:
+            f.write("Ignored: too big.\n")
+        return asyncio.create_subprocess_exec(
+            "echo", f"Graph {graph} too large. Ignoring")
 
 
 prelude()

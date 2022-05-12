@@ -96,7 +96,7 @@ async def generate_graphs(iters):
         for model, variable_params in GENERATORS:
             stable_params = get_stable_params(n, seed, model, m)
             common_prefix = f"-prefix:{graph.replace('.txt', '')}_"
-            for i in range(iters):
+            for i in range(1, iters + 1):
                 promises.append(
                     generate_graph(
                         model,
