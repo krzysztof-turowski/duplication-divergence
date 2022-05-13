@@ -35,6 +35,7 @@ def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('filename', metavar = 'FILE', help = 'data to plot')
     parser.add_argument('--export', choices = ['pdf', 'png', 'eps'], help = 'export plot to file')
+    parser.add_argument('--mode', choices = ['single', 'cmp1d', 'cmp2d'], default='single', help = 'export plot to file')
     return parser
 
 def plot(name, export):
