@@ -4,12 +4,14 @@ import matplotlib
 import matplotlib.pyplot as pyplot
 import numpy
 
-TEXT_WIDTH_PT = 506.295 # Get this from LaTeX using \the\textwidth
+# TEXT_WIDTH_PT = 506.295 # Get this from LaTeX using \the\textwidth
+TEXT_WIDTH_PT = 656.295 # Get this from LaTeX using \the\textwidth
 TEMP_FOLDER = 'temp'
 
 def figure_size(figure_size_scale):
     inches_per_pt = 1.0 / 72.27 # Convert pt to inch
-    golden_mean = (numpy.sqrt(5.0) - 1.0) / 2.0 # Aesthetic ratio (you could change this)
+    # golden_mean = (numpy.sqrt(5.0) - 1.0) / 2.0 # Aesthetic ratio (you could change this)
+    golden_mean = 9/21
     figure_width = TEXT_WIDTH_PT * inches_per_pt * figure_size_scale
     figure_height = figure_width * golden_mean
     return [figure_width, figure_height]

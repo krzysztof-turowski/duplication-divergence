@@ -10,5 +10,6 @@
 *.gephi
 temp/*
 *.o
+*.pyc
 
 .vscode
