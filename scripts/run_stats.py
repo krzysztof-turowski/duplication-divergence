@@ -19,7 +19,7 @@ def float_range(start, end, values=4):
 GENERATORS = [
     ("pure_duplication", [("p", float_range(0, 1, 100))]),
     ("chung_lu", [("p", float_range(0, 1, 10)), ("q", float_range(0, 1, 10))]),
-    ("pastor_satorras", [("p", float_range(0, 1, 10)),
+    ("pastor_satorras", [("p", float_range(0, 5, 10)),
      ("r", float_range(0, 1, 10))]),
     ("sticky", [("gamma", float_range(2, 3, 100))]),
     ("ba", [("m", int_range(1, 10, 10))]),
@@ -90,13 +90,15 @@ def get_stable_params(n, seed, model, m):
     return stable_params
 
 
-async def generate_graphs(iters):
+async def generate_graphs(start, end=None):
+    if end is None:
+        start, end = 0, start
     promises = []
     for graph, seed, n, m in common.REAL_GRAPHS:
         for model, variable_params in GENERATORS:
             stable_params = get_stable_params(n, seed, model, m)
             common_prefix = f"-prefix:{graph.replace('.txt', '')}_"
-            for i in range(1, iters + 1):
+            for i in range(start, end):
                 promises.append(
                     generate_graph(
                         model,
@@ -112,12 +114,21 @@ async def generate_graphs(iters):
 
 
 async def main():
-    iters = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+    if len(sys.argv) == 1:
+        start, end = 0, 1
+    elif len(sys.argv) == 2:
+        start, end = 0, int(sys.argv[1])
+    elif len(sys.argv) == 3:
+        start, end = int(sys.argv[1]), int(sys.argv[2])
+    else:
+        print("Too many arguments")
+        exit(1)
 
-    generated = await generate_graphs(iters)
-    processess = await asyncio.gather(*(common.calculate_stats(graph) for graph in generated))
-    for process in processess:
-        _ = await process.communicate()
+    for i in range(start, end):
+        generated = await generate_graphs(start + i, start + i + 1)
+        processess = await asyncio.gather(*(common.calculate_stats(graph) for graph in generated))
+        for process in processess:
+            _ = await process.communicate()
 
 
 asyncio.run(main())

@@ -148,6 +148,7 @@ def plot_data_cmp2d(data_file, graph, synthetic, export):
                       [*set([v[1] for v, d in data])])
         pyplot.imshow(numpy.array([math.fabs(d[metric] - target[metric])
                       for v, d in data]).reshape((side_length, side_length)))
+        pyplot.colorbar()
     dd_plot.plot(graph + '-cmp2d', export)
 
 
