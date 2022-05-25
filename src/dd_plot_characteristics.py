@@ -28,6 +28,9 @@ def read_data(data, interpolate=False):
         else:
             result[name] = [float(x) for x in data]
 
+    result["closeness"] = sorted(result["closeness"])
+    result["betweenness_centrality"] = sorted(result["betweenness_centrality"])
+
     return result
 
 
@@ -48,10 +51,6 @@ def plot_data(data_file, filename, export):
     print("Get data: ", filename)
     data = read_data(data_file)
     pyplot.subplots_adjust(hspace=0.3, wspace=0.2)
-
-    print("Sorting: ", filename)
-    data["closeness"] = sorted(data["closeness"])
-    data["betweenness_centrality"] = sorted(data["betweenness_centrality"])
 
     def pre():
         pyplot.yscale('log')
@@ -88,6 +87,78 @@ def plot_data(data_file, filename, export):
     print("Plotting deg: ", filename)
     dd_plot.plot(filename + '-deg', export)
     print("Done: ", filename)
+
+
+def calculate_vector_distance(s: List[float], t: List[float]) -> float:
+    if len(s) != len(t):
+        raise Exception("Not equal length")
+    NON_MATCHED_INF_PENALTY = 1000
+    result = 0
+    for (si, ti) in zip(s, t):
+        if math.isinf(si) and math.isinf(ti):
+            result += 0
+        elif math.isinf(si) or math.isinf(ti):
+            result += NON_MATCHED_INF_PENALTY / min(si, ti)
+        else:
+            result += (si - ti)**2
+    return result
+
+
+def calculate_dtw(s: list, t: list) -> float:
+    dtw = [[float('inf') for _ in range(len(t) + 1)]
+           for _ in range(len(s) + 1)]
+    dtw[0][0] = 0
+
+    for i, si in enumerate(s):
+        for j, tj in enumerate(t):
+            cost = (si - tj)**2
+            dtw[i + 1][j + 1] = cost + min(
+                dtw[i][j + 1],
+                dtw[i + 1][j],
+                dtw[i][j]
+            )
+
+    return dtw[-1][-1]
+
+
+def calculate_mrr(target: dict, synts: (str, List[dict])) -> Dict[str, float]:
+    keys = [
+        ('log_automorphisms_sparse', "num"),
+        ('get_average_shortest_path', "num"),
+        ('clustering_coefficient_two', "num"),
+        ('clustering_coefficient_three', "num"),
+        ('clustering_coefficient_four', "num"),
+        ('get_diameter', "num"),
+        ('get_degree_distribution', "list"),
+        ('betweenness_centrality', "list"),
+        ('closeness', "list"),
+        ('khop_reachability_2', "list"),
+        ('khop_reachability_3', "list"),
+        ('khop_reachability_4', "list"),
+        ('Graphlets', "vec"),
+        ('RGF', "vec")
+    ]
+
+    results = []
+    for (name, synt) in synts:
+        result = []
+        for (key, typ) in keys:
+            if typ == 'num':
+                result.append((synt[key] - target[key])**2)
+            elif typ == 'list':
+                result.append(calculate_dtw(synt[key], target[key]))
+            elif typ == 'vec':
+                result.append(
+                    calculate_vector_distance(
+                        synt[key], target[key]))
+        results.append((name, result))
+    scores = {name: [] for name, _ in results}
+    for i in range(len(keys)):
+        sorted_results = sorted(results, key=lambda x: x[1][i])
+        for (score, (name, _)) in enumerate(sorted_results, 1):
+            scores[name].append(score)
+    return {name: sum(1 / score for score in scores) / len(keys)
+            for (name, scores) in scores.items()}
 
 
 def plot_data_cmp1d(data_file, graph, synthetic, export):
