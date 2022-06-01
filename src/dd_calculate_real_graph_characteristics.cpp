@@ -15,74 +15,83 @@
 #include <chrono>
 #include <string>
 
-void count_graph_statistics(SimpleGraph const &G, std::ostream &out) {
-  const auto shortest_paths = repeated_bfs(G);
+int FAST = 1 << 0;
+int SLOW = 1 << 1;
 
-  out << "log_automorphisms_sparse: " << log_automorphisms_sparse(G) << std::endl;
-  out << "get_average_shortest_path: " << get_average_shortest_path(G, shortest_paths) << std::endl;
+void count_graph_statistics(SimpleGraph const &G, std::ostream &out, int const &mode) {
+  if (mode & FAST) {
+    const auto shortest_paths = repeated_bfs(G);
 
-  {
-    const auto bc = betweenness_centrality(G, shortest_paths);
-    out << "betweenness_centrality: ";
-    for (auto &&i : bc) {
-      out << i << " ";
+    out << "log_automorphisms_sparse: " << log_automorphisms_sparse(G) << std::endl;
+    out << "get_average_shortest_path: " << get_average_shortest_path(G, shortest_paths)
+        << std::endl;
+
+    {
+      const auto bc = betweenness_centrality(G, shortest_paths);
+      out << "betweenness_centrality: ";
+      for (auto &&i : bc) {
+        out << i << " ";
+      }
+      out << std::endl;
+    }
+    {
+      const auto cl = closeness(G, shortest_paths);
+      out << "closeness: ";
+      for (auto &&i : cl) {
+        out << i << " ";
+      }
+      out << std::endl;
+    }
+
+    out << "clustering_coefficient_two: " << clustering_coefficient_two(G) << std::endl;
+    out << "clustering_coefficient_three: " << clustering_coefficient_three(G) << std::endl;
+
+    {
+      const auto cl = get_degree_distribution(G);
+      out << "get_degree_distribution: ";
+      for (auto &&i : cl) {
+        out << i << " ";
+      }
+      out << std::endl;
+    }
+
+    out << "get_diameter: " << get_diameter(G, shortest_paths) << std::endl;
+    for (size_t i = 2; i < 5; i++) {
+      const auto kh = khop_reachability(G, i, shortest_paths);
+      out << "khop_reachability " << i << ": ";
+      for (auto &&o : kh) {
+        out << o << " ";
+      }
+      out << std::endl;
+    }
+  }
+
+  if (mode & SLOW) {
+    out << "clustering_coefficient_four: " << clustering_coefficient_four(G) << std::endl;
+
+    auto small_graphlets = count_small_graphlets(G);
+    out << "Graphlets: ";
+    for (auto &&graphlet : small_graphlets) {
+      out << graphlet << " ";
+    }
+    out << std::endl;
+
+    out << "RGF: ";
+    auto rgfs = relative_graphlet_frequency(small_graphlets);
+    for (auto &&rgf : rgfs) {
+      out << rgf << " ";
     }
     out << std::endl;
   }
-  {
-    const auto cl = closeness(G, shortest_paths);
-    out << "closeness: ";
-    for (auto &&i : cl) {
-      out << i << " ";
-    }
-    out << std::endl;
-  }
-
-  out << "clustering_coefficient_two: " << clustering_coefficient_two(G) << std::endl;
-  out << "clustering_coefficient_three: " << clustering_coefficient_three(G) << std::endl;
-
-  {
-    const auto cl = get_degree_distribution(G);
-    out << "get_degree_distribution: ";
-    for (auto &&i : cl) {
-      out << i << " ";
-    }
-    out << std::endl;
-  }
-
-  out << "get_diameter: " << get_diameter(G, shortest_paths) << std::endl;
-
-  // Slower
-
-  for (size_t i = 2; i < 5; i++) {
-    const auto kh = khop_reachability(G, i, shortest_paths);
-    out << "khop_reachability " << i << ": ";
-    for (auto &&o : kh) {
-      out << o << " ";
-    }
-    out << std::endl;
-  }
-
-  out << "clustering_coefficient_four: " << clustering_coefficient_four(G) << std::endl;
-
-  auto small_graphlets = count_small_graphlets(G);
-  out << "Graphlets: ";
-  for (auto &&graphlet : small_graphlets) {
-    out << graphlet << " ";
-  }
-  out << std::endl;
-
-  out << "RGF: ";
-  auto rgfs = relative_graphlet_frequency(small_graphlets);
-  for (auto &&rgf : rgfs) {
-    out << rgf << " ";
-  }
-  out << std::endl;
 }
 
 int main(int argc, char const *argv[]) {
   if (argc < 2) {
     return 1;
+  }
+  int mode = FAST | SLOW;
+  if (argc > 2) {
+    mode = std::stoi(argv[2]);
   }
   const std::string RESULTS_FOLDER = "results/";
   std::string graph_name = argv[1];
@@ -92,7 +101,7 @@ int main(int argc, char const *argv[]) {
 
   SimpleGraph G(read_graph_simple(FILES_FOLDER + graph_name));
   result.open(RESULTS_FOLDER + graph_name);
-  count_graph_statistics(G, result);
+  count_graph_statistics(G, result, mode);
   result.close();
 
   return 0;

@@ -5,6 +5,7 @@ import itertools
 import common
 import sys
 import asyncio
+import argparse
 
 
 def int_range(start, end, values=3):
@@ -114,19 +115,38 @@ async def generate_graphs(start, end=None):
 
 
 async def main():
-    if len(sys.argv) == 1:
+    parser = argparse.ArgumentParser(description='Run statistics for graphs.')
+    parser.add_argument(
+        'rangeone',
+        type=int,
+        nargs="?",
+        default=None,
+        help='first arg of range')
+    parser.add_argument(
+        'rangetwo',
+        type=int,
+        nargs="?",
+        default=None,
+        help='second arg of range')
+    parser.add_argument(
+        '--mode',
+        type=int,
+        nargs=1,
+        default=3,
+        help='mode 1 - fast, 2 - slow, 3 - fast and slow')
+
+    args = parser.parse_args()
+
+    if args.rangeone is None:
         start, end = 0, 1
-    elif len(sys.argv) == 2:
-        start, end = 0, int(sys.argv[1])
-    elif len(sys.argv) == 3:
-        start, end = int(sys.argv[1]), int(sys.argv[2])
+    elif args.rangetwo is None:
+        start, end = 0, args.rangeone
     else:
-        print("Too many arguments")
-        exit(1)
+        start, end = args.rangeone, args.rangetwo
 
     for i in range(start, end):
         generated = await generate_graphs(start + i, start + i + 1)
-        processess = await asyncio.gather(*(common.calculate_stats(graph) for graph in generated))
+        processess = await asyncio.gather(*(common.calculate_stats(graph, args.mode) for graph in generated))
         for process in processess:
             _ = await process.communicate()
 
