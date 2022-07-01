@@ -146,7 +146,7 @@ async def main():
 
     for i in range(start, end):
         generated = await generate_graphs(i, i + 1)
-        processess = await asyncio.gather(*(common.calculate_stats(graph) for graph in generated))
+        processess = await asyncio.gather(*(common.calculate_stats(graph, args.mode) for graph in generated))
         for process in processess:
             _ = await process.communicate()
 

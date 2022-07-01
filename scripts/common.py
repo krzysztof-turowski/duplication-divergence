@@ -18,13 +18,16 @@ def prelude():
     os.system("mkdir -p results")
 
 
-def calculate_stats(graph):
+def calculate_stats(graph, mode):
+    return asyncio.create_subprocess_exec(
+        "echo", f"Graph {graph} too large. Ignoring")
     size = os.path.getsize("files/" + graph)
     if size <= CUTOFF_SIZE:
         print(f"Starting job for graph {graph}.")
         return asyncio.create_subprocess_exec(
             "./dd_calculate_real_graph_characteristics",
             graph,
+            mode,
             stdout=asyncio.subprocess.PIPE,
         )
     else:
