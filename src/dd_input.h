@@ -10,6 +10,12 @@ TEnv prepare_environment(int argc, char **argv) {
   return TEnv(argc, argv, TNotify::StdNotify);
 }
 
+inline bool read_bool(TEnv &environment, const std::string &prefix, const bool &default_value,
+    const std::string &description) {
+  return environment.GetIfArgPrefixBool(
+      TStr(prefix.c_str()), default_value, TStr(description.c_str()));
+}
+
 inline int read_int(TEnv &environment, const std::string &prefix, const int &default_value,
     const std::string &description) {
   return environment.GetIfArgPrefixInt(

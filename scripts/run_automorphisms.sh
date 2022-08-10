@@ -32,18 +32,18 @@ make dd_automorphisms
 
 for p in $(seq 0.0 0.1 1.0);
 do for r in $(seq 0.0 0.4 5.0);
-  do ./dd_automorphisms -action:synthetic -n:200 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r
+  do ./dd_automorphisms -action:synthetic -n:200 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r -all
   done
 done
 
 for p in $(seq 0.0 0.1 1.0);
 do for r in $(seq 0.0 0.4 5.0);
-  do ./dd_automorphisms -action:synthetic -n:1000 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r
+  do ./dd_automorphisms -action:synthetic -n:1000 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r -all
   done
 done
 
 for p in $(seq 0.0 0.1 1.0);
 do for r in $(seq 0.0 0.4 5.0);
-  do ./dd_automorphisms -action:synthetic -n:5000 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r
+  do ./dd_automorphisms -action:synthetic -n:5000 -n0:20 -p0:1.0 -gt:100 -mode:pastor_satorras -p:$p -r:$r -all
   done
 done

@@ -15,6 +15,7 @@ Syntax: ./dd_automorphisms <options>
 <parameters>: Depending on `mode`, the parameters `p,q,r` of the duplication-divergence model.
 -n: The size of a graph in the case of `synthetic` action.
 -n0, -p0: The parameters for generating a seed graph in the case of `synthetic` action.
+-all: Generate all possible data: log number of automorphisms overall, from isolated nodes, from cherries, from butterflies, from identical nodes.
 
 Example runs:
   ./dd_automorphisms -action:real_graph -graph:G-s-cerevisiae.txt
@@ -30,10 +31,11 @@ Example runs:
 #include <chrono>
 #include <string>
 
-typedef std::tuple<double, double, double, double> AutomorphismsInfo;
-typedef std::tuple<double, double, double, double> PValuesInfo;
+typedef std::tuple<double, double, double, double, double> AutomorphismsInfo;
+typedef std::tuple<double, double, double, double, double> PValuesInfo;
 
 int PVAL_TRIES, AVG_TRIES;
+bool ALL_TYPES;
 
 enum AutomorphismsDetection { NAUTY_DENSE, NAUTY_SPARSE, TRACES, ALL };
 
@@ -92,6 +94,24 @@ double log_automorphisms_from_cherries(const SimpleGraph &G) {
   return out;
 }
 
+double log_automorphisms_from_butterflies(const SimpleGraph &G) {
+  std::vector<bool> V(G.size(), false);
+  double out = 0, count;
+  for (size_t i = 0; i < G.size(); i++) {
+    if (G[i].size() != 2) {
+      continue;
+    }
+    count = 1, V[i] = true;
+    for (size_t j = i + 1; j < G.size(); j++) {
+      if (G[i] == G[j]) {
+        count++, V[j] = true;
+      }
+    }
+    out += lgamma(count + 1);
+  }
+  return out;
+}
+
 double log_automorphisms_from_copies(const SimpleGraph &G) {
   std::vector<bool> V(G.size(), false);
   double out = 0, count;
@@ -105,15 +125,18 @@ double log_automorphisms_from_copies(const SimpleGraph &G) {
         count++, V[j] = true;
       }
     }
-    out += lgamma(count);
+    out += lgamma(count + 1);
   }
   return out;
 }
 
 AutomorphismsInfo log_automorphisms_single(const SimpleGraph &G) {
   return AutomorphismsInfo(
-      log_automorphisms(G), log_automorphisms_from_isolated_nodes(G),
-      log_automorphisms_from_cherries(G), log_automorphisms_from_copies(G));
+      log_automorphisms(G),
+      log_automorphisms_from_isolated_nodes(G),
+      log_automorphisms_from_cherries(G),
+      log_automorphisms_from_butterflies(G),
+      log_automorphisms_from_copies(G));
 }
 
 AutomorphismsInfo log_automorphisms_single(
@@ -139,13 +162,14 @@ std::vector<AutomorphismsInfo> log_automorphisms(
 }
 
 template <typename T>
-void print(const std::string &graph_name, const T &info, const bool &all_types) {
+void print(const std::string &graph_name, const T &info) {
   std::cout << std::left << std::setw(25) << graph_name << " " << std::right;
   std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<0>(info) << " ";
-  if (all_types) {
+  if (ALL_TYPES) {
     std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<1>(info) << " ";
     std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<2>(info) << " ";
     std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<3>(info) << " ";
+    std::cout << std::fixed << std::setw(8) << std::setprecision(3) << std::get<4>(info) << " ";
   }
   std::cout << std::endl;
 }
@@ -164,12 +188,14 @@ AutomorphismsInfo get_average(const std::vector<AutomorphismsInfo> &log_aut_H) {
   auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
   auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
   auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
-  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+  auto get_log_aut_butterflies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<4>(info); };
 
   return AutomorphismsInfo(
       get_average(log_aut_H, get_log_aut),
       get_average(log_aut_H, get_log_aut_isolated),
       get_average(log_aut_H, get_log_aut_cherries),
+      get_average(log_aut_H, get_log_aut_butterflies),
       get_average(log_aut_H, get_log_aut_copies));
 }
 
@@ -193,12 +219,14 @@ PValuesInfo get_p_value(
   auto get_log_aut = [](const AutomorphismsInfo &info) { return std::get<0>(info); };
   auto get_log_aut_isolated = [](const AutomorphismsInfo &info) { return std::get<1>(info); };
   auto get_log_aut_cherries = [](const AutomorphismsInfo &info) { return std::get<2>(info); };
-  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+  auto get_log_aut_butterflies = [](const AutomorphismsInfo &info) { return std::get<3>(info); };
+  auto get_log_aut_copies = [](const AutomorphismsInfo &info) { return std::get<4>(info); };
 
   return PValuesInfo(
       get_p_value(log_aut_G, log_aut_H, get_log_aut),
       get_p_value(log_aut_G, log_aut_H, get_log_aut_isolated),
       get_p_value(log_aut_G, log_aut_H, get_log_aut_cherries),
+      get_p_value(log_aut_G, log_aut_H, get_log_aut_butterflies),
       get_p_value(log_aut_G, log_aut_H, get_log_aut_copies));
 }
 
@@ -210,15 +238,15 @@ void log_automorphisms_p_value(
   std::vector<AutomorphismsInfo> log_aut_H = log_automorphisms(G0, G.size(), params, PVAL_TRIES);
 
   AutomorphismsInfo log_aut_avg_values = get_average(log_aut_H);
-  print(graph_name, log_aut_avg_values, false);
+  print(graph_name, log_aut_avg_values);
 
   PValuesInfo p_values = get_p_value(log_aut_G, log_aut_H);
-  print("", p_values, false);
+  print("", p_values);
 }
 
 void log_automorphisms(const std::string &graph_name) {
   SimpleGraph G(read_graph_simple(FILES_FOLDER + graph_name));
-  print(graph_name, log_automorphisms_single(G), false);
+  print(graph_name, log_automorphisms_single(G));
 }
 
 void synthetic_data(const int &n, const int &n0, const double &p0, const Parameters &params) {
@@ -227,7 +255,7 @@ void synthetic_data(const int &n, const int &n0, const double &p0, const Paramet
     case PASTOR_SATORRAS: {
       std::vector<AutomorphismsInfo> log_aut_G = log_automorphisms(G0, n, params, AVG_TRIES);
       AutomorphismsInfo log_aut_avg_values = get_average(log_aut_G);
-      print("Synthetic data: " + params.to_string(), log_aut_avg_values, false);
+      print("Synthetic data: " + params.to_string(), log_aut_avg_values);
       break;
     }
     default:
@@ -240,6 +268,7 @@ int main(int argc, char **argv) {
     Env = prepare_environment(argc, argv);
     std::string action =
         read_string(Env, "-action:", "", "Action: real_graph, real_seed, synthetic");
+    ALL_TYPES = read_bool(Env, "-all:", false, "Output all values");
     // TODO(unknown): test parameters ranges
     if (action == "synthetic") {
       AVG_TRIES = read_int(Env, "-gt:", 1, "Number of tries");
