@@ -44,13 +44,14 @@ GENERATORS = [
 ]
 
 
-async def generate_graph(mode, stable_params, variable_params, prefix):
+async def generate_graph(mode, stable_params, variable_params, prefix, stats_mode):
     promises = []
     for param_values in itertools.product(
         *(prange for _, prange in variable_params)
     ):
         args = [
             f"-mode:{mode}",
+            f"-stats_mode:{stats_mode}",
             prefix,
             *stable_params,
             *(
@@ -91,7 +92,7 @@ def get_stable_params(n, seed, model, m):
     return stable_params
 
 
-async def generate_graphs(start, end=None):
+async def generate_graphs(start, end=None, mode=3):
     if end is None:
         start, end = 0, start
     promises = []
@@ -106,6 +107,7 @@ async def generate_graphs(start, end=None):
                         stable_params,
                         variable_params,
                         f"{common_prefix}{i}_",
+                        mode
                     )
                 )
 
@@ -132,7 +134,7 @@ async def main():
         '--mode',
         type=int,
         nargs=1,
-        default=3,
+        default=[3],
         help='mode 1 - fast, 2 - slow, 3 - fast and slow')
 
     args = parser.parse_args()
@@ -144,11 +146,8 @@ async def main():
     else:
         start, end = args.rangeone, args.rangetwo
 
-    for i in range(start, end):
-        generated = await generate_graphs(i, i + 1)
-        processess = await asyncio.gather(*(common.calculate_stats(graph, args.mode) for graph in generated))
-        for process in processess:
-            _ = await process.communicate()
+    await asyncio.gather(*(generate_graphs(i, i + 1, args.mode[0])
+                           for i in range(start, end)))
 
 
 asyncio.run(main())
