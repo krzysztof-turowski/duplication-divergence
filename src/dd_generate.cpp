@@ -59,6 +59,10 @@ void generate_graph_and_calculated_stats(const int &n, const int &n0, const doub
 
   const auto output_file =
       "results/" + prefix + "G-" + name(n, n0, params) + ":mode:" + std::to_string(mode) + ".txt";
+  if (G.size() > 100 * n) {
+    std::cout << "Skipping due to size: " << output_file << std::endl;
+    return;
+  }
   result.open(output_file);
   count_graph_statistics(G, result, mode);
   result.close();

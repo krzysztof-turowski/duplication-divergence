@@ -146,8 +146,8 @@ async def main():
     else:
         start, end = args.rangeone, args.rangetwo
 
-    await asyncio.gather(*(generate_graphs(i, i + 1, args.mode[0])
-                           for i in range(start, end)))
+    for i in range(start, end):
+        await generate_graphs(i, i + 1, args.mode[0])
 
 
 asyncio.run(main())
