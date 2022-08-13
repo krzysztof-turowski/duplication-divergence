@@ -20,8 +20,8 @@ def float_range(start, end, values=4):
 GENERATORS = [
     ("pure_duplication", [("p", float_range(0, 1, 100))]),
     ("chung_lu", [("p", float_range(0, 1, 10)), ("q", float_range(0, 1, 10))]),
-    ("pastor_satorras", [("p", float_range(0, 5, 10)),
-     ("r", float_range(0, 1, 10))]),
+    ("pastor_satorras", [("p", float_range(0, 1, 10)),
+     ("r", float_range(0, 5, 10))]),
     ("sticky", [("gamma", float_range(2, 3, 100))]),
     ("ba", [("m", int_range(1, 10, 10))]),
     (
