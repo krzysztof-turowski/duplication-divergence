@@ -1,12 +1,16 @@
 #include "sticky.h"
 
+constexpr int PRECISION_GAMMA = 3;
+
 StickyParameters::StickyParameters(std::vector<int> &&_degrees) {
   this->mode = Mode::STICKY;
+  this->gamma = -1;
   degrees = std::move(_degrees);
 }
 
-StickyParameters::StickyParameters(const size_t &n, const double &gamma) {
+StickyParameters::StickyParameters(const size_t &n, const double &_gamma) {
   this->mode = Mode::STICKY;
+  this->gamma = _gamma;
 
   std::vector<double> weights(n);
   for (size_t i = 0; i < weights.size(); i++) {
@@ -25,16 +29,22 @@ StickyParameters::StickyParameters(const size_t &n, const double &gamma) {
 
 std::string StickyParameters::to_string() const {
   std::stringstream out;
-  return this->long_name();
+  out << this->long_name() << " ";
+  out << "gamma = " << this->gamma << " ";
+  return out.str();
 }
 
 std::string StickyParameters::to_filename() const {
   std::stringstream out;
-  return this->short_name();
+  out << this->short_name();
+  out << "-" << std::fixed << std::setprecision(PRECISION_GAMMA) << this->gamma;
+  return out.str();
 }
 
 std::string StickyParameters::to_csv() const {
-  return "";
+  std::stringstream out;
+  out << this->gamma;
+  return out.str();
 }
 
 SimpleGraph generate_sticky_graph(const StickyParameters &params) {
