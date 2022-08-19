@@ -22,3 +22,5 @@ double log_automorphisms_traces(const SimpleGraph &G);
 std::vector<int> connectivity(const SimpleGraph &G);
 
 int isolated_nodes(const SimpleGraph &G);
+
+int nodes_with_degree(const SimpleGraph &G, int d);
