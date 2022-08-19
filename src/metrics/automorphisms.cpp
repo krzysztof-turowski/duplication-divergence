@@ -113,7 +113,7 @@ int isolated_nodes(const SimpleGraph &G) {
       G.begin(), G.end(), [](const std::set<unsigned> &v) { return v.size() == 0; });
 }
 
-int nodes_with_degree(const SimpleGraph &G, int d) {
+int nodes_with_degree(const SimpleGraph &G, const int &d) {
   return std::count_if(
-      G.begin(), G.end(), [](const std::set<unsigned> &v) { return v.size() == d; });
+      G.begin(), G.end(), [&](const std::set<unsigned> &v) { return v.size() == d; });
 }

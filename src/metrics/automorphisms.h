@@ -23,4 +23,4 @@ std::vector<int> connectivity(const SimpleGraph &G);
 
 int isolated_nodes(const SimpleGraph &G);
 
-int nodes_with_degree(const SimpleGraph &G, int d);
+int nodes_with_degree(const SimpleGraph &G, const int &d);
