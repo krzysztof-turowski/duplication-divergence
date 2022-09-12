@@ -1,0 +1,120 @@
+import os
+import json
+from typing import List, Dict, Any
+from dd_plot_characteristics import read_data, PLOT_STYLE, FIGURE_SIZE_SCALE
+from itertools import combinations
+import matplotlib.pyplot as pyplot
+import dd_plot
+import numpy
+import math
+
+KEYS = [
+    'log_automorphisms_sparse',
+    'get_average_shortest_path',
+    'clustering_coefficient_two',
+    'clustering_coefficient_three',
+    'clustering_coefficient_four',
+    'get_diameter',
+    'get_degree_distribution',
+    'betweenness_centrality',
+    'closeness',
+    'khop_reachability_2',
+    'khop_reachability_3',
+    'khop_reachability_4',
+    'Graphlets',
+    'RGF',
+]
+
+
+def get_all_param_pairs(model, params):
+    if len(params) == 1:
+        return [(model, params[0])]
+    if model == "BERG":
+        params = params[2:]
+
+    return [(f"{model}_{a[0]}_{b[0]}", a[1], b[1])
+            for a, b in combinations(enumerate(params), 2)]
+
+
+def get_average(results: List[dict]) -> Dict[str, float]:
+    averaged = {}
+    for key in KEYS:
+        number = 0
+        summed = 0
+        for result in results:
+            result = result["comparison"]
+            if key not in result:
+                continue
+            number += 1
+            summed += result[key]
+        if number > 0:
+            averaged[key] = summed / number
+
+    return averaged
+
+
+def get_averaged_dict():
+    tree = os.walk('results/compared')
+
+    db: Dict[str, List[Any]] = {}
+
+    grouped = {}
+
+    for (path, _, files) in tree:
+        for file in files:
+            with open(path + "/" + file) as f:
+                data = json.load(f)
+
+            _, _, model = file[:-4].split("%3Amode%3A")[0].split("_")
+            _, _, model, *_ = model[2:].split("-")
+
+            param_pairs = get_all_param_pairs(model, data["params"])
+            for pair in param_pairs:
+                if pair not in grouped:
+                    grouped[pair] = []
+                grouped[pair].append(data)
+    return {k: get_average(v) for k, v in grouped.items()}
+
+
+def plot_data_cmp1d(key, data):
+    for metric in KEYS:
+        pyplot.title(metric)
+        pyplot.plot([v for v, d in data], [d[metric] for v, d in data])
+        dd_plot.plot(f"{key}-cmp1d-{metric}", 'pdf')
+        pyplot.clf()
+
+
+def plot_data_cmp2d(key, data):
+    left = [*set([v[0] for v, d in data])]
+    right = [*set([v[1] for v, d in data])]
+    for metric in KEYS:
+        dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
+        pyplot.title(metric)
+        pyplot.xticks(range(len(left)), left, rotation=-90)
+        pyplot.yticks(range(len(right)), right)
+        pyplot.imshow(
+            numpy.array([
+                d[metric] if metric in d else 0 for v, d in data
+            ]).reshape((len(right), len(left))))
+        pyplot.colorbar()
+        dd_plot.plot(f"{key}-cmp2d-{metric}", 'pdf')
+        pyplot.clf()
+
+
+def plot_all(averaged_dict):
+    results = sorted(averaged_dict.items())
+    last_key = None
+    current = []
+    for ((key, *params), data) in results:
+        if last_key != key:
+            if len(current) > 0:
+                if len(current[-1][0]) > 1:
+                    plot_data_cmp2d(last_key, current)
+                else:
+                    plot_data_cmp1d(last_key, current)
+            current = []
+            last_key = key
+        current.append((params, data))
+
+
+plot_all(get_averaged_dict())

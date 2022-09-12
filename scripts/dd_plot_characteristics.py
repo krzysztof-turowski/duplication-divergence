@@ -9,6 +9,7 @@ import pprint
 import matplotlib.pyplot as pyplot
 import scipy.interpolate
 import os
+from typing import List, Dict
 
 import dd_plot
 
@@ -223,24 +224,33 @@ def plot_data_cmp2d(data_file, graph, synthetic, export):
     dd_plot.plot(graph + '-cmp2d', export)
 
 
-args = dd_plot.get_parser().parse_args()
-with open('results/' + args.filename + '.txt') as input_file:
-    if args.mode == 'single':
-        plot_data(input_file, args.filename, args.export)
-    elif args.mode == 'cmp1d':
-        models1d = ['PD']
-        for model in models1d:
-            synthetic = [file for file in os.listdir(
-                "results/synthetic") if file.startswith(args.filename) and model in file]
+if __name__ == "__name__":
+    args = dd_plot.get_parser().parse_args()
+    with open('results/' + args.filename + '.txt') as input_file:
+        if args.mode == 'single':
+            plot_data(input_file, args.filename, args.export)
+        elif args.mode == 'cmp1d':
+            models1d = ['PD']
+            for model in models1d:
+                synthetic = [file for file in os.listdir(
+                    "results/synthetic") if file.startswith(args.filename) and model in file]
 
-            plot_data_cmp1d(input_file, args.filename, synthetic, args.export)
-    elif args.mode == 'cmp2d':
-        models2d = ['PS']
-        for model in models2d:
-            synthetic = [file for file in os.listdir(
-                "results/synthetic") if file.startswith(args.filename) and model in file]
+                plot_data_cmp1d(
+                    input_file,
+                    args.filename,
+                    synthetic,
+                    args.export)
+        elif args.mode == 'cmp2d':
+            models2d = ['PS']
+            for model in models2d:
+                synthetic = [file for file in os.listdir(
+                    "results/synthetic") if file.startswith(args.filename) and model in file]
 
-            plot_data_cmp2d(input_file, args.filename, synthetic, args.export)
-    else:
-        print('Unknown mode', args.mode)
-        exit(1)
+                plot_data_cmp2d(
+                    input_file,
+                    args.filename,
+                    synthetic,
+                    args.export)
+        else:
+            print('Unknown mode', args.mode)
+            exit(1)
