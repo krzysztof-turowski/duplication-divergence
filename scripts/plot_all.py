@@ -90,12 +90,12 @@ def plot_data_cmp2d(key, data):
     for metric, title in KEYS:
         dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
         pyplot.title(title)
-        pyplot.xticks(range(len(left)), left)
-        pyplot.yticks(range(len(right)), right)
+        pyplot.xticks(range(len(right)), right)
+        pyplot.yticks(range(len(left)), left)
         pyplot.imshow(
             numpy.array([
-                d[metric] if metric in d else 0 for v, d in data
-            ]).reshape((len(right), len(left))))
+                d[metric] if metric in d else float('inf') for v, d in data
+            ]).reshape((len(left), len(right))))
         pyplot.colorbar()
         dd_plot.plot(f"{key}-cmp2d-{metric}", 'pdf')
         pyplot.clf()
@@ -128,7 +128,7 @@ def calculate_mrr(results: (str, List[dict])) -> Dict[str, float]:
         sorted_results = sorted(
             results.items(),
             key=lambda x:
-                x[1][key] if key in x[1] else -float('inf')
+                x[1][key] if key in x[1] else float('inf')
         )
         for (score, (name, _)) in enumerate(sorted_results, 1):
             scores[name].append(score)
@@ -138,9 +138,12 @@ def calculate_mrr(results: (str, List[dict])) -> Dict[str, float]:
 
 # plot_all(get_averaged_dict())
 print("Param set", "MRR", *[name for _, name in KEYS], sep=", ")
-print(*[f"\"{name}\", {', '.join([str(x) for x in value])}" for name, value in
-      sorted(
-          calculate_mrr(
-              get_averaged_dict()).items(),
-          key=lambda x: -x[1][0])],
-      sep="\n")
+print(*[
+    f"\"{name}\", {mrr}, {', '.join([str(x) for x in scores])}"
+    for name, (mrr, scores) in sorted(
+        calculate_mrr(
+            get_averaged_dict()).items(),
+        key=lambda x: -
+        x[1][0])
+],
+    sep="\n")
