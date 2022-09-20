@@ -8,6 +8,7 @@ import dd_plot
 import numpy
 import math
 
+INFINITY = float('inf')
 KEYS = [
     ('log_automorphisms_sparse', "Automorphisms"),
     ('get_average_shortest_path', "Average shortest path"),
@@ -94,7 +95,7 @@ def plot_data_cmp2d(key, data):
         pyplot.yticks(range(len(left)), left)
         pyplot.imshow(
             numpy.array([
-                d[metric] if metric in d else float('inf') for v, d in data
+                d[metric] if metric in d else INFINITY for v, d in data
             ]).reshape((len(left), len(right))))
         pyplot.colorbar()
         dd_plot.plot(f"{key}-cmp2d-{metric}", 'pdf')
@@ -128,7 +129,7 @@ def calculate_mrr(results: (str, List[dict])) -> Dict[str, float]:
         sorted_results = sorted(
             results.items(),
             key=lambda x:
-                x[1][key] if key in x[1] else float('inf')
+                x[1][key] if key in x[1] else INFINITY
         )
         for (score, (name, _)) in enumerate(sorted_results, 1):
             scores[name].append(score)
@@ -136,14 +137,17 @@ def calculate_mrr(results: (str, List[dict])) -> Dict[str, float]:
             for (name, scores) in scores.items()}
 
 
-# plot_all(get_averaged_dict())
-print("Param set", "MRR", *[name for _, name in KEYS], sep=", ")
-print(*[
-    f"\"{name}\", {mrr}, {', '.join([str(x) for x in scores])}"
-    for name, (mrr, scores) in sorted(
-        calculate_mrr(
-            get_averaged_dict()).items(),
-        key=lambda x: -
-        x[1][0])
-],
-    sep="\n")
+def print_mrr_as_csv(averaged_dict):
+    print("Param set", "MRR", *[name for _, name in KEYS], sep=", ")
+    print(*[
+        f"\"{name}\", {mrr}, {', '.join([str(x) for x in scores])}"
+        for name, (mrr, scores) in sorted(
+            calculate_mrr(averaged_dict).items(),
+            key=lambda x: -x[1][0])
+    ],
+        sep="\n")
+
+
+averaged_dict = get_averaged_dict()
+plot_all(averaged_dict)
+print_mrr_as_csv(averaged_dict)
