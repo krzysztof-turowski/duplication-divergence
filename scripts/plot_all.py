@@ -9,25 +9,25 @@ import numpy
 import math
 
 KEYS = [
-    'log_automorphisms_sparse',
-    'get_average_shortest_path',
-    'clustering_coefficient_two',
-    'clustering_coefficient_three',
-    'clustering_coefficient_four',
-    'get_diameter',
-    'get_degree_distribution',
-    'betweenness_centrality',
-    'closeness',
-    'khop_reachability_2',
-    'khop_reachability_3',
-    'khop_reachability_4',
-    'Graphlets',
-    'RGF',
+    ('log_automorphisms_sparse', "Automorphisms"),
+    ('get_average_shortest_path', "Average shortest path"),
+    ('clustering_coefficient_two', "Clustering coefficient 2"),
+    ('clustering_coefficient_three', "Clustering coefficient 3"),
+    ('clustering_coefficient_four', "Clustering coefficient 4"),
+    ('get_diameter', "Diameter"),
+    ('get_degree_distribution', "Degree Distribution"),
+    ('betweenness_centrality', "Betweenness"),
+    ('closeness', "Closeness"),
+    ('khop_reachability_2', "$k$-hop reachability 2"),
+    ('khop_reachability_3', "$k$-hop reachability 3"),
+    ('khop_reachability_4', "$k$-hop reachability 4"),
+    ('Graphlets', "Graphlets"),
+    ('RGF', "Relative Graphlet Frequency"),
 ]
 
 
 def get_all_param_pairs(model, params):
-    if len(params) == 1:
+    if len(params) == 1 or model == "2STEP":
         return [(model, params[0])]
     if model == "BERG":
         params = params[2:]
@@ -38,7 +38,7 @@ def get_all_param_pairs(model, params):
 
 def get_average(results: List[dict]) -> Dict[str, float]:
     averaged = {}
-    for key in KEYS:
+    for key, _ in KEYS:
         number = 0
         summed = 0
         for result in results:
@@ -77,8 +77,8 @@ def get_averaged_dict():
 
 
 def plot_data_cmp1d(key, data):
-    for metric in KEYS:
-        pyplot.title(metric)
+    for metric, title in KEYS:
+        pyplot.title(title)
         pyplot.plot([v for v, d in data], [d[metric] for v, d in data])
         dd_plot.plot(f"{key}-cmp1d-{metric}", 'pdf')
         pyplot.clf()
@@ -87,10 +87,10 @@ def plot_data_cmp1d(key, data):
 def plot_data_cmp2d(key, data):
     left = [*set([v[0] for v, d in data])]
     right = [*set([v[1] for v, d in data])]
-    for metric in KEYS:
+    for metric, title in KEYS:
         dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
-        pyplot.title(metric)
-        pyplot.xticks(range(len(left)), left, rotation=-90)
+        pyplot.title(title)
+        pyplot.xticks(range(len(left)), left)
         pyplot.yticks(range(len(right)), right)
         pyplot.imshow(
             numpy.array([
@@ -115,6 +115,11 @@ def plot_all(averaged_dict):
             current = []
             last_key = key
         current.append((params, data))
+    if len(current) > 0:
+        if len(current[-1][0]) > 1:
+            plot_data_cmp2d(last_key, current)
+        else:
+            plot_data_cmp1d(last_key, current)
 
 
 plot_all(get_averaged_dict())
