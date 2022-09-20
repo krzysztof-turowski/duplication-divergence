@@ -122,4 +122,25 @@ def plot_all(averaged_dict):
             plot_data_cmp1d(last_key, current)
 
 
-plot_all(get_averaged_dict())
+def calculate_mrr(results: (str, List[dict])) -> Dict[str, float]:
+    scores = {name: [] for name, _ in results.items()}
+    for key, _ in KEYS:
+        sorted_results = sorted(
+            results.items(),
+            key=lambda x:
+                x[1][key] if key in x[1] else -float('inf')
+        )
+        for (score, (name, _)) in enumerate(sorted_results, 1):
+            scores[name].append(score)
+    return {name: (sum(1 / score for score in scores) / len(KEYS), scores)
+            for (name, scores) in scores.items()}
+
+
+# plot_all(get_averaged_dict())
+print("Param set", "MRR", *[name for _, name in KEYS], sep=", ")
+print(*[f"\"{name}\", {', '.join([str(x) for x in value])}" for name, value in
+      sorted(
+          calculate_mrr(
+              get_averaged_dict()).items(),
+          key=lambda x: -x[1][0])],
+      sep="\n")
