@@ -8,6 +8,8 @@ import dd_plot
 import numpy
 import math
 
+MRR = True
+
 INFINITY = float('inf')
 KEYS = [
     ('log_automorphisms_sparse', "Automorphisms"),
@@ -22,7 +24,7 @@ KEYS = [
     ('khop_reachability_2', "$k$-hop reachability 2"),
     ('khop_reachability_3', "$k$-hop reachability 3"),
     ('khop_reachability_4', "$k$-hop reachability 4"),
-    ('Graphlets', "Graphlets"),
+    # ('Graphlets', "Graphlets"),
     ('RGF', "Relative Graphlet Frequency"),
 ]
 
@@ -33,8 +35,11 @@ def get_all_param_pairs(model, params):
     if model == "BERG":
         params = params[2:]
 
-    return [(f"{model}_{a[0]}_{b[0]}", a[1], b[1])
-            for a, b in combinations(enumerate(params), 2)]
+    if MRR:
+        return [(model, str(params))]
+    else:
+        return [(f"{model}_{a[0]}_{b[0]}", a[1], b[1])
+                for a, b in combinations(enumerate(params), 2)]
 
 
 def get_average(results: List[dict]) -> Dict[str, float]:
@@ -149,5 +154,7 @@ def print_mrr_as_csv(averaged_dict):
 
 
 averaged_dict = get_averaged_dict()
-plot_all(averaged_dict)
-print_mrr_as_csv(averaged_dict)
+if MRR:
+    print_mrr_as_csv(averaged_dict)
+else:
+    plot_all(averaged_dict)
