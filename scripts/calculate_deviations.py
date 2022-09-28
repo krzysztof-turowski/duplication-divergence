@@ -4,15 +4,16 @@ from typing import List, Dict
 from itertools import repeat
 import os
 from multiprocessing import Pool
+import math
 
 
 def compare_graphs(target: dict, synt: dict) -> Dict[str, float]:
     keys = [
         ('log_automorphisms_sparse', "num"),
         ('get_average_shortest_path', "num"),
-        ('clustering_coefficient_two', "num"),
-        ('clustering_coefficient_three', "num"),
-        ('clustering_coefficient_four', "num"),
+        ('clustering_coefficient_two', "log"),
+        ('clustering_coefficient_three', "log"),
+        ('clustering_coefficient_four', "log"),
         ('get_diameter', "num"),
         ('get_degree_distribution', "list"),
         ('betweenness_centrality', "list"),
@@ -31,6 +32,10 @@ def compare_graphs(target: dict, synt: dict) -> Dict[str, float]:
 
         if typ == 'num':
             result[key] = (synt[key] - target[key])**2
+        if typ == 'log':
+            result[key] = (abs(math.log(synt[key]) - math.log(target[key]))
+                           if synt[key] != 0 and target[key] != 0
+                           else float('inf'))
         elif typ == 'list':
             result[key] = calculate_dtw(synt[key], target[key])
         elif typ == 'vec':
