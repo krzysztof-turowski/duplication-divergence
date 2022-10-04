@@ -31,7 +31,7 @@ KEYS = [
 
 def get_all_param_pairs(model, params):
     if len(params) == 1 or model == "2STEP":
-        return [(model, params[0])]
+        return [(model, str([params[0]]))] if MRR else [(model, params[0])]
     if model == "BERG":
         params = params[2:]
 
@@ -151,6 +151,36 @@ def print_mrr_as_csv(averaged_dict):
             key=lambda x: -x[1][0])
     ],
         sep="\n")
+
+
+def print_tables_for_best_individual_scores(averaged_dict):
+    toptens = []
+    for i in range(len(KEYS)):
+        toptens.append(
+            (KEYS[i],
+             [name
+             for name, (mrr, scores) in sorted(
+                 calculate_mrr(averaged_dict).items(),
+                 key=lambda x: x[1][1][i])[:10]]
+             )
+        )
+
+    chunks = [toptens[:len(toptens) // 2], toptens[len(toptens) // 2:]]
+
+    for chunk in chunks:
+        for (metric, _) in chunk:
+            print(metric[1], end=" & ")
+        print('\\\\\n\\midrule')
+        for j in range(10):
+            for (_, model) in chunk:
+                name, params = model[j]
+                params = eval(params)
+                print(
+                    name,
+                    f"\\(({', '.join(str(p) for p in params)})\\)",
+                    end=" & ")
+            print('\\\\')
+        print()
 
 
 averaged_dict = get_averaged_dict()
