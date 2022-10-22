@@ -7,8 +7,11 @@ import matplotlib.pyplot as pyplot
 import dd_plot
 import numpy
 import math
+from statistics import mean
 
-MRR = True
+# MODE = "MRR"
+# MODE = "PLOT"
+MODE = "SUBCUBES"
 
 INFINITY = float('inf')
 KEYS = [
@@ -31,11 +34,13 @@ KEYS = [
 
 def get_all_param_pairs(model, params):
     if len(params) == 1 or model == "2STEP":
-        return [(model, str([params[0]]))] if MRR else [(model, params[0])]
+        return ([(model, str([params[0]]))]
+                if MODE != "PLOT"
+                else [(model, params[0])])
     if model == "BERG":
         params = params[2:]
 
-    if MRR:
+    if MODE != "PLOT":
         return [(model, str(params))]
     else:
         return [(f"{model}_{a[0]}_{b[0]}", a[1], b[1])
@@ -153,6 +158,60 @@ def print_mrr_as_csv(averaged_dict):
         sep="\n")
 
 
+def transpose(array2d):
+    result = [[None] * len(array2d) for _ in range(len(array2d[0]))]
+
+    for i, row in enumerate(array2d):
+        for j, val in enumerate(row):
+            result[j][i] = val
+
+    return result
+
+
+def get_f_of_each_column(array2d, f):
+    return [f(row) for row in transpose(array2d)]
+
+
+def get_best_subcubes(averaged_dict):
+    ranking = [(model, eval(params)) for
+               (model, params), _ in sorted(
+        calculate_mrr(averaged_dict).items(),
+        key=lambda x: -x[1][0])]
+
+    grouped = {}
+    for model, params in ranking:
+        if model not in grouped:
+            grouped[model] = []
+        if len(grouped[model]) <= 10:
+            grouped[model].append(params)
+
+    def title(string):
+        print()
+        print(string)
+        print("-" * len(string))
+        print()
+
+    title("MIN MAX of top 10:")
+    for model, param_group in grouped.items():
+        print(
+            model, get_f_of_each_column(
+                param_group, min), get_f_of_each_column(
+                param_group, max))
+
+    title("AVERAGE of top 10 +- 10%:")
+    for model, param_group in grouped.items():
+        averaged = get_f_of_each_column(param_group, mean)
+
+        print(model, [x * 0.9 for x in averaged], [x * 1.1 for x in averaged])
+
+    title("WEIGHTED AVERAGE of top 10 +- 10%:")
+    for model, param_group in grouped.items():
+        averaged = get_f_of_each_column(param_group, lambda arr: sum(
+            (weight * val for weight, val in zip(reversed([x / (10 * 11 / 2) for x in range(1, 11)]), arr))))
+
+        print(model, [x * 0.9 for x in averaged], [x * 1.1 for x in averaged])
+
+
 def print_tables_for_best_individual_scores(averaged_dict):
     toptens = []
     for i in range(len(KEYS)):
@@ -184,7 +243,11 @@ def print_tables_for_best_individual_scores(averaged_dict):
 
 
 averaged_dict = get_averaged_dict()
-if MRR:
+if MODE == "MRR":
     print_mrr_as_csv(averaged_dict)
-else:
+elif MODE == "SUBCUBES":
+    get_best_subcubes(averaged_dict)
+elif MODE == "PLOT":
     plot_all(averaged_dict)
+else:
+    exit(1)
