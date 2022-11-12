@@ -113,6 +113,28 @@ def plot_data_cmp2d(key, data):
         pyplot.clf()
 
 
+def plot_data_mrr2d(model_name, averaged_dict):
+    mrr = sorted(
+        calculate_mrr(averaged_dict).items(),
+        key=lambda x: -x[1][0])
+    data = sorted([(params, mrr) for (model, params), (mrr, scores)
+                   in mrr if model.startswith(model_name)])
+    left = sorted([*set([eval(v)[0] for v, d in data])])
+    right = sorted([*set([eval(v)[1] for v, d in data])])
+    dd_plot.initialize_figure(PLOT_STYLE, 1)
+    pyplot.title('Chung Lu MRR score')
+    pyplot.xticks(range(len(right)), right, rotation=-90)
+    pyplot.yticks(range(len(left)), left)
+    pyplot.imshow(
+        numpy.array([d for _, d in data]
+                    ).reshape((len(left), len(right))),
+        cmap='magma'
+    )
+    pyplot.colorbar()
+    dd_plot.plot(f"mrr-{model_name}-heatmap", 'pdf')
+    pyplot.clf()
+
+
 def plot_all(averaged_dict):
     results = sorted(averaged_dict.items())
     last_key = None
@@ -245,6 +267,7 @@ def print_tables_for_best_individual_scores(averaged_dict):
 
 averaged_dict = get_averaged_dict()
 if MODE == "MRR":
+    # plot_data_mrr2d("CL", averaged_dict)
     print_mrr_as_csv(averaged_dict)
 elif MODE == "SUBCUBES":
     get_best_subcubes(averaged_dict)
