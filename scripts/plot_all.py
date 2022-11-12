@@ -24,9 +24,9 @@ KEYS = [
     ('get_degree_distribution', "Degree Distribution"),
     ('betweenness_centrality', "Betweenness"),
     ('closeness', "Closeness"),
-    ('khop_reachability_2', "$k$-hop reachability 2"),
-    ('khop_reachability_3', "$k$-hop reachability 3"),
-    ('khop_reachability_4', "$k$-hop reachability 4"),
+    ('khop_reachability_2', "$2$-hop reachability"),
+    ('khop_reachability_3', "$3$-hop reachability"),
+    ('khop_reachability_4', "$4$-hop reachability"),
     # ('Graphlets', "Graphlets"),
     ('RGF', "Relative Graphlet Frequency"),
 ]
@@ -89,6 +89,7 @@ def get_averaged_dict():
 
 def plot_data_cmp1d(key, data):
     for metric, title in KEYS:
+        dd_plot.initialize_figure(PLOT_STYLE, 1)
         pyplot.title(title)
         pyplot.plot([v for v, d in data], [d[metric] for v, d in data])
         dd_plot.plot(f"{key}-cmp1d-{metric}", 'pdf')
@@ -99,9 +100,9 @@ def plot_data_cmp2d(key, data):
     left = [*set([v[0] for v, d in data])]
     right = [*set([v[1] for v, d in data])]
     for metric, title in KEYS:
-        dd_plot.initialize_figure(PLOT_STYLE, FIGURE_SIZE_SCALE)
+        dd_plot.initialize_figure(PLOT_STYLE, 1)
         pyplot.title(title)
-        pyplot.xticks(range(len(right)), right)
+        pyplot.xticks(range(len(right)), right, rotation=-90)
         pyplot.yticks(range(len(left)), left)
         pyplot.imshow(
             numpy.array([

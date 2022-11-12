@@ -18,16 +18,17 @@ def figure_size(figure_size_scale):
 
 def initialize_figure(plot_style, figure_size_scale):
     publication_with_latex = {
-        "pgf.texsystem": "pdflatex", # change this if using xetex or lautex
+        "pgf.texsystem": "lualatex", # change this if using xetex or lautex
         "text.usetex": True, # use LaTeX to write all text
         "font.family": "serif",
         "axes.labelsize": 8, # LaTeX default is 10pt font.
         "font.size": 8,
         "legend.fontsize": 8, # Make the legend/label fonts a little smaller
         "savefig.dpi": 125,
-        "text.latex.preamble": r"\usepackage{amsmath,amssymb,amsfonts}",
+        "pgf.preamble": r"\usepackage{unicode-math}\setmainfont{TeX Gyre Schola}\setmathfont{TeX Gyre Schola Math}",
         "figure.figsize": figure_size(figure_size_scale)
     }
+    matplotlib.use('pgf')
     pyplot.style.use(plot_style)
     matplotlib.rcParams.update(publication_with_latex)
 
