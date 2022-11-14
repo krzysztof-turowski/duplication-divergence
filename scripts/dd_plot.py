@@ -26,6 +26,7 @@ def initialize_figure(plot_style, figure_size_scale):
         "legend.fontsize": 8, # Make the legend/label fonts a little smaller
         "savefig.dpi": 125,
         "pgf.preamble": r"\usepackage{unicode-math}\setmainfont{TeX Gyre Schola}\setmathfont{TeX Gyre Schola Math}",
+        "pgf.rcfonts": False,
         "figure.figsize": figure_size(figure_size_scale)
     }
     matplotlib.use('pgf')
